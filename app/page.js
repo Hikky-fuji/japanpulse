@@ -31,11 +31,12 @@ export default function Home() {
     <div style={{padding:'40px',fontFamily:'sans-serif',color:'#666'}}>Loading...</div>
   )
 
-  const { headline, core, corecore, services,
+const { headline, core, corecore, services,
           food_ex_fresh, energy, goods_ex_food_energy,
-          housing, medical, transport, education, comms,
+          housing, medical, transport, education, comms, leisure, eating_out, apparel, furniture,
           headline_mm, core_mm, corecore_mm, services_mm,
-          food_mm, energy_mm, goods_mm, housing_mm, medical_mm, transport_mm,
+          food_mm, energy_mm, goods_mm, housing_mm, medical_mm,
+          transport_mm, education_mm, comms_mm, leisure_mm, eating_out_mm, apparel_mm, furniture_mm,
           contrib } = data
 
   const latest = {
