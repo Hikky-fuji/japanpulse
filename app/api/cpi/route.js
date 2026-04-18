@@ -4,20 +4,28 @@ export async function GET() {
     + `?appId=${APP_ID}`
     + `&statsDataId=0003427113`
     + `&metaGetFlg=N&limit=200`
+    + `&cdArea=00000`
+    + `&cdCat01=0001`
 
   const res = await fetch(url, { next: { revalidate: 86400 } })
   const json = await res.json()
   const values = json?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE ?? []
 
-  const formatDate = (time) => time.slice(0, 4) + '/' + time.slice(4, 6)
+  const isMonthly = (v) => {
+    const t = v['@time']
+    return t && t.length === 10 && t.slice(6, 8) !== '00'
+  }
 
-  const parseVal = (code) =>
-    values
-      .filter(v => v['@cat01'] === code)
-      .slice(-24)
-      .map(v => ({ date: formatDate(v['@time']), value: parseFloat(v['$']) }))
+  const formatDate = (time) =>
+    time.slice(0, 4) + '/' + time.slice(4, 6)
 
-  return Response.json({
-    headline: parseVal('0001'),
-  })
+  const headline = values
+    .filter(isMonthly)
+    .slice(-24)
+    .map(v => ({
+      date: formatDate(v['@time']),
+      value: parseFloat(v['$'])
+    }))
+
+  return Response.json({ headline })
 }
