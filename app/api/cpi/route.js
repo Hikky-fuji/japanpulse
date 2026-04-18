@@ -15,15 +15,15 @@ export async function GET() {
   const json = await res.json()
   const values = json?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE ?? []
 
-  const isMonthly = (v) => {
-    const t = v['@time']
-    if (!t || t.length !== 10) return false
-    const month = t.slice(4, 6)
-    return month >= '01' && month <= '12'
-  }
-
   const formatDate = (time) =>
     time.slice(0, 4) + '/' + time.slice(4, 6)
+
+  const isMonthly = (v) => {
+    const t = v['@time']
+    if (!t) return false
+    const month = parseInt(t.slice(4, 6))
+    return month >= 1 && month <= 12
+  }
 
   const headline = values
     .filter(isMonthly)
@@ -34,5 +34,5 @@ export async function GET() {
       value: parseFloat(v['$'])
     }))
 
-  return Response.json({ headline, debug_count: values.length, debug_first: values[0] })
+  return Response.json({ headline })
 }
