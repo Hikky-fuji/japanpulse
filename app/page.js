@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect, useState } from 'react'
-import { Line, Bar } from 'react-chartjs-2'
+import { Line, Bar, Doughnut } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -8,12 +8,13 @@ import {
   PointElement,
   LineElement,
   BarElement,
+  ArcElement,
   Title,
   Tooltip,
   Legend
 } from 'chart.js'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend)
 
 const mma3 = (arr) => arr.map((v, i) => {
   if (i < 2) return null
@@ -88,6 +89,32 @@ export default function Home() {
     ]
   }
 
+  // ウェート円グラフ（2020年基準、総合1000分比）
+  const weightData = {
+    labels: [
+      'Housing (住居) 16%',
+      'Food ex. Fresh (食料) 22%',
+      'Transport & Comms (交通通信) 14%',
+      'Services ex. Rent (サービス) 11%',
+      'Leisure & Education (教養教育) 9%',
+      'Energy (光熱) 7%',
+      'Goods ex. Food & Energy (財) 8%',
+      'Medical (保健医療) 5%',
+      'Apparel (被服) 4%',
+      'Other 4%',
+    ],
+    datasets: [{
+      data: [160, 219, 143, 110, 90, 72, 80, 50, 41, 35],
+      backgroundColor: [
+        '#378ADD', '#D85A30', '#1D9E75', '#F5A623',
+        '#9B59B6', '#E24B4A', '#2ECC71', '#1ABC9C',
+        '#E67E22', '#95A5A6',
+      ],
+      borderWidth: 1,
+      borderColor: '#fff',
+    }]
+  }
+
   const lineOpts = {
     responsive: true,
     plugins: { legend:{ position:'top' }, tooltip:{ mode:'index', intersect:false } },
@@ -99,6 +126,13 @@ export default function Home() {
     scales: {
       x: { stacked: true },
       y: { stacked: true, ticks:{ callback: v => v.toFixed(1)+'pp' } }
+    }
+  }
+  const doughnutOpts = {
+    responsive: true,
+    plugins: {
+      legend: { position: 'right', labels: { font: { size: 11 }, padding: 12 } },
+      tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.raw}/1000` } }
     }
   }
 
@@ -178,35 +212,41 @@ export default function Home() {
         <Bar data={chart3} options={contribOpts} />
       </div>
 
-      <div style={s.box}>
-        <div style={s.boxTitle}>M/M Highlight — Last 3 months (NSA, not seasonally adjusted)</div>
-        <table style={s.table}>
-          <thead>
-            <tr>
-              <th style={{...s.th, textAlign:'left', width:'220px'}}>Series</th>
-              {mmMonths.map(m => <th key={m} style={s.th}>{m}</th>)}
-            </tr>
-          </thead>
-          <tbody>
-            {['Aggregate','Goods','Services'].map(group => (
-              <React.Fragment key={group}>
-                <tr>
-                  <td colSpan={4} style={{...s.td, fontSize:'11px', color:'#aaa', fontWeight:'600', textTransform:'uppercase', paddingTop:'12px', background:'#fafafa'}}>{group}</td>
-                </tr>
-                {mmRows.filter(r => r.group === group).map(row => (
-                  <tr key={row.label}>
-                    <td style={{...s.td, fontWeight: group==='Aggregate'?'600':'400'}}>{row.label}</td>
-                    {(row.mm||[]).slice(-3).map(v => (
-                      <td key={v.date} style={{...s.td, textAlign:'right', color: mmColor(v.value), fontWeight:'500'}}>
-                        {v.value > 0 ? '+' : ''}{v.value.toFixed(2)}%
-                      </td>
-                    ))}
+      <div style={s.grid2}>
+        <div style={s.box}>
+          <div style={s.boxTitle}>CPI Basket Weight Composition (2020 Base, /1000)</div>
+          <Doughnut data={weightData} options={doughnutOpts} />
+        </div>
+        <div style={s.box}>
+          <div style={s.boxTitle}>M/M Highlight — Last 3 months (NSA, not seasonally adjusted)</div>
+          <table style={s.table}>
+            <thead>
+              <tr>
+                <th style={{...s.th, textAlign:'left', width:'200px'}}>Series</th>
+                {mmMonths.map(m => <th key={m} style={s.th}>{m}</th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {['Aggregate','Goods','Services'].map(group => (
+                <React.Fragment key={group}>
+                  <tr>
+                    <td colSpan={4} style={{...s.td, fontSize:'11px', color:'#aaa', fontWeight:'600', textTransform:'uppercase', paddingTop:'12px', background:'#fafafa'}}>{group}</td>
                   </tr>
-                ))}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
+                  {mmRows.filter(r => r.group === group).map(row => (
+                    <tr key={row.label}>
+                      <td style={{...s.td, fontWeight: group==='Aggregate'?'600':'400'}}>{row.label}</td>
+                      {(row.mm||[]).slice(-3).map(v => (
+                        <td key={v.date} style={{...s.td, textAlign:'right', color: mmColor(v.value), fontWeight:'500'}}>
+                          {v.value > 0 ? '+' : ''}{v.value.toFixed(2)}%
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </main>
   )
