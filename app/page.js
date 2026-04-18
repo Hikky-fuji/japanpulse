@@ -111,18 +111,24 @@ export default function Home() {
     { label:'Services ex. Imputed Rent', val:latest.services?.value, d:diff(latest.services, prev.services) },
   ]
 
-  // M/M Highlight テーブル（10品目）
-  const mmRows = [
-    { label:'Headline',                  mm: headline_mm,  group: 'Aggregate' },
-    { label:'Core (ex. Fresh Food)',     mm: core_mm,      group: 'Aggregate' },
-    { label:'Core-Core',                 mm: corecore_mm,  group: 'Aggregate' },
-    { label:'Services (ex. Imp. Rent)',  mm: services_mm,  group: 'Aggregate' },
-    { label:'Food (ex. Fresh)',          mm: food_mm,      group: 'Category' },
-    { label:'Energy',                    mm: energy_mm,    group: 'Category' },
-    { label:'Goods (ex. Food & Energy)', mm: goods_mm,     group: 'Category' },
-    { label:'Housing',                   mm: housing_mm,   group: 'Category' },
-    { label:'Medical',                   mm: medical_mm,   group: 'Category' },
-    { label:'Transport & Comms',         mm: transport_mm, group: 'Category' },
+  // M/M Highlight テーブル（16品目）
+const mmRows = [
+    { label:'Headline',                  mm: headline_mm,     group: 'Aggregate' },
+    { label:'Core (ex. Fresh Food)',     mm: core_mm,         group: 'Aggregate' },
+    { label:'Core-Core',                 mm: corecore_mm,     group: 'Aggregate' },
+    { label:'Services (ex. Imp. Rent)',  mm: services_mm,     group: 'Aggregate' },
+    { label:'Food (ex. Fresh)',          mm: food_mm,         group: 'Goods' },
+    { label:'Energy',                    mm: energy_mm,       group: 'Goods' },
+    { label:'Goods (ex. Food & Energy)', mm: goods_mm,        group: 'Goods' },
+    { label:'Furniture & Household',     mm: furniture_mm,    group: 'Goods' },
+    { label:'Apparel & Footwear',        mm: apparel_mm,      group: 'Goods' },
+    { label:'Housing',                   mm: housing_mm,      group: 'Services' },
+    { label:'Medical & Healthcare',      mm: medical_mm,      group: 'Services' },
+    { label:'Transport',                 mm: transport_mm,    group: 'Services' },
+    { label:'Communications',            mm: comms_mm,        group: 'Services' },
+    { label:'Education',                 mm: education_mm,    group: 'Services' },
+    { label:'Leisure & Culture',         mm: leisure_mm,      group: 'Services' },
+    { label:'Eating Out',                mm: eating_out_mm,   group: 'Services' },
   ]
   const mmMonths = (headline_mm||[]).slice(-3).map(v=>v.date)
 
