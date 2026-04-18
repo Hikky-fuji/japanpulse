@@ -16,12 +16,12 @@ export async function GET() {
   const values = json?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE ?? []
 
   const formatDate = (time) =>
-    time.slice(0, 4) + '/' + time.slice(4, 6)
+    time.slice(0, 4) + '/' + time.slice(6, 8)
 
   const isMonthly = (v) => {
     const t = v['@time']
-    if (!t) return false
-    const month = parseInt(t.slice(4, 6))
+    if (!t || t.length !== 10) return false
+    const month = parseInt(t.slice(6, 8))
     return month >= 1 && month <= 12
   }
 
