@@ -184,7 +184,7 @@ export default function Home() {
 
       {/* M/M Highlight table */}
       <div style={s.box}>
-        <div style={s.boxTitle}>M/M Highlight — Last 3 months</div>
+        <div style={s.boxTitle}>M/M Highlight — Last 3 months (NSA, not seasonally adjusted)</div>
         <table style={s.table}>
           <thead>
             <tr>
