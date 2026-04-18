@@ -182,9 +182,11 @@ export default function Home() {
   return (
     <main style={s.wrap}>
       <div style={s.header}>
-        <h1 style={{fontSize:'20px',fontWeight:'600',color:'#111'}}>Japan CPI Dashboard</h1>
-        <span style={{fontSize:'12px',color:'#888'}}>Source: MIC e-Stat / Auto-updated monthly</span>
-      </div>
+    <h1 style={{fontSize:'20px',fontWeight:'600',color:'#111'}}>Japan CPI Dashboard</h1>
+    <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
+      <a href="/tokyo-cpi" style={{fontSize:'12px',color:'#378ADD',textDecoration:'none'}}>Tokyo CPI (Leading) →</a>
+      <span style={{fontSize:'12px',color:'#888'}}>Source: MIC e-Stat / Auto-updated monthly</span>
+    </div>
 
       <div style={s.grid4}>
         {cards.map(k => (
