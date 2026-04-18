@@ -19,9 +19,7 @@ export async function GET() {
     const isMonthly = (v) => {
       const t = v['@time']
       if (!t || t.length !== 10) return false
-      const mid = t.slice(4, 6)
-      const month = parseInt(t.slice(6, 8))
-      return mid === '00' && month >= 1 && month <= 12
+      return t.slice(4, 6) === '00' && parseInt(t.slice(6, 8)) >= 1 && parseInt(t.slice(6, 8)) <= 12
     }
 
     const formatDate = (time) => time.slice(0, 4) + '/' + time.slice(6, 8)
@@ -33,27 +31,34 @@ export async function GET() {
       .map(v => ({ date: formatDate(v['@time']), value: parseFloat(v['$']) }))
   }
 
-  // Y/Y系列
-  const [headline, core, corecore, services,
-         food_ex_fresh, energy, goods_ex_food_energy,
-         housing, medical, transport, education, comms] = await Promise.all([
+  const [
+    headline, core, corecore, services,
+    food_ex_fresh, energy, goods_ex_food_energy,
+    housing, medical, transport, education, comms, leisure, eating_out, apparel, furniture
+  ] = await Promise.all([
     fetchSeries('0001'),  // 総合
-    fetchSeries('0161'),  // コア（生鮮除く）
-    fetchSeries('0178'),  // コアコア（食料・エネ除く）
+    fetchSeries('0161'),  // コア
+    fetchSeries('0178'),  // コアコア
     fetchSeries('0220'),  // サービス
     fetchSeries('0172'),  // 食料（生鮮除く）
     fetchSeries('0167'),  // エネルギー
-    fetchSeries('0241'),  // 生鮮食品を除く財
+    fetchSeries('0241'),  // 財（食料・エネ除く）
     fetchSeries('0045'),  // 住居
     fetchSeries('0107'),  // 保健医療
-    fetchSeries('0111'),  // 交通・通信
+    fetchSeries('0112'),  // 交通
     fetchSeries('0118'),  // 教育
     fetchSeries('0117'),  // 通信
+    fetchSeries('0122'),  // 教養娯楽
+    fetchSeries('0042'),  // 外食
+    fetchSeries('0082'),  // 被服及び履物
+    fetchSeries('0060'),  // 家具・家事用品
   ])
 
-  // M/M系列（重要品目）
-  const [headline_mm, core_mm, corecore_mm, services_mm,
-         food_mm, energy_mm, goods_mm, housing_mm, medical_mm, transport_mm] = await Promise.all([
+  const [
+    headline_mm, core_mm, corecore_mm, services_mm,
+    food_mm, energy_mm, goods_mm, housing_mm, medical_mm,
+    transport_mm, education_mm, comms_mm, leisure_mm, eating_out_mm, apparel_mm, furniture_mm
+  ] = await Promise.all([
     fetchSeries('0001', '2'),
     fetchSeries('0161', '2'),
     fetchSeries('0178', '2'),
@@ -63,35 +68,32 @@ export async function GET() {
     fetchSeries('0241', '2'),
     fetchSeries('0045', '2'),
     fetchSeries('0107', '2'),
-    fetchSeries('0111', '2'),
+    fetchSeries('0112', '2'),
+    fetchSeries('0118', '2'),
+    fetchSeries('0117', '2'),
+    fetchSeries('0122', '2'),
+    fetchSeries('0042', '2'),
+    fetchSeries('0082', '2'),
+    fetchSeries('0060', '2'),
   ])
 
-  // 寄与度計算用ウェート（2020年基準、総合1000分比）
-  const weights = {
-    food_ex_fresh:        219,
-    energy:                72,
-    goods_ex_food_energy: 269,
-    services_ex_rent:     330,
-    imputed_rent:         110,
-  }
-
-  // 寄与度 = Y/Y × weight / 1000
   const calcContrib = (series, weight) =>
     series.map(v => ({ date: v.date, value: parseFloat((v.value * weight / 1000).toFixed(3)) }))
 
   const contrib = {
-    food_ex_fresh:        calcContrib(food_ex_fresh, weights.food_ex_fresh),
-    energy:               calcContrib(energy, weights.energy),
-    goods_ex_food_energy: calcContrib(goods_ex_food_energy, weights.goods_ex_food_energy),
-    services:             calcContrib(services, weights.services_ex_rent),
+    food_ex_fresh:        calcContrib(food_ex_fresh, 219),
+    energy:               calcContrib(energy, 72),
+    goods_ex_food_energy: calcContrib(goods_ex_food_energy, 269),
+    services:             calcContrib(services, 330),
   }
 
   return Response.json({
     headline, core, corecore, services,
     food_ex_fresh, energy, goods_ex_food_energy,
-    housing, medical, transport, education, comms,
+    housing, medical, transport, education, comms, leisure, eating_out, apparel, furniture,
     headline_mm, core_mm, corecore_mm, services_mm,
-    food_mm, energy_mm, goods_mm, housing_mm, medical_mm, transport_mm,
+    food_mm, energy_mm, goods_mm, housing_mm, medical_mm,
+    transport_mm, education_mm, comms_mm, leisure_mm, eating_out_mm, apparel_mm, furniture_mm,
     contrib
   })
 }
