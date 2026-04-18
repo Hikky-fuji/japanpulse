@@ -33,16 +33,65 @@ export async function GET() {
       .map(v => ({ date: formatDate(v['@time']), value: parseFloat(v['$']) }))
   }
 
-  const [headline, core, corecore, services, headline_mm, core_mm, corecore_mm, services_mm] = await Promise.all([
-    fetchSeries('0001'),   // 総合 Y/Y
-    fetchSeries('0161'),   // コア Y/Y
-    fetchSeries('0178'),   // コアコア Y/Y
-    fetchSeries('0220'),   // サービス Y/Y
-    fetchSeries('0001', '2'),  // 総合 M/M
-    fetchSeries('0161', '2'),  // コア M/M
-    fetchSeries('0178', '2'),  // コアコア M/M
-    fetchSeries('0220', '2'),  // サービス M/M
+  // Y/Y系列
+  const [headline, core, corecore, services,
+         food_ex_fresh, energy, goods_ex_food_energy,
+         housing, medical, transport, education, comms] = await Promise.all([
+    fetchSeries('0001'),  // 総合
+    fetchSeries('0161'),  // コア（生鮮除く）
+    fetchSeries('0178'),  // コアコア（食料・エネ除く）
+    fetchSeries('0220'),  // サービス
+    fetchSeries('0172'),  // 食料（生鮮除く）
+    fetchSeries('0167'),  // エネルギー
+    fetchSeries('0241'),  // 生鮮食品を除く財
+    fetchSeries('0045'),  // 住居
+    fetchSeries('0107'),  // 保健医療
+    fetchSeries('0111'),  // 交通・通信
+    fetchSeries('0118'),  // 教育
+    fetchSeries('0117'),  // 通信
   ])
 
-  return Response.json({ headline, core, corecore, services, headline_mm, core_mm, corecore_mm, services_mm })
+  // M/M系列（重要品目）
+  const [headline_mm, core_mm, corecore_mm, services_mm,
+         food_mm, energy_mm, goods_mm, housing_mm, medical_mm, transport_mm] = await Promise.all([
+    fetchSeries('0001', '2'),
+    fetchSeries('0161', '2'),
+    fetchSeries('0178', '2'),
+    fetchSeries('0220', '2'),
+    fetchSeries('0172', '2'),
+    fetchSeries('0167', '2'),
+    fetchSeries('0241', '2'),
+    fetchSeries('0045', '2'),
+    fetchSeries('0107', '2'),
+    fetchSeries('0111', '2'),
+  ])
+
+  // 寄与度計算用ウェート（2020年基準、総合1000分比）
+  const weights = {
+    food_ex_fresh:        219,
+    energy:                72,
+    goods_ex_food_energy: 269,
+    services_ex_rent:     330,
+    imputed_rent:         110,
+  }
+
+  // 寄与度 = Y/Y × weight / 1000
+  const calcContrib = (series, weight) =>
+    series.map(v => ({ date: v.date, value: parseFloat((v.value * weight / 1000).toFixed(3)) }))
+
+  const contrib = {
+    food_ex_fresh:        calcContrib(food_ex_fresh, weights.food_ex_fresh),
+    energy:               calcContrib(energy, weights.energy),
+    goods_ex_food_energy: calcContrib(goods_ex_food_energy, weights.goods_ex_food_energy),
+    services:             calcContrib(services, weights.services_ex_rent),
+  }
+
+  return Response.json({
+    headline, core, corecore, services,
+    food_ex_fresh, energy, goods_ex_food_energy,
+    housing, medical, transport, education, comms,
+    headline_mm, core_mm, corecore_mm, services_mm,
+    food_mm, energy_mm, goods_mm, housing_mm, medical_mm, transport_mm,
+    contrib
+  })
 }
