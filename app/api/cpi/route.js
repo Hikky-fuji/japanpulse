@@ -21,8 +21,9 @@ export async function GET() {
   const isMonthly = (v) => {
     const t = v['@time']
     if (!t || t.length !== 10) return false
+    const mid = t.slice(4, 6)
     const month = parseInt(t.slice(6, 8))
-    return month >= 1 && month <= 12
+    return mid === '00' && month >= 1 && month <= 12
   }
 
   const headline = values
