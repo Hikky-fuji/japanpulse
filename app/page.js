@@ -31,11 +31,21 @@ export default function Home() {
     <div style={{padding:'40px',fontFamily:'sans-serif',color:'#666'}}>Loading...</div>
   )
 
-  const { headline, core, corecore, services, headline_mm, core_mm, corecore_mm, services_mm } = data
+  const { headline, core, corecore, services,
+          food_ex_fresh, energy, goods_ex_food_energy,
+          housing, medical, transport, education, comms,
+          headline_mm, core_mm, corecore_mm, services_mm,
+          food_mm, energy_mm, goods_mm, housing_mm, medical_mm, transport_mm,
+          contrib } = data
 
-  const latest = { headline: headline.at(-1), core: core.at(-1), corecore: corecore.at(-1), services: services?.at(-1) }
-  const prev   = { headline: headline.at(-2), core: core.at(-2), corecore: corecore.at(-2), services: services?.at(-2) }
-
+  const latest = {
+    headline: headline.at(-1), core: core.at(-1),
+    corecore: corecore.at(-1), services: services?.at(-1)
+  }
+  const prev = {
+    headline: headline.at(-2), core: core.at(-2),
+    corecore: corecore.at(-2), services: services?.at(-2)
+  }
   const diff = (a, b) => {
     if (!a || !b) return { str: 'N/A', pos: true }
     const d = (a.value - b.value).toFixed(1)
@@ -46,7 +56,7 @@ export default function Home() {
   const core3mma = mma3(core)
   const services3mma = mma3(services || [])
 
-  // Chart 1: Headline / Core / Core-Core Y/Y
+  // Chart 1: Y/Y 3系列
   const chart1 = {
     labels,
     datasets: [
@@ -56,29 +66,43 @@ export default function Home() {
     ]
   }
 
-  // Chart 2: Services + 3MMA
+  // Chart 2: Stickiness (Services + 3MMA)
   const chart2 = {
     labels,
     datasets: [
       { label: 'Services (ex. Imputed Rent)', data: (services||[]).map(v=>v.value), borderColor:'#D85A30', borderWidth:2, pointRadius:3, tension:0.3 },
-      { label: 'Services 3MMA', data: services3mma, borderColor:'#1D9E75', borderWidth:2, pointRadius:0, tension:0.3, borderDash:[4,2] },
+      { label: 'Services 3MMA', data: services3mma, borderColor:'#D85A30', borderWidth:1.5, pointRadius:0, tension:0.3, borderDash:[4,3] },
       { label: 'Core-Core', data: corecore.map(v=>v.value), borderColor:'#888', borderWidth:1.5, pointRadius:0, tension:0.3 },
-      { label: 'Core 3MMA', data: core3mma, borderColor:'#378ADD', borderWidth:2, pointRadius:0, tension:0.3, borderDash:[4,2] },
+      { label: 'Core 3MMA', data: core3mma, borderColor:'#378ADD', borderWidth:1.5, pointRadius:0, tension:0.3, borderDash:[4,3] },
     ]
   }
 
-  // Chart 3: M/M bar chart
-  const mmLabels = (headline_mm||[]).slice(-12).map(v=>v.date)
+  // Chart 3: 寄与度 積み上げ棒グラフ
+  const contribLabels = (contrib?.food_ex_fresh||[]).slice(-12).map(v=>v.date)
   const chart3 = {
-    labels: mmLabels,
+    labels: contribLabels,
     datasets: [
-      { label: 'Headline M/M', data: (headline_mm||[]).slice(-12).map(v=>v.value), backgroundColor: (headline_mm||[]).slice(-12).map(v=>v.value>=0?'rgba(55,138,221,0.7)':'rgba(232,74,74,0.7)'), borderRadius:3 },
-      { label: 'Core M/M', data: (core_mm||[]).slice(-12).map(v=>v.value), backgroundColor: (core_mm||[]).slice(-12).map(v=>v.value>=0?'rgba(29,158,117,0.7)':'rgba(232,74,74,0.7)'), borderRadius:3 },
+      { label: 'Food (ex. Fresh)', data: (contrib?.food_ex_fresh||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(55,138,221,0.8)', stack:'contrib', borderRadius:2 },
+      { label: 'Energy', data: (contrib?.energy||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(232,74,74,0.8)', stack:'contrib', borderRadius:2 },
+      { label: 'Goods (ex. Food & Energy)', data: (contrib?.goods_ex_food_energy||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(29,158,117,0.8)', stack:'contrib', borderRadius:2 },
+      { label: 'Services (ex. Imputed Rent)', data: (contrib?.services||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(255,165,0,0.8)', stack:'contrib', borderRadius:2 },
+      { label: 'Headline (Y/Y)', data: headline.slice(-12).map(v=>v.value), type:'line', borderColor:'#333', borderWidth:1.5, pointRadius:3, tension:0.3, borderDash:[3,2] },
     ]
   }
 
-  const lineOpts = { responsive:true, plugins:{ legend:{ position:'top' }, tooltip:{ mode:'index', intersect:false } }, scales:{ y:{ ticks:{ callback: v => v.toFixed(1)+'%' } } } }
-  const barOpts  = { responsive:true, plugins:{ legend:{ position:'top' }, tooltip:{ mode:'index', intersect:false } }, scales:{ y:{ ticks:{ callback: v => v.toFixed(2)+'%' } } } }
+  const lineOpts = {
+    responsive: true,
+    plugins: { legend:{ position:'top' }, tooltip:{ mode:'index', intersect:false } },
+    scales: { y:{ ticks:{ callback: v => v.toFixed(1)+'%' } } }
+  }
+  const contribOpts = {
+    responsive: true,
+    plugins: { legend:{ position:'top' }, tooltip:{ mode:'index', intersect:false } },
+    scales: {
+      x: { stacked: true },
+      y: { stacked: true, ticks:{ callback: v => v.toFixed(1)+'pp' } }
+    }
+  }
 
   const cards = [
     { label:'Headline (Y/Y)', val:latest.headline?.value, d:diff(latest.headline, prev.headline) },
@@ -87,27 +111,39 @@ export default function Home() {
     { label:'Services ex. Imputed Rent', val:latest.services?.value, d:diff(latest.services, prev.services) },
   ]
 
+  // M/M Highlight テーブル（10品目）
   const mmRows = [
-    { label:'Headline', mm: headline_mm },
-    { label:'Core', mm: core_mm },
-    { label:'Core-Core', mm: corecore_mm },
-    { label:'Services', mm: services_mm },
+    { label:'Headline',                  mm: headline_mm,  group: 'Aggregate' },
+    { label:'Core (ex. Fresh Food)',     mm: core_mm,      group: 'Aggregate' },
+    { label:'Core-Core',                 mm: corecore_mm,  group: 'Aggregate' },
+    { label:'Services (ex. Imp. Rent)',  mm: services_mm,  group: 'Aggregate' },
+    { label:'Food (ex. Fresh)',          mm: food_mm,      group: 'Category' },
+    { label:'Energy',                    mm: energy_mm,    group: 'Category' },
+    { label:'Goods (ex. Food & Energy)', mm: goods_mm,     group: 'Category' },
+    { label:'Housing',                   mm: housing_mm,   group: 'Category' },
+    { label:'Medical',                   mm: medical_mm,   group: 'Category' },
+    { label:'Transport & Comms',         mm: transport_mm, group: 'Category' },
   ]
   const mmMonths = (headline_mm||[]).slice(-3).map(v=>v.date)
 
   const s = {
-    wrap: { maxWidth:'960px', margin:'0 auto', padding:'24px', fontFamily:'sans-serif' },
+    wrap: { maxWidth:'980px', margin:'0 auto', padding:'24px', fontFamily:'sans-serif' },
     header: { display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:'20px', borderBottom:'1px solid #eee', paddingBottom:'12px' },
-    grid4: { display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'12px', marginBottom:'24px' },
+    grid4: { display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'12px', marginBottom:'20px' },
     card: { background:'#f8f8f6', borderRadius:'10px', padding:'14px 16px' },
     cardLabel: { fontSize:'10px', color:'#888', marginBottom:'4px', textTransform:'uppercase', letterSpacing:'0.05em' },
     cardVal: { fontSize:'22px', fontWeight:'600', color:'#111' },
     grid2: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px', marginBottom:'16px' },
     box: { background:'#fff', border:'1px solid #eee', borderRadius:'12px', padding:'16px', marginBottom:'16px' },
     boxTitle: { fontSize:'13px', fontWeight:'500', marginBottom:'12px', color:'#333' },
-    table: { width:'100%', borderCollapse:'collapse', fontSize:'13px' },
-    th: { textAlign:'right', padding:'6px 10px', color:'#888', fontWeight:'500', borderBottom:'1px solid #eee' },
-    td: { padding:'6px 10px', borderBottom:'1px solid #f5f5f5' },
+    table: { width:'100%', borderCollapse:'collapse', fontSize:'12.5px' },
+    th: { textAlign:'right', padding:'7px 12px', color:'#888', fontWeight:'500', borderBottom:'1px solid #eee', whiteSpace:'nowrap' },
+    td: { padding:'6px 12px', borderBottom:'1px solid #f5f5f5', whiteSpace:'nowrap' },
+  }
+
+  const mmColor = (v) => {
+    if (v == null) return '#888'
+    return v > 0 ? '#1D9E75' : v < 0 ? '#E24B4A' : '#888'
   }
 
   return (
@@ -140,32 +176,39 @@ export default function Home() {
         </div>
       </div>
 
-      {/* M/M bar chart */}
+      {/* Contribution chart */}
       <div style={s.box}>
-        <div style={s.boxTitle}>Month-over-Month (M/M %) — Last 12 months</div>
-        <Bar data={chart3} options={barOpts} />
+        <div style={s.boxTitle}>Contribution to Headline CPI (Y/Y, pp) — Last 12 months</div>
+        <Bar data={chart3} options={contribOpts} />
       </div>
 
-      {/* M/M highlight table */}
+      {/* M/M Highlight table */}
       <div style={s.box}>
         <div style={s.boxTitle}>M/M Highlight — Last 3 months</div>
         <table style={s.table}>
           <thead>
             <tr>
-              <th style={{...s.th, textAlign:'left'}}>Series</th>
+              <th style={{...s.th, textAlign:'left', width:'200px'}}>Series</th>
               {mmMonths.map(m => <th key={m} style={s.th}>{m}</th>)}
             </tr>
           </thead>
           <tbody>
-            {mmRows.map(row => (
-              <tr key={row.label}>
-                <td style={{...s.td, fontWeight:'500'}}>{row.label}</td>
-                {(row.mm||[]).slice(-3).map(v => (
-                  <td key={v.date} style={{...s.td, textAlign:'right', color: v.value>0?'#1D9E75': v.value<0?'#E24B4A':'#888', fontWeight:'500'}}>
-                    {v.value > 0 ? '+' : ''}{v.value.toFixed(2)}%
-                  </td>
+            {['Aggregate','Category'].map(group => (
+              <>
+                <tr key={group}>
+                  <td colSpan={4} style={{...s.td, fontSize:'11px', color:'#aaa', fontWeight:'600', textTransform:'uppercase', paddingTop:'12px', background:'#fafafa'}}>{group}</td>
+                </tr>
+                {mmRows.filter(r=>r.group===group).map(row => (
+                  <tr key={row.label}>
+                    <td style={{...s.td, fontWeight: row.group==='Aggregate'?'600':'400'}}>{row.label}</td>
+                    {(row.mm||[]).slice(-3).map(v => (
+                      <td key={v.date} style={{...s.td, textAlign:'right', color: mmColor(v.value), fontWeight:'500'}}>
+                        {v.value > 0 ? '+' : ''}{v.value.toFixed(2)}%
+                      </td>
+                    ))}
+                  </tr>
                 ))}
-              </tr>
+              </>
             ))}
           </tbody>
         </table>
