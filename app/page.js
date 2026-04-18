@@ -187,6 +187,7 @@ export default function Home() {
       <a href="/tokyo-cpi" style={{fontSize:'12px',color:'#378ADD',textDecoration:'none'}}>Tokyo CPI (Leading) →</a>
       <span style={{fontSize:'12px',color:'#888'}}>Source: MIC e-Stat / Auto-updated monthly</span>
     </div>
+  </div>
 
       <div style={s.grid4}>
         {cards.map(k => (
