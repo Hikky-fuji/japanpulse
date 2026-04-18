@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import　React { useEffect, useState } from 'react'
 import { Line, Bar } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -200,9 +200,9 @@ const mmRows = [
             </tr>
           </thead>
           <tbody>
-            {['Aggregate','Category'].map(group => (
-              <>
-                <tr key={group}>
+            {['Aggregate','Goods','Services'].map(group => (
+            <React.Fragment key={group}
+              <tr>
                   <td colSpan={4} style={{...s.td, fontSize:'11px', color:'#aaa', fontWeight:'600', textTransform:'uppercase', paddingTop:'12px', background:'#fafafa'}}>{group}</td>
                 </tr>
                 {mmRows.filter(r=>r.group===group).map(row => (
@@ -215,7 +215,7 @@ const mmRows = [
                     ))}
                   </tr>
                 ))}
-              </>
+              </React.Fragment>
             ))}
           </tbody>
         </table>
