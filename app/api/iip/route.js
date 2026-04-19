@@ -5,9 +5,10 @@ export async function GET() {
   const url = `https://api.e-stat.go.jp/rest/3.0/app/json/getStatsList`
     + `?appId=${APP_ID}`
     + `&toukei=00550300`
+    + `&tstat=000001022877`
+    + `&tclass1=000001078035`
     + `&cycle=1`
-    + `&limit=10`
-    + `&updatedDate=2026`
+    + `&limit=30`
 
   const res = await fetch(url, { cache: 'no-store' })
   const json = await res.json()
