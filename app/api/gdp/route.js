@@ -65,18 +65,19 @@ const yoy = (arr) => arr.map((v, i) => {
 
 export async function GET() {
   try {
-    // 2 parallel requests — activity/expenditure dims differ by transaction type
-    const [toArr1, toArr2] = await Promise.all([
-      fetchOECD('Q.Y.JPN.S1.S1.B1GQ+B11+P51G+P52._Z._Z+_T._Z.XDC.V.N.T0102'),
+    // 3 parallel requests — ACTIVITY dim differs: _Z for GDP/B11, _T for investment
+    const [toArr1, toArr2, toArr3] = await Promise.all([
+      fetchOECD('Q.Y.JPN.S1.S1.B1GQ+B11._Z._Z._Z.XDC.V.N.T0102'),
+      fetchOECD('Q.Y.JPN.S1.S1.P51G+P52._Z._T._Z.XDC.V.N.T0102'),
       fetchOECD('Q.Y.JPN.S1M+S13.S1.P3._Z._Z._T.XDC.V.N.T0102'),
     ])
 
     const gdp    = toArr1('S1/B1GQ')
     const netexp = toArr1('S1/B11')
-    const invest = toArr1('S1/P51G')
-    const stocks = toArr1('S1/P52')
-    const cons   = toArr2('S1M/P3')   // Households + NPISH
-    const govt   = toArr2('S13/P3')   // Government consumption
+    const invest = toArr2('S1/P51G')
+    const stocks = toArr2('S1/P52')
+    const cons   = toArr3('S1M/P3')   // Households + NPISH
+    const govt   = toArr3('S13/P3')   // Government consumption
 
     if (!gdp.length) throw new Error('No GDP data — check OECD API')
 
