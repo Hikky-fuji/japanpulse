@@ -32,8 +32,9 @@ export async function GET() {
         'PRCG20_2400000000',  // 輸出物価 円ベース 総平均
       ]),
       fetchBOJ('PR01', [
-        'PRCG20_2200310001',  // 石油・石炭製品
-        'PRCG20_2200410001',  // 電子部品・デバイス
+        'PRCG20_2200620001',  // 石油・石炭製品
+        'PRCG20_2201520001',  // 電子部品・デバイス
+        'PRCG20_2202220001',  // 電力・都市ガス・水道
       ]),
       fetchBOJ('PR02', [
         'PRCS20_5200000000',  // SPPI 総平均
@@ -46,6 +47,7 @@ export async function GET() {
       export_ppi: parseSeries(cgpiRes[2]),
       cgpi_oil:   parseSeries(tradeRes[0]),
       cgpi_elec:  parseSeries(tradeRes[1]),
+      cgpi_energy: parseSeries(tradeRes[2]),
       sppi:       parseSeries(sppiRes[0]),
     })
   } catch (e) {
