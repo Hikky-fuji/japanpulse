@@ -9,7 +9,6 @@ export async function GET() {
     const text = new TextDecoder('shift-jis').decode(buffer)
     const lines = text.trim().split('\r\n')
 
-    // 年・月ヘッダーからdate列を構築
     const yearsRow = lines[1].split(',')
     const monthsRow = lines[3].split(',')
     const dates = []
@@ -21,17 +20,21 @@ export async function GET() {
       dates.push(currentYear && m ? `${currentYear}/${m.padStart(2, '0')}` : '')
     }
 
-    // 消費支出行（line14, 0-indexed）
-    const row = lines[14].split(',')
-    const vals = row.slice(6)
+    const parseSeries = (lineIndex) => {
+      const row = lines[lineIndex].split(',')
+      const vals = row.slice(6)
+      return dates
+        .map((date, i) => ({ date, value: vals[i] }))
+        .filter(d => d.date && d.value && d.value.trim() !== '-' && d.value.trim() !== '')
+        .map(d => ({ date: d.date, value: parseFloat(d.value) }))
+        .slice(-24)
+    }
 
-    const data = dates
-      .map((date, i) => ({ date, value: vals[i] }))
-      .filter(d => d.date && d.value && d.value.trim() !== '-' && d.value.trim() !== '')
-      .map(d => ({ date: d.date, value: parseFloat(d.value) }))
-      .slice(-24)
-
-    return Response.json({ data })
+    return Response.json({
+      total:       parseSeries(14),   // 消費支出
+      basic:       parseSeries(187),  // 基礎的支出
+      discretionary: parseSeries(188), // 選択的支出
+    })
   } catch (e) {
     return Response.json({ error: e.message })
   }
