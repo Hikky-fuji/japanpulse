@@ -6,9 +6,7 @@ import {
   CategoryScale, LinearScale, PointElement, LineElement,
   BarElement, Title, Tooltip, Legend
 } from 'chart.js'
-import annotationPlugin from 'chartjs-plugin-annotation'
-
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, annotationPlugin)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend)
 
 const COLORS = {
   cons:     'rgba(55,138,221,0.85)',
@@ -23,7 +21,7 @@ const fmt1 = (v) => v != null ? (v > 0 ? `+${v.toFixed(1)}` : v.toFixed(1)) + '%
 const fmt2 = (v) => v != null ? (v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2)) + '%' : '--'
 const fmtPP = (v) => v != null ? (v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2)) + 'pp' : '--'
 
-const zeroLine = { annotation: { annotations: { zero: { type: 'line', yMin: 0, yMax: 0, borderColor: '#ccc', borderWidth: 1 } } } }
+
 
 export default function GDPPage() {
   const [data, setData] = useState(null)
@@ -128,12 +126,12 @@ export default function GDPPage() {
 
   const lineOpts = (yLabel = '%') => ({
     responsive: true,
-    plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false }, ...zeroLine.annotation },
+    plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } },
     scales: { y: { ticks: { callback: v => v.toFixed(1) + yLabel } } }
   })
   const contribOpts = {
     responsive: true,
-    plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false }, ...zeroLine.annotation },
+    plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } },
     scales: {
       x: { stacked: true },
       y: { stacked: true, ticks: { callback: v => v.toFixed(1) + 'pp' } }
@@ -141,7 +139,7 @@ export default function GDPPage() {
   }
   const barOpts = {
     responsive: true,
-    plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false }, ...zeroLine.annotation },
+    plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } },
     scales: { y: { ticks: { callback: v => v.toFixed(1) + '%' } } }
   }
 
