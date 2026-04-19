@@ -240,7 +240,7 @@ export default function IIP() {
     <main style={s.wrap}>
       <div style={s.header}>
         <div>
-          <a href="/" style={s.nav}>← National CPI</a>
+          <a href="/" style={s.nav}>← Home</a>
           <a href="/consumption" style={s.nav}>Consumption</a>
           <span style={{fontSize:'20px', fontWeight:'600', color:'#111'}}>
             Industrial Production Index

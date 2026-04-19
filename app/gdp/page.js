@@ -50,7 +50,8 @@ export default function GDPPage() {
       <div style={s.header}>
         <h1 style={{ fontSize: 20, fontWeight: 600, color: '#111', margin: 0 }}>Japan GDP Dashboard</h1>
         <div style={s.nav}>
-          <a href="/" style={{ fontSize: 12, color: '#E67E22', textDecoration: 'none' }}>CPI →</a>
+          <a href="/" style={{ fontSize: 12, color: '#555', textDecoration: 'none' }}>← Home</a>
+          <a href="/cpi" style={{ fontSize: 12, color: '#E67E22', textDecoration: 'none' }}>CPI →</a>
           <a href="/consumption" style={{ fontSize: 12, color: '#9B59B6', textDecoration: 'none' }}>Consumption →</a>
           <a href="/ppi" style={{ fontSize: 12, color: '#D85A30', textDecoration: 'none' }}>PPI →</a>
           <span style={{ fontSize: 12, color: '#888' }}>Source: Cabinet Office / e-Stat</span>

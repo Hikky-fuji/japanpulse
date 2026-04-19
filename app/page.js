@@ -1,258 +1,141 @@
-'use client'
-import React, { useEffect, useState } from 'react'
-import { Line, Bar, Doughnut } from 'react-chartjs-2'
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  BarElement,
-  ArcElement,
-  Title,
-  Tooltip,
-  Legend
-} from 'chart.js'
+import React from 'react'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend)
-
-const mma3 = (arr) => arr.map((v, i) => {
-  if (i < 2) return null
-  return parseFloat(((arr[i-2].value + arr[i-1].value + v.value) / 3).toFixed(2))
-})
-
-export default function Home() {
-  const [data, setData] = useState(null)
-
-  useEffect(() => {
-    fetch('/api/cpi').then(r => r.json()).then(setData)
-  }, [])
-
-  if (!data || !data.headline?.length) return (
-    <div style={{padding:'40px',fontFamily:'sans-serif',color:'#666'}}>Loading...</div>
-  )
-
-  const {
-    headline, core, corecore, services,
-    headline_mm, core_mm, corecore_mm, services_mm,
-    food_mm, energy_mm, goods_mm, housing_mm, medical_mm,
-    transport_mm, education_mm, comms_mm, leisure_mm, eating_out_mm, apparel_mm, furniture_mm,
-    contrib
-  } = data
-
-  const latest = {
-    headline: headline.at(-1), core: core.at(-1),
-    corecore: corecore.at(-1), services: services?.at(-1)
-  }
-  const prev = {
-    headline: headline.at(-2), core: core.at(-2),
-    corecore: corecore.at(-2), services: services?.at(-2)
-  }
-  const diff = (a, b) => {
-    if (!a || !b) return { str: 'N/A', pos: true }
-    const d = (a.value - b.value).toFixed(1)
-    return { str: Number(d) > 0 ? `+${d}pp` : `${d}pp`, pos: Number(d) >= 0 }
-  }
-
-  const labels = headline.map(v => v.date)
-  const core3mma = mma3(core)
-  const services3mma = mma3(services || [])
-
-  const chart1 = {
-    labels,
-    datasets: [
-      { label: 'Headline', data: headline.map(v=>v.value), borderColor:'#378ADD', borderWidth:2, pointRadius:0, tension:0.3 },
-      { label: 'Core', data: core.map(v=>v.value), borderColor:'#D85A30', borderWidth:2, pointRadius:0, tension:0.3 },
-      { label: 'Core-Core', data: corecore.map(v=>v.value), borderColor:'#1D9E75', borderWidth:2, pointRadius:0, tension:0.3 },
-    ]
-  }
-
-  const chart2 = {
-    labels,
-    datasets: [
-      { label: 'Services (ex. Imputed Rent)', data: (services||[]).map(v=>v.value), borderColor:'#D85A30', borderWidth:2, pointRadius:3, tension:0.3 },
-      { label: 'Services 3MMA', data: services3mma, borderColor:'#D85A30', borderWidth:1.5, pointRadius:0, tension:0.3, borderDash:[4,3] },
-      { label: 'Core-Core', data: corecore.map(v=>v.value), borderColor:'#888', borderWidth:1.5, pointRadius:0, tension:0.3 },
-      { label: 'Core 3MMA', data: core3mma, borderColor:'#378ADD', borderWidth:1.5, pointRadius:0, tension:0.3, borderDash:[4,3] },
-    ]
-  }
-
-  const contribLabels = (contrib?.food_ex_fresh||[]).slice(-12).map(v=>v.date)
-  const chart3 = {
-    labels: contribLabels,
-    datasets: [
-      { label: 'Food (ex. Fresh)', data: (contrib?.food_ex_fresh||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(55,138,221,0.8)', stack:'contrib' },
-      { label: 'Energy', data: (contrib?.energy||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(232,74,74,0.8)', stack:'contrib' },
-      { label: 'Goods (ex. Food & Energy)', data: (contrib?.goods_ex_food_energy||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(29,158,117,0.8)', stack:'contrib' },
-      { label: 'Services', data: (contrib?.services||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(255,165,0,0.8)', stack:'contrib' },
-      { label: 'Headline (Y/Y)', data: headline.slice(-12).map(v=>v.value), type:'line', borderColor:'#333', borderWidth:1.5, pointRadius:3, tension:0.3, borderDash:[3,2] },
-    ]
-  }
-
-  // ウェート円グラフ（2020年基準、総合1000分比）
-  const weightData = {
-    labels: [
-      'Housing (住居) 16%',
-      'Food ex. Fresh (食料) 22%',
-      'Transport & Comms (交通通信) 14%',
-      'Services ex. Rent (サービス) 11%',
-      'Leisure & Education (教養教育) 9%',
-      'Energy (光熱) 7%',
-      'Goods ex. Food & Energy (財) 8%',
-      'Medical (保健医療) 5%',
-      'Apparel (被服) 4%',
-      'Other 4%',
+const indicators = [
+  {
+    group: '物価',
+    color: '#E67E22',
+    bg: '#FFF8F0',
+    border: '#F0A050',
+    items: [
+      {
+        href: '/cpi',
+        title: 'CPI（消費者物価）',
+        subtitle: '全国・コア・コアコア',
+        badge: '月次',
+        desc: '全国の消費者物価指数。BOJのインフレ目標の主要指標。',
+      },
+      {
+        href: '/tokyo-cpi',
+        title: 'Tokyo CPI',
+        subtitle: '東京都区部',
+        badge: '月次 / 先行指標',
+        badgeColor: '#2980B9',
+        desc: '全国CPI公表の約3週間前に発表。先行指標として注目。',
+      },
+      {
+        href: '/ppi',
+        title: 'PPI（企業物価）',
+        subtitle: 'CGPI / SPPI',
+        badge: '月次',
+        desc: '国内企業物価・輸出入物価・サービス物価。川上インフレの先行シグナル。',
+      },
     ],
-    datasets: [{
-      data: [160, 219, 143, 110, 90, 72, 80, 50, 41, 35],
-      backgroundColor: [
-        '#378ADD', '#D85A30', '#1D9E75', '#F5A623',
-        '#9B59B6', '#E24B4A', '#2ECC71', '#1ABC9C',
-        '#E67E22', '#95A5A6',
-      ],
-      borderWidth: 1,
-      borderColor: '#fff',
-    }]
-  }
+  },
+  {
+    group: '経済成長',
+    color: '#27AE60',
+    bg: '#F0FAF4',
+    border: '#5DBF80',
+    items: [
+      {
+        href: '/gdp',
+        title: 'GDP（国内総生産）',
+        subtitle: '実質・季節調整済',
+        badge: '四半期',
+        desc: '実質GDP成長率（前期比・前年比）と寄与度内訳。2020年基準。',
+      },
+      {
+        href: '/iip',
+        title: '鉱工業生産指数',
+        subtitle: 'IIP',
+        badge: '月次',
+        desc: '製造業・鉱業の生産活動を示す指数。景気の実態を把握する先行指標。',
+      },
+    ],
+  },
+  {
+    group: '個人消費',
+    color: '#9B59B6',
+    bg: '#FAF0FF',
+    border: '#C080E0',
+    items: [
+      {
+        href: '/consumption',
+        title: '家計消費支出',
+        subtitle: '家計調査',
+        badge: '月次',
+        desc: '二人以上世帯の消費支出。実質・名目ベースでの個人消費動向。',
+      },
+    ],
+  },
+]
 
-  const lineOpts = {
-    responsive: true,
-    plugins: { legend:{ position:'top' }, tooltip:{ mode:'index', intersect:false } },
-    scales: { y:{ ticks:{ callback: v => v.toFixed(1)+'%' } } }
-  }
-  const contribOpts = {
-    responsive: true,
-    plugins: { legend:{ position:'top' }, tooltip:{ mode:'index', intersect:false } },
-    scales: {
-      x: { stacked: true },
-      y: { stacked: true, ticks:{ callback: v => v.toFixed(1)+'pp' } }
-    }
-  }
-  const doughnutOpts = {
-    responsive: true,
-    plugins: {
-      legend: { position: 'right', labels: { font: { size: 11 }, padding: 12 } },
-      tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.raw}/1000` } }
-    }
-  }
-
-  const cards = [
-    { label:'Headline (Y/Y)', val:latest.headline?.value, d:diff(latest.headline, prev.headline) },
-    { label:'Core ex. Fresh Food', val:latest.core?.value, d:diff(latest.core, prev.core) },
-    { label:'Core-Core ex. Food & Energy', val:latest.corecore?.value, d:diff(latest.corecore, prev.corecore) },
-    { label:'Services ex. Imputed Rent', val:latest.services?.value, d:diff(latest.services, prev.services) },
-  ]
-
-  const mmRows = [
-    { label:'Headline',                  mm: headline_mm,   group: 'Aggregate' },
-    { label:'Core (ex. Fresh Food)',     mm: core_mm,       group: 'Aggregate' },
-    { label:'Core-Core',                 mm: corecore_mm,   group: 'Aggregate' },
-    { label:'Services (ex. Imp. Rent)',  mm: services_mm,   group: 'Aggregate' },
-    { label:'Food (ex. Fresh)',          mm: food_mm,       group: 'Goods' },
-    { label:'Energy',                    mm: energy_mm,     group: 'Goods' },
-    { label:'Goods (ex. Food & Energy)', mm: goods_mm,      group: 'Goods' },
-    { label:'Furniture & Household',     mm: furniture_mm,  group: 'Goods' },
-    { label:'Apparel & Footwear',        mm: apparel_mm,    group: 'Goods' },
-    { label:'Housing',                   mm: housing_mm,    group: 'Services' },
-    { label:'Medical & Healthcare',      mm: medical_mm,    group: 'Services' },
-    { label:'Transport',                 mm: transport_mm,  group: 'Services' },
-    { label:'Communications',            mm: comms_mm,      group: 'Services' },
-    { label:'Education',                 mm: education_mm,  group: 'Services' },
-    { label:'Leisure & Culture',         mm: leisure_mm,    group: 'Services' },
-    { label:'Eating Out',                mm: eating_out_mm, group: 'Services' },
-  ]
-  const mmMonths = (headline_mm||[]).slice(-3).map(v=>v.date)
-  const mmColor = (v) => v > 0 ? '#1D9E75' : v < 0 ? '#E24B4A' : '#888'
-
-  const s = {
-    wrap: { maxWidth:'980px', margin:'0 auto', padding:'24px', fontFamily:'sans-serif' },
-    header: { display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:'20px', borderBottom:'1px solid #eee', paddingBottom:'12px' },
-    grid4: { display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'12px', marginBottom:'20px' },
-    card: { background:'#f8f8f6', borderRadius:'10px', padding:'14px 16px' },
-    cardLabel: { fontSize:'10px', color:'#888', marginBottom:'4px', textTransform:'uppercase', letterSpacing:'0.05em' },
-    cardVal: { fontSize:'22px', fontWeight:'600', color:'#111' },
-    grid2: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px', marginBottom:'16px' },
-    box: { background:'#fff', border:'1px solid #eee', borderRadius:'12px', padding:'16px', marginBottom:'16px' },
-    boxTitle: { fontSize:'13px', fontWeight:'500', marginBottom:'12px', color:'#333' },
-    table: { width:'100%', borderCollapse:'collapse', fontSize:'12.5px' },
-    th: { textAlign:'right', padding:'7px 12px', color:'#888', fontWeight:'500', borderBottom:'1px solid #eee' },
-    td: { padding:'6px 12px', borderBottom:'1px solid #f5f5f5' },
-  }
-
+export default function HomePage() {
   return (
-    <main style={s.wrap}>
-      <div style={s.header}>
-    <h1 style={{fontSize:'20px',fontWeight:'600',color:'#111'}}>Japan CPI Dashboard</h1>
-    <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
-      <a href="/tokyo-cpi" style={{fontSize:'12px',color:'#378ADD',textDecoration:'none'}}>Tokyo CPI (Leading) →</a>
-      <a href="/consumption" style={{fontSize:'12px',color:'#9B59B6',textDecoration:'none'}}>Consumption →</a>
-      <a href="/ppi" style={{fontSize:'12px',color:'#D85A30',textDecoration:'none'}}>PPI →</a>
-      <a href="/gdp" style={{fontSize:'12px',color:'#27AE60',textDecoration:'none'}}>GDP →</a>
-      <span style={{fontSize:'12px',color:'#888'}}>Source: MIC e-Stat / Auto-updated monthly</span>
-    </div>
-  </div>
+    <main style={{ maxWidth: 860, margin: '0 auto', padding: '40px 16px', fontFamily: 'system-ui, sans-serif' }}>
+      <div style={{ marginBottom: 40 }}>
+        <h1 style={{ fontSize: 26, fontWeight: 700, color: '#111', margin: '0 0 6px' }}>
+          Japan Macro Dashboard
+        </h1>
+        <p style={{ fontSize: 14, color: '#666', margin: 0 }}>
+          日本の主要マクロ経済指標をリアルタイムで追跡。データはe-Stat（政府統計）から自動更新。
+        </p>
+      </div>
 
-      <div style={s.grid4}>
-        {cards.map(k => (
-          <div key={k.label} style={s.card}>
-            <div style={s.cardLabel}>{k.label}</div>
-            <div style={s.cardVal}>{k.val != null ? k.val.toFixed(1)+'%' : '--'}</div>
-            <div style={{fontSize:'11px', color: k.d.pos?'#1D9E75':'#E24B4A', marginTop:'3px'}}>{k.d.str} vs prior</div>
+      {indicators.map(group => (
+        <div key={group.group} style={{ marginBottom: 36 }}>
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14,
+            paddingBottom: 8, borderBottom: `2px solid ${group.border}`
+          }}>
+            <span style={{
+              width: 10, height: 10, borderRadius: '50%',
+              background: group.color, display: 'inline-block'
+            }} />
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: group.color, margin: 0 }}>
+              {group.group}
+            </h2>
           </div>
-        ))}
-      </div>
 
-      <div style={s.grid2}>
-        <div style={s.box}>
-          <div style={s.boxTitle}>Headline / Core / Core-Core (Y/Y %)</div>
-          <Line data={chart1} options={lineOpts} />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
+            {group.items.map(item => (
+              <a
+                key={item.href}
+                href={item.href}
+                style={{
+                  display: 'block', textDecoration: 'none',
+                  background: '#fff', border: `1px solid ${group.border}`,
+                  borderRadius: 10, padding: '16px 18px',
+                  transition: 'box-shadow 0.15s',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
+                }}
+                onMouseEnter={e => e.currentTarget.style.boxShadow = `0 4px 12px ${group.color}30`}
+                onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'}
+              >
+                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{item.title}</div>
+                  <span style={{
+                    fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 10,
+                    background: item.badgeColor ?? group.color, color: '#fff',
+                    whiteSpace: 'nowrap', marginLeft: 8, marginTop: 2,
+                  }}>
+                    {item.badge}
+                  </span>
+                </div>
+                <div style={{ fontSize: 12, color: group.color, fontWeight: 600, marginBottom: 6 }}>
+                  {item.subtitle}
+                </div>
+                <div style={{ fontSize: 12, color: '#555', lineHeight: 1.6 }}>
+                  {item.desc}
+                </div>
+              </a>
+            ))}
+          </div>
         </div>
-        <div style={s.box}>
-          <div style={s.boxTitle}>Services & Core — 3MMA Stickiness Check (Y/Y %)</div>
-          <Line data={chart2} options={lineOpts} />
-        </div>
-      </div>
+      ))}
 
-      <div style={s.box}>
-        <div style={s.boxTitle}>Contribution to Headline CPI (Y/Y, pp) — Last 12 months</div>
-        <Bar data={chart3} options={contribOpts} />
-      </div>
-
-      <div style={s.grid2}>
-        <div style={s.box}>
-          <div style={s.boxTitle}>CPI Basket Weight Composition (2020 Base, /1000)</div>
-          <Doughnut data={weightData} options={doughnutOpts} />
-        </div>
-        <div style={s.box}>
-          <div style={s.boxTitle}>M/M Highlight — Last 3 months (NSA, not seasonally adjusted)</div>
-          <table style={s.table}>
-            <thead>
-              <tr>
-                <th style={{...s.th, textAlign:'left', width:'200px'}}>Series</th>
-                {mmMonths.map(m => <th key={m} style={s.th}>{m}</th>)}
-              </tr>
-            </thead>
-            <tbody>
-              {['Aggregate','Goods','Services'].map(group => (
-                <React.Fragment key={group}>
-                  <tr>
-                    <td colSpan={4} style={{...s.td, fontSize:'11px', color:'#aaa', fontWeight:'600', textTransform:'uppercase', paddingTop:'12px', background:'#fafafa'}}>{group}</td>
-                  </tr>
-                  {mmRows.filter(r => r.group === group).map(row => (
-                    <tr key={row.label}>
-                      <td style={{...s.td, fontWeight: group==='Aggregate'?'600':'400'}}>{row.label}</td>
-                      {(row.mm||[]).slice(-3).map(v => (
-                        <td key={v.date} style={{...s.td, textAlign:'right', color: mmColor(v.value), fontWeight:'500'}}>
-                          {v.value > 0 ? '+' : ''}{v.value.toFixed(2)}%
-                        </td>
-                      ))}
-                    </tr>
-                  ))}
-                </React.Fragment>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      <div style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid #eee', fontSize: 11, color: '#aaa', textAlign: 'center' }}>
+        データソース: 総務省統計局・内閣府・日本銀行 / e-Stat API
       </div>
     </main>
   )

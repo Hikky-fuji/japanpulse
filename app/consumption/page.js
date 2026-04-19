@@ -147,7 +147,7 @@ export default function Consumption() {
     <main style={s.wrap}>
       <div style={s.header}>
         <div>
-          <a href="/" style={s.nav}>← National CPI</a>
+          <a href="/" style={s.nav}>← Home</a>
           <a href="/tokyo-cpi" style={s.nav}>Tokyo CPI</a>
           <span style={{fontSize:'20px', fontWeight:'600', color:'#111'}}>
             Household Consumption
