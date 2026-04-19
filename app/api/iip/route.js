@@ -5,9 +5,9 @@ export async function GET() {
   const url = `https://api.e-stat.go.jp/rest/3.0/app/json/getStatsList`
     + `?appId=${APP_ID}`
     + `&toukei=00550300`
-    + `&tstat=000001022877`
     + `&cycle=1`
-    + `&limit=30`
+    + `&limit=10`
+    + `&updatedDate=2026`
 
   const res = await fetch(url, { cache: 'no-store' })
   const json = await res.json()
@@ -15,9 +15,9 @@ export async function GET() {
 
   return Response.json({
     count: tables.length,
-    sample: tables.slice(0, 5).map(t => ({
+    sample: tables.slice(0, 10).map(t => ({
       id: t['@id'],
-      title: t.TITLE,
+      title: t.TITLE?.$ ?? t.TITLE,
       date: t.SURVEY_DATE,
       updated: t.UPDATED_DATE,
     }))
