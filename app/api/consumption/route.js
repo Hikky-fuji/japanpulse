@@ -9,12 +9,13 @@ export async function GET() {
     const text = new TextDecoder('shift-jis').decode(buffer)
     
     const lines = text.trim().split('\r\n')
+    // line4〜8の品目名と最初の数値を確認
     return Response.json({ 
-      total_lines: lines.length,
-      line0: lines[0].slice(0, 200),  // ヘッダー行1
-      line1: lines[1].slice(0, 200),  // ヘッダー行2
-      line2: lines[2].slice(0, 200),  // データ行1
-      line3: lines[3].slice(0, 200),  // データ行2
+      line4: lines[4].slice(0, 300),
+      line5: lines[5].slice(0, 300),
+      line6: lines[6].slice(0, 300),
+      line7: lines[7].slice(0, 300),
+      line8: lines[8].slice(0, 300),
     })
   } catch (e) {
     return Response.json({ error: e.message })
