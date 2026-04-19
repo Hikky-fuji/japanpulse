@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const BASE = 'https://www.stat-search.boj.or.jp/api/v1/getDataCode'
-  const start = '202101'
+  const start = '202201'
 
   const fetchBOJ = async (db, codes) => {
     const url = `${BASE}?format=json&lang=jp&db=${db}&code=${codes.join(',')}&startDate=${start}`
@@ -21,7 +21,7 @@ export async function GET() {
         value: vals[i] != null ? parseFloat(vals[i]) : null
       }))
       .filter(d => d.value != null)
-      .slice(-36)
+      .slice(-48)
   }
 
   try {
