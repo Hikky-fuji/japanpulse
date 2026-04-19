@@ -69,6 +69,21 @@ const indicators = [
       },
     ],
   },
+  {
+    group: '雇用・賃金',
+    color: '#1A56DB',
+    bg: '#F0F4FF',
+    border: '#6B8FE8',
+    items: [
+      {
+        href: '/wages',
+        title: '毎月勤労統計',
+        subtitle: '名目・実質賃金',
+        badge: '月次',
+        desc: '名目・実質賃金指数（前年比）、所定内給与、パートタイム比率。厚労省発表。',
+      },
+    ],
+  },
 ]
 
 export default function HomePage() {
