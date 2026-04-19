@@ -185,6 +185,7 @@ export default function Home() {
     <h1 style={{fontSize:'20px',fontWeight:'600',color:'#111'}}>Japan CPI Dashboard</h1>
     <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
       <a href="/tokyo-cpi" style={{fontSize:'12px',color:'#378ADD',textDecoration:'none'}}>Tokyo CPI (Leading) →</a>
+      <a href="/consumption" style={{fontSize:'12px',color:'#9B59B6',textDecoration:'none'}}>Consumption →</a>
       <span style={{fontSize:'12px',color:'#888'}}>Source: MIC e-Stat / Auto-updated monthly</span>
     </div>
   </div>
