@@ -8,52 +8,48 @@ export async function GET() {
     const url = `${BASE}?format=json&lang=jp&db=${db}&code=${codes.join(',')}&startDate=${start}`
     const res = await fetch(url, { cache: 'no-store' })
     const json = await res.json()
-    return json?.DATA?.SERIES ?? []
+    return json?.RESULTSET ?? []
   }
 
-  const parseSeriesJson = (series) => {
-    if (!series) return []
-    const dates = series.SURVEY_DATES ?? []
-    const values = series.VALUES ?? []
+  const parseSeries = (s) => {
+    if (!s?.VALUES) return []
+    const dates = s.VALUES.SURVEY_DATES ?? []
+    const vals  = s.VALUES.VALUES ?? []
     return dates
       .map((d, i) => ({
-        date: d.slice(0, 4) + '/' + d.slice(4, 6),
-        value: values[i] != null ? parseFloat(values[i]) : null
+        date:  String(d).slice(0,4) + '/' + String(d).slice(4,6),
+        value: vals[i] != null ? parseFloat(vals[i]) : null
       }))
       .filter(d => d.value != null)
       .slice(-36)
   }
 
   try {
-    // CGPI: 国内企業物価
-    const cgpiSeries = await fetchBOJ('PR01', [
-      'PRCG20_2200000000',  // 国内企業物価 総平均
-      'PRCG20_2200310001',  // 石油・石炭製品
-      'PRCG20_2200410001',  // 電子部品・デバイス
-      'PRCG20_2200510001',  // 電力・都市ガス・水道
+    const [cgpiRes, tradeRes, sppiRes] = await Promise.all([
+      fetchBOJ('PR01', [
+        'PRCG20_2200000000',
+        'PRCG20_2200310001',
+        'PRCG20_2200410001',
+        'PRCG20_2200510001',
+      ]),
+      fetchBOJ('PR01', [
+        'PRIF20_2600000000',
+        'PREF20_2700000000',
+      ]),
+      fetchBOJ('PR02', [
+        'PRCS20_2000000000',
+      ]),
     ])
 
-    // 輸入・輸出物価
-    const tradeSeries = await fetchBOJ('PR01', [
-      'PRIF20_2600000000',  // 輸入物価 円ベース 総平均
-      'PREF20_2700000000',  // 輸出物価 円ベース 総平均
-    ])
-
-    // SPPI: 企業向けサービス価格
-    const sppiSeries = await fetchBOJ('PR02', [
-      'PRCS20_2000000000',  // SPPI 総平均
-    ])
-
-    const result = {
-      cgpi:   parseSeriesJson(cgpiSeries[0]),
-      import: parseSeriesJson(tradeSeries[0]),
-      export: parseSeriesJson(tradeSeries[1]),
-      sppi:   parseSeriesJson(sppiSeries[0]),
-      // デバッグ用
-      _raw: { cgpi: cgpiSeries[0]?.SERIES_CODE }
-    }
-
-    return Response.json(result)
+    return Response.json({
+      cgpi:          parseSeries(cgpiRes[0]),
+      cgpi_oil:      parseSeries(cgpiRes[1]),
+      cgpi_electric: parseSeries(cgpiRes[2]),
+      cgpi_energy:   parseSeries(cgpiRes[3]),
+      import_ppi:    parseSeries(tradeRes[0]),
+      export_ppi:    parseSeries(tradeRes[1]),
+      sppi:          parseSeries(sppiRes[0]),
+    })
   } catch (e) {
     return Response.json({ error: e.message })
   }
