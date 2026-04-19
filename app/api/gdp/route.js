@@ -3,9 +3,9 @@ export const dynamic = 'force-dynamic'
 const APP_ID = process.env.ESTAT_APP_ID
 const BASE = 'https://api.e-stat.go.jp/rest/3.0/app/json'
 
-// Cabinet Office quarterly GDP - real SA series (2011 chained prices)
-// statsDataId: 0003376031
-const STATS_ID = '0003376031'
+// Cabinet Office quarterly GDP - real SA series (2020 base, up to 2025 Q4)
+const STATS_ID_LEVELS = '0003109750'  // 実質季節調整系列 実額
+const STATS_ID_QOQ    = '0003113542'  // 実質季節調整系列 前期比・寄与度
 
 // cat01 codes
 const CAT_GDP    = '11'  // 国内総生産(支出側)
@@ -26,9 +26,10 @@ function parseTime(t) {
   return q ? `${year}-Q${q}` : null
 }
 
-async function fetchSeries(cat) {
-  const url = `${BASE}/getStatsData?appId=${APP_ID}&statsDataId=${STATS_ID}`
+async function fetchSeries(statsId, cat, tab) {
+  let url = `${BASE}/getStatsData?appId=${APP_ID}&statsDataId=${statsId}`
     + `&metaGetFlg=N&cdCat01=${cat}`
+  if (tab) url += `&cdTab=${tab}`
   const res = await fetch(url, { cache: 'no-store' })
   const json = await res.json()
   const values = json?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE ?? []
@@ -56,48 +57,46 @@ const yoy = (arr) => arr.map((v, i) => {
 
 export async function GET() {
   try {
-    const [gdp, cons, govt, invest, exp, imp] = await Promise.all([
-      fetchSeries(CAT_GDP),
-      fetchSeries(CAT_CONS),
-      fetchSeries(CAT_GOVT),
-      fetchSeries(CAT_INVEST),
-      fetchSeries(CAT_EXP),
-      fetchSeries(CAT_IMP),
+    // Fetch levels from 0003109750 and QoQ/contributions from 0003113542
+    // Tab codes for 0003113542: 13=寄与度, 14=前期比, 15=前期比・年率
+    const [gdpLevel, gdpQoQ, consContrib, govtContrib, investContrib, netExpContrib] = await Promise.all([
+      fetchSeries(STATS_ID_LEVELS, CAT_GDP),
+      fetchSeries(STATS_ID_QOQ, CAT_GDP, '14'),       // 前期比
+      fetchSeries(STATS_ID_QOQ, CAT_CONS, '13'),      // 寄与度
+      fetchSeries(STATS_ID_QOQ, CAT_GOVT, '13'),      // 寄与度
+      fetchSeries(STATS_ID_QOQ, '34', '13'),           // <参考>総固定資本形成 寄与度
+      fetchSeries(STATS_ID_QOQ, '21', '13'),           // 財貨・サービス_純輸出 寄与度
     ])
 
-    if (!gdp.length) throw new Error('No GDP data returned from e-Stat')
+    if (!gdpLevel.length) throw new Error('No GDP data returned from e-Stat')
 
-    // Align all series to GDP dates
-    const align = (arr) => {
+    const gdpYoY = yoy(gdpLevel)
+
+    // Align contributions to gdpQoQ dates
+    const alignTo = (base, arr) => {
       const map = Object.fromEntries(arr.map(v => [v.date, v.value]))
-      return gdp.map(v => ({ date: v.date, value: map[v.date] ?? null }))
+      return base.map(v => ({ date: v.date, value: map[v.date] ?? null }))
     }
-    const [consA, govtA, investA, expA, impA] = [cons, govt, invest, exp, imp].map(align)
 
-    // QoQ contribution to GDP growth (pp)
-    const contributions = gdp.slice(1).map((v, i) => {
-      const prevGDP = gdp[i].value
-      const contrib = (arr) => {
-        const cv = arr[i+1]?.value, pv = arr[i]?.value
-        return (cv != null && pv != null) ? parseFloat(((cv - pv) / prevGDP * 100).toFixed(3)) : null
-      }
-      const ev = expA[i+1]?.value, ep = expA[i]?.value
-      const mv = impA[i+1]?.value, mp = impA[i]?.value
-      const net_exp = (ev!=null&&ep!=null&&mv!=null&&mp!=null)
-        ? parseFloat((((ev-ep)-(mv-mp))/prevGDP*100).toFixed(3)) : null
-      return {
-        date: v.date,
-        cons: contrib(consA), govt: contrib(govtA),
-        invest: contrib(investA), net_exp,
-        gdp_qoq: parseFloat(((v.value-gdp[i].value)/gdp[i].value*100).toFixed(2))
-      }
-    }).filter(v => v.cons !== null)
+    const consMap    = Object.fromEntries(consContrib.map(v => [v.date, v.value]))
+    const govtMap    = Object.fromEntries(govtContrib.map(v => [v.date, v.value]))
+    const investMap  = Object.fromEntries(investContrib.map(v => [v.date, v.value]))
+    const netExpMap  = Object.fromEntries(netExpContrib.map(v => [v.date, v.value]))
+
+    const contributions = gdpQoQ.slice(-12).map(v => ({
+      date: v.date,
+      gdp_qoq: v.value,
+      cons:    consMap[v.date] ?? null,
+      govt:    govtMap[v.date] ?? null,
+      invest:  investMap[v.date] ?? null,
+      net_exp: netExpMap[v.date] ?? null,
+    }))
 
     return Response.json({
-      gdp_qoq:       qoq(gdp).slice(-16),
-      gdp_yoy:       yoy(gdp).slice(-16),
-      gdp_levels:    gdp.slice(-16),
-      contributions: contributions.slice(-12),
+      gdp_qoq:       gdpQoQ.slice(-16),
+      gdp_yoy:       gdpYoY.slice(-16),
+      gdp_levels:    gdpLevel.slice(-16),
+      contributions,
     })
   } catch (e) {
     return Response.json({ error: e.message }, { status: 500 })
