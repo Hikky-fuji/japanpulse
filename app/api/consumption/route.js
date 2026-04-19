@@ -4,7 +4,7 @@ export async function GET() {
   const APP_ID = process.env.ESTAT_APP_ID
   const url = `https://api.e-stat.go.jp/rest/3.0/app/json/getStatsData`
     + `?appId=${APP_ID}`
-    + `&statsDataId=0002070003`
+    + `&statsDataId=0003000132`
     + `&metaGetFlg=N&limit=10`
 
   const res = await fetch(url, { cache: 'no-store' })
