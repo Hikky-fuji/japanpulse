@@ -48,9 +48,13 @@ function parseSDMX(json) {
 
 async function fetchOECD(dims, start = '2015-Q1') {
   const url = `${BASE}/${dims}?startPeriod=${start}&format=jsondata`
-  const res = await fetch(url, { cache: 'no-store' })
-  if (!res.ok) return () => []
-  try { return parseSDMX(await res.json()) } catch { return () => [] }
+  const res = await fetch(url, {
+    cache: 'no-store',
+    headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' }
+  })
+  if (!res.ok) throw new Error(`OECD ${res.status}: ${dims.slice(0, 60)}`)
+  const json = await res.json()
+  return parseSDMX(json)
 }
 
 const qoq = (arr) => arr.map((v, i) => {
@@ -65,13 +69,11 @@ const yoy = (arr) => arr.map((v, i) => {
 
 export async function GET() {
   try {
-    // 4 parallel requests — each specifies exactly one SECTOR to avoid OECD 500s
-    const [toArr1, toArr2, toArr3, toArr4] = await Promise.all([
-      fetchOECD('Q.Y.JPN.S1.S1.B1GQ+B11._Z._Z._Z.XDC.V.N.T0102'),
-      fetchOECD('Q.Y.JPN.S1.S1.P51G+P52._Z._T._Z.XDC.V.N.T0102'),
-      fetchOECD('Q.Y.JPN.S1M.S1.P3._Z._Z._T.XDC.V.N.T0102'),
-      fetchOECD('Q.Y.JPN.S13.S1.P3._Z._Z._T.XDC.V.N.T0102'),
-    ])
+    // Sequential to surface exact error per request
+    const toArr1 = await fetchOECD('Q.Y.JPN.S1.S1.B1GQ+B11._Z._Z._Z.XDC.V.N.T0102')
+    const toArr2 = await fetchOECD('Q.Y.JPN.S1.S1.P51G+P52._Z._T._Z.XDC.V.N.T0102')
+    const toArr3 = await fetchOECD('Q.Y.JPN.S1M.S1.P3._Z._Z._T.XDC.V.N.T0102').catch(() => () => [])
+    const toArr4 = await fetchOECD('Q.Y.JPN.S13.S1.P3._Z._Z._T.XDC.V.N.T0102').catch(() => () => [])
 
     const gdp    = toArr1('S1/B1GQ')
     const netexp = toArr1('S1/B11')
