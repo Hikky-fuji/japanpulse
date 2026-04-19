@@ -49,8 +49,8 @@ function parseSDMX(json) {
 async function fetchOECD(dims, start = '2015-Q1') {
   const url = `${BASE}/${dims}?startPeriod=${start}&format=jsondata`
   const res = await fetch(url, { cache: 'no-store' })
-  if (!res.ok) throw new Error(`OECD ${res.status}: ${dims.slice(0, 80)}`)
-  return parseSDMX(await res.json())
+  if (!res.ok) return () => []
+  try { return parseSDMX(await res.json()) } catch { return () => [] }
 }
 
 const qoq = (arr) => arr.map((v, i) => {
@@ -80,7 +80,7 @@ export async function GET() {
     const cons   = toArr3('S1M/P3')   // Households + NPISH
     const govt   = toArr4('S13/P3')   // Government consumption
 
-    if (!gdp.length) throw new Error('No GDP data — check OECD API')
+    if (!gdp.length) throw new Error('No GDP data from OECD')
 
     // Align all series to GDP date range
     const align = (arr) => {
