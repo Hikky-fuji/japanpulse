@@ -187,6 +187,7 @@ export default function Home() {
       <a href="/tokyo-cpi" style={{fontSize:'12px',color:'#378ADD',textDecoration:'none'}}>Tokyo CPI (Leading) →</a>
       <a href="/consumption" style={{fontSize:'12px',color:'#9B59B6',textDecoration:'none'}}>Consumption →</a>
       <a href="/ppi" style={{fontSize:'12px',color:'#D85A30',textDecoration:'none'}}>PPI →</a>
+      <a href="/gdp" style={{fontSize:'12px',color:'#27AE60',textDecoration:'none'}}>GDP →</a>
       <span style={{fontSize:'12px',color:'#888'}}>Source: MIC e-Stat / Auto-updated monthly</span>
     </div>
   </div>
