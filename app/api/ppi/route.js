@@ -27,28 +27,26 @@ export async function GET() {
   try {
     const [cgpiRes, tradeRes, sppiRes] = await Promise.all([
       fetchBOJ('PR01', [
-        'PRCG20_2200000000',
-        'PRCG20_2200310001',
-        'PRCG20_2200410001',
-        'PRCG20_2200510001',
+        'PRCG20_2200000000',  // 国内企業物価 総平均
+        'PRCG20_2600000000',  // 輸入物価 円ベース 総平均
+        'PRCG20_2400000000',  // 輸出物価 円ベース 総平均
       ]),
       fetchBOJ('PR01', [
-        'PRIF20_2600000000',
-        'PREF20_2700000000',
+        'PRCG20_2200310001',  // 石油・石炭製品
+        'PRCG20_2200410001',  // 電子部品・デバイス
       ]),
       fetchBOJ('PR02', [
-        'PRCS20_2000000000',
+        'PRCS20_5200000000',  // SPPI 総平均
       ]),
     ])
 
     return Response.json({
-      cgpi:          parseSeries(cgpiRes[0]),
-      cgpi_oil:      parseSeries(cgpiRes[1]),
-      cgpi_electric: parseSeries(cgpiRes[2]),
-      cgpi_energy:   parseSeries(cgpiRes[3]),
-      import_ppi:    parseSeries(tradeRes[0]),
-      export_ppi:    parseSeries(tradeRes[1]),
-      sppi:          parseSeries(sppiRes[0]),
+      cgpi:       parseSeries(cgpiRes[0]),
+      import_ppi: parseSeries(cgpiRes[1]),
+      export_ppi: parseSeries(cgpiRes[2]),
+      cgpi_oil:   parseSeries(tradeRes[0]),
+      cgpi_elec:  parseSeries(tradeRes[1]),
+      sppi:       parseSeries(sppiRes[0]),
     })
   } catch (e) {
     return Response.json({ error: e.message })
