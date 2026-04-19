@@ -28,7 +28,7 @@ function parseTime(t) {
 
 async function fetchSeries(cat) {
   const url = `${BASE}/getStatsData?appId=${APP_ID}&statsDataId=${STATS_ID}`
-    + `&metaGetFlg=N&cdCat01=${cat}&limit=40`
+    + `&metaGetFlg=N&cdCat01=${cat}`
   const res = await fetch(url, { cache: 'no-store' })
   const json = await res.json()
   const values = json?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE ?? []
