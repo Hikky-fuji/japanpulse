@@ -20,18 +20,24 @@ export default function Wages() {
     <div style={{ padding: '40px', fontFamily: 'sans-serif', color: '#666' }}>Loading...</div>
   )
 
-  const { nominal, real, scheduled, parttime_ratio, latest_date } = data
+  const { nominal, real, scheduled, parttime_ratio, nominal_same, scheduled_same, latest_date } = data
 
   const latestNom   = nominal.at(-1)
   const latestReal  = real.at(-1)
   const latestSched = scheduled.at(-1)
   const latestPt    = parttime_ratio.at(-1)
+  const latestNomSame  = nominal_same?.at(-1)
+  const latestSchedSame = scheduled_same?.at(-1)
 
   const labels = nominal.map(d => d.date)
   const realMap = {}
   real.forEach(d => { realMap[d.date] = d })
   const schedMap = {}
   scheduled.forEach(d => { schedMap[d.date] = d })
+  const nomSameMap = {}
+  ;(nominal_same ?? []).forEach(d => { nomSameMap[d.date] = d })
+  const schedSameMap = {}
+  ;(scheduled_same ?? []).forEach(d => { schedSameMap[d.date] = d })
 
   const chart1 = {
     labels,
@@ -66,6 +72,26 @@ export default function Wages() {
         pointRadius: 2,
         tension: 0.3,
         borderDash: [4, 3],
+        fill: false,
+      },
+      {
+        label: '名目賃金（同一事業所） Y/Y (%)',
+        data: labels.map(d => nomSameMap[d]?.yoy ?? null),
+        borderColor: '#8E44AD',
+        borderWidth: 2,
+        pointRadius: 2,
+        tension: 0.3,
+        borderDash: [2, 2],
+        fill: false,
+      },
+      {
+        label: '所定内給与（同一事業所） Y/Y (%)',
+        data: labels.map(d => schedSameMap[d]?.yoy ?? null),
+        borderColor: '#16A085',
+        borderWidth: 1.5,
+        pointRadius: 2,
+        tension: 0.3,
+        borderDash: [2, 2],
         fill: false,
       },
     ],
@@ -164,8 +190,13 @@ export default function Wages() {
             {latestNom?.yoy != null ? latestNom.yoy.toFixed(1) + '%' : '--'}
           </div>
           <div style={{ fontSize: '11px', color: latestNom?.yoy != null ? yoyColor(latestNom.yoy) : '#888', marginTop: '3px' }}>
-            Total cash earnings
+            全事業所
           </div>
+          {latestNomSame?.yoy != null && (
+            <div style={{ fontSize: '11px', color: '#8E44AD', marginTop: '2px' }}>
+              同一事業所: {latestNomSame.yoy.toFixed(1)}%
+            </div>
+          )}
         </div>
         <div style={s.card}>
           <div style={s.cardLabel}>実質賃金 Y/Y</div>
@@ -182,8 +213,13 @@ export default function Wages() {
             {latestSched?.yoy != null ? latestSched.yoy.toFixed(1) + '%' : '--'}
           </div>
           <div style={{ fontSize: '11px', color: latestSched?.yoy != null ? yoyColor(latestSched.yoy) : '#888', marginTop: '3px' }}>
-            Scheduled earnings
+            全事業所
           </div>
+          {latestSchedSame?.yoy != null && (
+            <div style={{ fontSize: '11px', color: '#16A085', marginTop: '2px' }}>
+              同一事業所: {latestSchedSame.yoy.toFixed(1)}%
+            </div>
+          )}
         </div>
         <div style={s.card}>
           <div style={s.cardLabel}>パートタイム比率</div>
@@ -199,7 +235,7 @@ export default function Wages() {
       <div style={s.box}>
         <div style={s.boxTitle}>賃金 前年比 (%) — 名目・実質・所定内給与（直近24ヶ月）</div>
         <Line data={chart1} options={yoyOpts} />
-        <div style={s.note}>※ 実質賃金のマイナス領域を赤背景で強調。所定内給与は破線。</div>
+        <div style={s.note}>※ 実質賃金のマイナス領域を赤背景で強調。所定内給与は破線。紫・緑の点線は同一事業所（共通事業所）ベース。</div>
       </div>
 
       <div style={s.grid2}>
