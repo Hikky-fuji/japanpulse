@@ -1,0 +1,16 @@
+{
+  "name": "Japan Macro Dashboard",
+  "short_name": "JapanPulse",
+  "description": "Japan macroeconomic indicators dashboard",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f2044",
+  "theme_color": "#0f2044",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
