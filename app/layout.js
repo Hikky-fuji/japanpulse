@@ -1,12 +1,17 @@
+import { Analytics } from "@vercel/analytics/next"
+
 export const metadata = {
-  title: 'Japan CPI Dashboard',
-  description: 'Japan CPI auto-updating dashboard powered by e-Stat',
+  title: 'Japan Macro Dashboard',
+  description: 'Japan macroeconomic indicators dashboard powered by e-Stat and Bank of Japan API',
 }
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <Analytics />
+      </body>
     </html>
   )
 }
