@@ -3,84 +3,84 @@ import React from 'react'
 
 const indicators = [
   {
-    group: '物価',
+    group: 'Prices',
     color: '#E67E22',
     bg: '#FFF8F0',
     border: '#F0A050',
     items: [
       {
         href: '/cpi',
-        title: 'CPI（消費者物価）',
-        subtitle: '全国・コア・コアコア',
-        badge: '月次',
-        desc: '全国の消費者物価指数。BOJのインフレ目標の主要指標。',
+        title: 'CPI (Consumer Prices)',
+        subtitle: 'National / Core / Core-Core',
+        badge: 'Monthly',
+        desc: 'National consumer price index. Primary indicator for BOJ inflation target.',
       },
       {
         href: '/tokyo-cpi',
         title: 'Tokyo CPI',
-        subtitle: '東京都区部',
-        badge: '月次 / 先行指標',
+        subtitle: 'Tokyo Metropolitan Area',
+        badge: 'Monthly / Leading Indicator',
         badgeColor: '#2980B9',
-        desc: '全国CPI公表の約3週間前に発表。先行指標として注目。',
+        desc: 'Released ~3 weeks before national CPI. Widely watched as a leading indicator.',
       },
       {
         href: '/ppi',
-        title: 'PPI（企業物価）',
+        title: 'PPI (Producer Prices)',
         subtitle: 'CGPI / SPPI',
-        badge: '月次',
-        desc: '国内企業物価・輸出入物価・サービス物価。川上インフレの先行シグナル。',
+        badge: 'Monthly',
+        desc: 'Domestic corporate, import/export, and services prices. Leading signal for upstream inflation.',
       },
     ],
   },
   {
-    group: '経済成長',
+    group: 'Economic Growth',
     color: '#27AE60',
     bg: '#F0FAF4',
     border: '#5DBF80',
     items: [
       {
         href: '/gdp',
-        title: 'GDP（国内総生産）',
-        subtitle: '実質・季節調整済',
-        badge: '四半期',
-        desc: '実質GDP成長率（前期比・前年比）と寄与度内訳。2020年基準。',
+        title: 'GDP (Gross Domestic Product)',
+        subtitle: 'Real / Seasonally Adjusted',
+        badge: 'Quarterly',
+        desc: 'Real GDP growth rate (Q/Q, Y/Y) with contribution breakdown. 2020 base.',
       },
       {
         href: '/iip',
-        title: '鉱工業生産指数',
+        title: 'Industrial Production Index',
         subtitle: 'IIP',
-        badge: '月次',
-        desc: '製造業・鉱業の生産活動を示す指数。景気の実態を把握する先行指標。',
+        badge: 'Monthly',
+        desc: 'Index of manufacturing and mining production activity. Leading indicator for economic conditions.',
       },
     ],
   },
   {
-    group: '個人消費',
+    group: 'Private Consumption',
     color: '#9B59B6',
     bg: '#FAF0FF',
     border: '#C080E0',
     items: [
       {
         href: '/consumption',
-        title: '家計消費支出',
-        subtitle: '家計調査',
-        badge: '月次',
-        desc: '二人以上世帯の消費支出。実質・名目ベースでの個人消費動向。',
+        title: 'Household Consumption',
+        subtitle: 'Family Income & Expenditure Survey',
+        badge: 'Monthly',
+        desc: 'Consumption spending of 2+ person households. Real and nominal private consumption trends.',
       },
     ],
   },
   {
-    group: '雇用・賃金',
+    group: 'Employment & Wages',
     color: '#1A56DB',
     bg: '#F0F4FF',
     border: '#6B8FE8',
     items: [
       {
         href: '/wages',
-        title: '毎月勤労統計',
-        subtitle: '名目・実質賃金',
-        badge: '月次',
-        desc: '名目・実質賃金指数（前年比）、所定内給与、パートタイム比率。厚労省発表。',
+        title: 'Monthly Labor Survey',
+        subtitle: 'Nominal / Real Wages',
+        badge: 'Monthly',
+        desc: 'Nominal/real wage index (Y/Y), scheduled wages, part-time ratio. Published by MHLW.',
       },
     ],
   },
@@ -94,7 +94,7 @@ export default function HomePage() {
           Japan Macro Dashboard
         </h1>
         <p style={{ fontSize: 14, color: '#666', margin: 0 }}>
-          日本の主要マクロ経済指標をリアルタイムで追跡。データはe-Stat（政府統計）から自動更新。
+          Tracking Japan's key macroeconomic indicators in real time. Data auto-updated from e-Stat (government statistics).
         </p>
       </div>
 
@@ -151,7 +151,7 @@ export default function HomePage() {
       ))}
 
       <div style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid #eee', fontSize: 11, color: '#aaa', textAlign: 'center' }}>
-        データソース: 総務省統計局・内閣府・日本銀行 / e-Stat API
+        Data Source: Statistics Bureau MIC / Cabinet Office / Bank of Japan · e-Stat API
       </div>
     </main>
   )

@@ -43,7 +43,7 @@ export default function Wages() {
     labels,
     datasets: [
       {
-        label: '名目賃金 Y/Y (%)',
+        label: 'Nominal Wages Y/Y (%)',
         data: nominal.map(d => d.yoy),
         borderColor: '#2980B9',
         borderWidth: 2,
@@ -52,7 +52,7 @@ export default function Wages() {
         fill: false,
       },
       {
-        label: '実質賃金 Y/Y (%)',
+        label: 'Real Wages Y/Y (%)',
         data: labels.map(d => realMap[d]?.yoy ?? null),
         borderColor: '#E74C3C',
         borderWidth: 2,
@@ -65,7 +65,7 @@ export default function Wages() {
         },
       },
       {
-        label: '所定内給与 Y/Y (%)',
+        label: 'Scheduled Wages Y/Y (%)',
         data: labels.map(d => schedMap[d]?.yoy ?? null),
         borderColor: '#27AE60',
         borderWidth: 1.5,
@@ -75,7 +75,7 @@ export default function Wages() {
         fill: false,
       },
       {
-        label: '名目賃金（同一事業所） Y/Y (%)',
+        label: 'Nominal Wages (Same Establishment) Y/Y (%)',
         data: labels.map(d => nomSameMap[d]?.yoy ?? null),
         borderColor: '#8E44AD',
         borderWidth: 2,
@@ -85,7 +85,7 @@ export default function Wages() {
         fill: false,
       },
       {
-        label: '所定内給与（同一事業所） Y/Y (%)',
+        label: 'Scheduled Wages (Same Establishment) Y/Y (%)',
         data: labels.map(d => schedSameMap[d]?.yoy ?? null),
         borderColor: '#16A085',
         borderWidth: 1.5,
@@ -101,7 +101,7 @@ export default function Wages() {
     labels,
     datasets: [
       {
-        label: '名目賃金 (Index)',
+        label: 'Nominal Wages (Index)',
         data: nominal.map(d => d.value),
         borderColor: '#2980B9',
         borderWidth: 2,
@@ -110,7 +110,7 @@ export default function Wages() {
         fill: false,
       },
       {
-        label: '実質賃金 (Index)',
+        label: 'Real Wages (Index)',
         data: labels.map(d => realMap[d]?.value ?? null),
         borderColor: '#E74C3C',
         borderWidth: 2,
@@ -175,7 +175,7 @@ export default function Wages() {
           <a href="/consumption" style={s.nav}>Consumption</a>
           <span style={{ fontSize: '20px', fontWeight: '600', color: '#111' }}>
             Wages
-            <span style={s.badge}>毎月勤労統計</span>
+            <span style={s.badge}>Monthly Labor Survey</span>
           </span>
         </div>
         <span style={{ fontSize: '12px', color: '#888' }}>
@@ -185,21 +185,21 @@ export default function Wages() {
 
       <div style={s.grid4}>
         <div style={s.card}>
-          <div style={s.cardLabel}>名目賃金 Y/Y</div>
+          <div style={s.cardLabel}>Nominal Wages Y/Y</div>
           <div style={s.cardVal}>
             {latestNom?.yoy != null ? latestNom.yoy.toFixed(1) + '%' : '--'}
           </div>
           <div style={{ fontSize: '11px', color: latestNom?.yoy != null ? yoyColor(latestNom.yoy) : '#888', marginTop: '3px' }}>
-            全事業所
+            All establishments
           </div>
           {latestNomSame?.yoy != null && (
             <div style={{ fontSize: '11px', color: '#8E44AD', marginTop: '2px' }}>
-              同一事業所: {latestNomSame.yoy.toFixed(1)}%
+              Same establishment: {latestNomSame.yoy.toFixed(1)}%
             </div>
           )}
         </div>
         <div style={s.card}>
-          <div style={s.cardLabel}>実質賃金 Y/Y</div>
+          <div style={s.cardLabel}>Real Wages Y/Y</div>
           <div style={{ ...s.cardVal, color: latestReal?.yoy != null && latestReal.yoy < 0 ? '#E24B4A' : '#111' }}>
             {latestReal?.yoy != null ? latestReal.yoy.toFixed(1) + '%' : '--'}
           </div>
@@ -208,21 +208,21 @@ export default function Wages() {
           </div>
         </div>
         <div style={s.card}>
-          <div style={s.cardLabel}>所定内給与 Y/Y</div>
+          <div style={s.cardLabel}>Scheduled Wages Y/Y</div>
           <div style={s.cardVal}>
             {latestSched?.yoy != null ? latestSched.yoy.toFixed(1) + '%' : '--'}
           </div>
           <div style={{ fontSize: '11px', color: latestSched?.yoy != null ? yoyColor(latestSched.yoy) : '#888', marginTop: '3px' }}>
-            全事業所
+            All establishments
           </div>
           {latestSchedSame?.yoy != null && (
             <div style={{ fontSize: '11px', color: '#16A085', marginTop: '2px' }}>
-              同一事業所: {latestSchedSame.yoy.toFixed(1)}%
+              Same establishment: {latestSchedSame.yoy.toFixed(1)}%
             </div>
           )}
         </div>
         <div style={s.card}>
-          <div style={s.cardLabel}>パートタイム比率</div>
+          <div style={s.cardLabel}>Part-time Ratio</div>
           <div style={s.cardVal}>
             {latestPt?.value != null ? latestPt.value.toFixed(1) + '%' : '--'}
           </div>
@@ -233,20 +233,20 @@ export default function Wages() {
       </div>
 
       <div style={s.box}>
-        <div style={s.boxTitle}>賃金 前年比 (%) — 名目・実質・所定内給与（直近24ヶ月）</div>
+        <div style={s.boxTitle}>Wages Y/Y (%) — Nominal / Real / Scheduled (Last 24 months)</div>
         <Line data={chart1} options={yoyOpts} />
-        <div style={s.note}>※ 実質賃金のマイナス領域を赤背景で強調。所定内給与は破線。紫・緑の点線は同一事業所（共通事業所）ベース。</div>
+        <div style={s.note}>※ Negative real wage region highlighted in red. Scheduled wages shown as dashed line. Purple/green dotted lines are same-establishment basis.</div>
       </div>
 
       <div style={s.grid2}>
         <div style={s.box}>
-          <div style={s.boxTitle}>賃金指数水準 — 名目・実質（直近24ヶ月）</div>
+          <div style={s.boxTitle}>Wage Index Level — Nominal / Real (Last 24 months)</div>
           <Line data={chart2} options={indexOpts} />
-          <div style={s.note}>※ 季節調整済指数（第8表）</div>
+          <div style={s.note}>※ Seasonally adjusted index (Table 8)</div>
         </div>
         <div style={{ ...s.box, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
           <div>
-            <div style={s.boxTitle}>パートタイム労働者比率（直近24ヶ月）</div>
+            <div style={s.boxTitle}>Part-time Worker Ratio (Last 24 months)</div>
             <Line
               data={{
                 labels: parttime_ratio.map(d => d.date),
@@ -266,7 +266,7 @@ export default function Wages() {
               }}
             />
           </div>
-          <div style={s.note}>※ パートタイム比率（全事業所）</div>
+          <div style={s.note}>※ Part-time ratio (all establishments)</div>
         </div>
       </div>
     </main>

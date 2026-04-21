@@ -92,15 +92,15 @@ export default function Home() {
   // ウェート円グラフ（2020年基準、総合1000分比）
   const weightData = {
     labels: [
-      'Housing (住居) 16%',
-      'Food ex. Fresh (食料) 22%',
-      'Transport & Comms (交通通信) 14%',
-      'Services ex. Rent (サービス) 11%',
-      'Leisure & Education (教養教育) 9%',
-      'Energy (光熱) 7%',
-      'Goods ex. Food & Energy (財) 8%',
-      'Medical (保健医療) 5%',
-      'Apparel (被服) 4%',
+      'Housing 16%',
+      'Food ex. Fresh 22%',
+      'Transport & Comms 14%',
+      'Services ex. Rent 11%',
+      'Leisure & Education 9%',
+      'Energy 7%',
+      'Goods ex. Food & Energy 8%',
+      'Medical 5%',
+      'Apparel 4%',
       'Other 4%',
     ],
     datasets: [{

@@ -56,7 +56,7 @@ export default function Consumption() {
     labels,
     datasets: [
       {
-        label: 'Basic (食料・光熱等)',
+        label: 'Basic (food, utilities etc.)',
         data: labels.map(d => basicMap[d] ?? null),
         borderColor: '#378ADD',
         borderWidth: 2,
@@ -65,7 +65,7 @@ export default function Consumption() {
         spanGaps: false,
       },
       {
-        label: 'Discretionary (旅行・娯楽等)',
+        label: 'Discretionary (travel, leisure etc.)',
         data: labels.map(d => discMap[d] ?? null),
         borderColor: '#F5A623',
         borderWidth: 2,
