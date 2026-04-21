@@ -10,14 +10,17 @@ export const metadata = {
     statusBarStyle: 'black-translucent',
   },
   icons: {
-    icon: '/icon.svg',
-    apple: '/icon.svg',
+    icon: '/icon-512.png',
+    apple: '/icon-512.png',  // ← これがiOS用
   },
 }
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
+      <head>
+        <link rel="apple-touch-icon" href="/icon-512.png" />  {/* ← これも追加 */}
+      </head>
       <body>
         {children}
         <Analytics />
