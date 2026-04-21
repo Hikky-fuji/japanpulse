@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { Line, Bar, Scatter } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
@@ -99,25 +99,37 @@ export default function IIP() {
     }]
   }
 
-  // 在庫循環図（散布図）：X軸=生産Y/Y、Y軸=在庫Y/Y
+  // 在庫循環図
   const cyclePoints = total
     .filter(v => v.prod_yoy != null && v.inv_yoy != null)
     .slice(-24)
+
   const cycleData = {
-    datasets: [{
-      label: 'Inventory Cycle',
-      data: cyclePoints.map((v, i) => ({
-        x: v.prod_yoy,
-        y: v.inv_yoy,
-        date: v.date,
-      })),
-      backgroundColor: cyclePoints.map((v, i) => {
-        const alpha = 0.3 + (i / cyclePoints.length) * 0.7
-        return `rgba(55,138,221,${alpha})`
-      }),
-      pointRadius: cyclePoints.map((_, i) => i === cyclePoints.length - 1 ? 8 : 4),
-      pointStyle: cyclePoints.map((_, i) => i === cyclePoints.length - 1 ? 'star' : 'circle'),
-    }]
+    datasets: [
+      // ① 線：時系列順に繋ぐ
+      {
+        label: 'Path',
+        type: 'line',
+        data: cyclePoints.map(v => ({ x: v.prod_yoy, y: v.inv_yoy })),
+        borderColor: 'rgba(55,138,221,0.4)',
+        borderWidth: 1.5,
+        pointRadius: 0,
+        tension: 0.3,
+        showLine: true,
+      },
+      // ② 点：濃淡で新旧を表現 + 最新月★
+      {
+        label: 'Inventory Cycle',
+        type: 'scatter',
+        data: cyclePoints.map(v => ({ x: v.prod_yoy, y: v.inv_yoy, date: v.date })),
+        backgroundColor: cyclePoints.map((_, i) => {
+          const alpha = 0.2 + (i / cyclePoints.length) * 0.8
+          return `rgba(55,138,221,${alpha})`
+        }),
+        pointRadius: cyclePoints.map((_, i) => i === cyclePoints.length - 1 ? 9 : 4),
+        pointStyle: cyclePoints.map((_, i) => i === cyclePoints.length - 1 ? 'star' : 'circle'),
+      }
+    ]
   }
 
   // 予測指数チャート
@@ -185,11 +197,14 @@ export default function IIP() {
     plugins: { legend: { display: false } },
     scales: { x: { ticks: { callback: v => v + '%' } } }
   }
+
+  // ★ scatterOpts：filterを追加してtooltipを点のみに限定
   const scatterOpts = {
     responsive: true,
     plugins: {
       legend: { display: false },
       tooltip: {
+        filter: (item) => item.datasetIndex === 1,
         callbacks: {
           label: (ctx) => {
             const d = cyclePoints[ctx.dataIndex]
