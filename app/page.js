@@ -70,6 +70,21 @@ const indicators = [
     ],
   },
   {
+    group: 'Sentiment',
+    color: '#16A085',
+    bg: '#F0FAF8',
+    border: '#50C4A8',
+    items: [
+      {
+        href: '/tankan',
+        title: 'Tankan Survey',
+        subtitle: 'Business Conditions DI',
+        badge: 'Quarterly',
+        desc: 'BOJ quarterly business sentiment survey. DI for large manufacturers and non-manufacturers, enterprise size breakdown, and forecast accuracy.',
+      },
+    ],
+  },
+  {
     group: 'Employment & Wages',
     color: '#1A56DB',
     bg: '#F0F4FF',
