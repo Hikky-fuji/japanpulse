@@ -5,10 +5,10 @@ import {
   Chart as ChartJS,
   CategoryScale, LinearScale, PointElement,
   LineElement, BarElement, Title, Tooltip, Legend,
-  ScatterController
+  ScatterController, LineController
 } from 'chart.js'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ScatterController)
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Title, Tooltip, Legend, ScatterController, LineController)
 
 const SECTORS = [
   { key: '鉱工業',               label: 'Mining & Mfg (Total)' },
@@ -25,6 +25,14 @@ const SECTORS = [
 ]
 
 const FINANCIAL_SECTORS = ['資本財', '耐久消費財', '非耐久消費財', '生産財']
+
+function detectPhase(prodYoy, invYoy) {
+  if (invYoy > 0 && prodYoy > 0) return { phase: 'Involuntary Build', color: '#E24B4A', next: 'Recession' }
+  if (invYoy > 0 && prodYoy < 0) return { phase: 'Recession',          color: '#9B59B6', next: 'Destocking' }
+  if (invYoy < 0 && prodYoy < 0) return { phase: 'Destocking',         color: '#D85A30', next: 'Recovery' }
+  if (invYoy < 0 && prodYoy > 0) return { phase: 'Recovery',           color: '#1D9E75', next: 'Involuntary Build' }
+  return { phase: 'Neutral', color: '#888', next: '—' }
+}
 
 function HeatmapCell({ value }) {
   if (value == null) return <td style={{padding:'6px 8px', textAlign:'center', background:'#f5f5f5', fontSize:'11px', color:'#ccc'}}>—</td>
@@ -257,6 +265,7 @@ export default function IIP() {
         <div>
           <a href="/" style={s.nav}>← Home</a>
           <a href="/consumption" style={s.nav}>Consumption</a>
+          <a href="/trade" style={s.nav}>Trade</a>
           <span style={{fontSize:'20px', fontWeight:'600', color:'#111'}}>
             Industrial Production Index
             {latest?.is_flash && <span style={s.badge}>Flash</span>}
@@ -315,6 +324,19 @@ export default function IIP() {
               <div>↓Inv / ↑Prod → <b>Recovery</b></div>
             </div>
           </div>
+          {(() => {
+            const lp = cyclePoints.at(-1)
+            if (!lp) return null
+            const ph = detectPhase(lp.prod_yoy, lp.inv_yoy)
+            return (
+              <div style={{marginTop:'8px', fontSize:'12px', color:'#555'}}>
+                Current phase: <b style={{color: ph.color}}>{ph.phase}</b>
+                <span style={{color:'#aaa'}}> → transitioning to </span>
+                <b>{ph.next}</b>
+                <span style={{color:'#bbb', marginLeft:'8px', fontSize:'11px'}}>({lp.date}: Prod {lp.prod_yoy > 0 ? '+' : ''}{lp.prod_yoy}% / Inv {lp.inv_yoy > 0 ? '+' : ''}{lp.inv_yoy}%)</span>
+              </div>
+            )
+          })()}
           <div style={s.note}>※ ★ = latest month. Darker = more recent. X-axis: Production Y/Y, Y-axis: Inventory Y/Y</div>
         </div>
         <div style={s.box}>

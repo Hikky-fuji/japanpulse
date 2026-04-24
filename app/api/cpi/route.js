@@ -24,6 +24,8 @@ export async function GET() {
 
     const formatDate = (time) => time.slice(0, 4) + '/' + time.slice(6, 8)
 
+    if (!values.length) console.warn(`[CPI] No data: cat=${cat} tab=${tab}`)
+
     return values
       .filter(isMonthly)
       .sort((a, b) => a['@time'].localeCompare(b['@time']))
@@ -34,32 +36,28 @@ export async function GET() {
   const [
     headline, core, corecore, services,
     food_ex_fresh, energy, goods_ex_food_energy,
-    housing, medical, transport, education, comms, leisure, eating_out, apparel, furniture
-  ] = await Promise.all([
-    fetchSeries('0001'),  // 総合
-    fetchSeries('0161'),  // コア
-    fetchSeries('0178'),  // コアコア
-    fetchSeries('0220'),  // サービス
-    fetchSeries('0172'),  // 食料（生鮮除く）
-    fetchSeries('0167'),  // エネルギー
-    fetchSeries('0241'),  // 財（食料・エネ除く）
-    fetchSeries('0045'),  // 住居
-    fetchSeries('0107'),  // 保健医療
-    fetchSeries('0112'),  // 交通
-    fetchSeries('0118'),  // 教育
-    fetchSeries('0117'),  // 通信
-    fetchSeries('0122'),  // 教養娯楽
-    fetchSeries('0042'),  // 外食
-    fetchSeries('0082'),  // 被服及び履物
-    fetchSeries('0060'),  // 家具・家事用品
-  ])
-
-  const [
+    housing, medical, transport, education, comms, leisure, eating_out, apparel, furniture,
     headline_mm, core_mm, corecore_mm, services_mm,
     food_mm, energy_mm, goods_mm, housing_mm, medical_mm,
     transport_mm, education_mm, comms_mm, leisure_mm, eating_out_mm, apparel_mm, furniture_mm
   ] = await Promise.all([
-    fetchSeries('0001', '2'),
+    fetchSeries('0001'),       // 総合
+    fetchSeries('0161'),       // コア
+    fetchSeries('0178'),       // コアコア
+    fetchSeries('0220'),       // サービス
+    fetchSeries('0172'),       // 食料（生鮮除く）
+    fetchSeries('0167'),       // エネルギー
+    fetchSeries('0241'),       // 財（食料・エネ除く）
+    fetchSeries('0045'),       // 住居
+    fetchSeries('0107'),       // 保健医療
+    fetchSeries('0112'),       // 交通
+    fetchSeries('0118'),       // 教育
+    fetchSeries('0117'),       // 通信
+    fetchSeries('0122'),       // 教養娯楽
+    fetchSeries('0042'),       // 外食
+    fetchSeries('0082'),       // 被服及び履物
+    fetchSeries('0060'),       // 家具・家事用品
+    fetchSeries('0001', '2'),  // 総合 M/M
     fetchSeries('0161', '2'),
     fetchSeries('0178', '2'),
     fetchSeries('0220', '2'),

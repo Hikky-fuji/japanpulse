@@ -149,6 +149,7 @@ export default function Consumption() {
         <div>
           <a href="/" style={s.nav}>← Home</a>
           <a href="/tokyo-cpi" style={s.nav}>Tokyo CPI</a>
+          <a href="/trade" style={s.nav}>Trade</a>
           <span style={{fontSize:'20px', fontWeight:'600', color:'#111'}}>
             Household Consumption
             <span style={s.badge}>Family Survey</span>
