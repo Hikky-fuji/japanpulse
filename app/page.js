@@ -99,6 +99,21 @@ const indicators = [
       },
     ],
   },
+  {
+    group: 'Trade',
+    color: '#0E7490',
+    bg: '#F0FDFF',
+    border: '#67C8D4',
+    items: [
+      {
+        href: '/trade',
+        title: 'Trade Statistics',
+        subtitle: 'Export / Import / Balance',
+        badge: 'Monthly',
+        desc: 'Japan trade statistics: exports, imports, trade balance by commodity and destination. Source: MOF Customs.',
+      },
+    ],
+  },
 ]
 
 export default function HomePage() {

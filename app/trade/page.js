@@ -192,8 +192,14 @@ export default function Trade() {
     fetch('/api/trade').then(r => r.json()).then(setData)
   }, [])
 
-  if (!data?.months?.length) return (
+  if (!data) return (
     <div style={{padding:'40px', fontFamily:'sans-serif', color:'#666'}}>Loading...</div>
+  )
+  if (!data.months?.length) return (
+    <div style={{padding:'40px', fontFamily:'sans-serif', color:'#666'}}>
+      <div style={{marginBottom:'8px', fontWeight:'600'}}>Trade data unavailable</div>
+      {data.error && <div style={{fontSize:'12px', color:'#aaa'}}>{data.error}</div>}
+    </div>
   )
 
   const { months, export: exp, import: imp, byDest } = data
