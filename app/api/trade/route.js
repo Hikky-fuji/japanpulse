@@ -55,6 +55,12 @@ export async function GET() {
     return { map, rev }
   }
 
+  // Log ALL dimension codes for diagnosis
+  for (const [dimId, cls] of Object.entries(expDims)) {
+    console.log(`[Trade] EXP dim[${dimId}] (${cls.length}):`,
+      cls.slice(0, 8).map(c => `${c['@code']}=${c['@name']}`).join(' | '))
+  }
+
   const { map: expMonthMap, rev: expMonthRev } = buildMonthTabMap(expDims.tab ?? [])
   const { map: impMonthMap, rev: impMonthRev } = buildMonthTabMap(impDims.tab ?? [])
 
