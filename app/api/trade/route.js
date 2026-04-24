@@ -22,11 +22,15 @@ export async function GET() {
     const r = await fetch(`${B}/getMetaInfo?appId=${APP_ID}&statsDataId=${id}`, { cache: 'no-store' })
     const j = await r.json()
     console.log(`[Trade] metaInfo raw keys (${id}):`, JSON.stringify(Object.keys(j ?? {})))
-    const top = j?.GET_META_INFO ?? j?.getMetaInfo ?? j
-    console.log(`[Trade] metaInfo top keys (${id}):`, JSON.stringify(Object.keys(top ?? {})))
-    const raw = top?.CLASS_INF?.CLASS_OBJ ?? top?.RESULT?.CLASS_INF?.CLASS_OBJ ?? []
-    console.log(`[Trade] CLASS_OBJ length (${id}):`, Array.isArray(raw) ? raw.length : (raw ? 1 : 0))
-    return Array.isArray(raw) ? raw : (raw ? [raw] : [])
+    const top = j?.GET_META_INFO ?? j
+    const raw = top?.METADATA_INF?.CLASS_INF?.CLASS_OBJ ?? top?.CLASS_INF?.CLASS_OBJ ?? []
+    const arr = Array.isArray(raw) ? raw : (raw ? [raw] : [])
+    console.log(`[Trade] CLASS_OBJ dims (${id}):`, arr.map(o => `${o['@id']}(${(Array.isArray(o.CLASS)?o.CLASS:[o.CLASS]).length})`).join(', '))
+    if (arr[0]) {
+      const cls0 = Array.isArray(arr[0].CLASS) ? arr[0].CLASS : [arr[0].CLASS]
+      console.log(`[Trade] dim[${arr[0]['@id']}] first 5:`, cls0.slice(0,5).map(c=>`${c['@code']}=${c['@name']}`).join(' | '))
+    }
+    return arr
   }
 
   // Also try a bare data fetch to see if any rows come back at all
