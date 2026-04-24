@@ -47,8 +47,11 @@ export async function GET() {
     const cls = areaObj ? (Array.isArray(areaObj.CLASS) ? areaObj.CLASS : [areaObj.CLASS]) : []
     const found = cls.find(c => /世界計|World/.test(c['@name']) || /^0+$/.test(c['@code']))
     console.log('[Trade] areaList first 3:', cls.slice(0,3).map(c=>`${c['@code']}=${c['@name']}`).join(' | '))
-    console.log('[Trade] worldArea:', found?.['@code'] ?? '50000(fallback)')
-    return found?.['@code'] ?? '50000'
+    console.log('[Trade] areaList last 3:', cls.slice(-3).map(c=>`${c['@code']}=${c['@name']}`).join(' | '))
+    // Try CPI-style '00000', then '50000', then null (no filter = sum all)
+    const worldCode = found?.['@code'] ?? '00000'
+    console.log('[Trade] worldArea:', worldCode)
+    return worldCode
   }
 
   const WORLD = await getWorldArea()
