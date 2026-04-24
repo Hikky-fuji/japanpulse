@@ -19,7 +19,7 @@ export async function GET() {
 
   // ── Metadata ───────────────────────────────────────────────────────────────
   const getMeta = async (id) => {
-    const r = await fetch(`${B}/getMetaData?appId=${APP_ID}&statsDataId=${id}`, { cache: 'no-store' })
+    const r = await fetch(`${B}/getMetaInfo?appId=${APP_ID}&statsDataId=${id}`, { cache: 'no-store' })
     const j = await r.json()
     const raw = j?.GET_META_INFO?.CLASS_INF?.CLASS_OBJ ?? []
     return Array.isArray(raw) ? raw : [raw]
