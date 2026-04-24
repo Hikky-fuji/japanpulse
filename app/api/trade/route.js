@@ -21,9 +21,25 @@ export async function GET() {
   const getMeta = async (id) => {
     const r = await fetch(`${B}/getMetaInfo?appId=${APP_ID}&statsDataId=${id}`, { cache: 'no-store' })
     const j = await r.json()
-    const raw = j?.GET_META_INFO?.CLASS_INF?.CLASS_OBJ ?? []
-    return Array.isArray(raw) ? raw : [raw]
+    console.log(`[Trade] metaInfo raw keys (${id}):`, JSON.stringify(Object.keys(j ?? {})))
+    const top = j?.GET_META_INFO ?? j?.getMetaInfo ?? j
+    console.log(`[Trade] metaInfo top keys (${id}):`, JSON.stringify(Object.keys(top ?? {})))
+    const raw = top?.CLASS_INF?.CLASS_OBJ ?? top?.RESULT?.CLASS_INF?.CLASS_OBJ ?? []
+    console.log(`[Trade] CLASS_OBJ length (${id}):`, Array.isArray(raw) ? raw.length : (raw ? 1 : 0))
+    return Array.isArray(raw) ? raw : (raw ? [raw] : [])
   }
+
+  // Also try a bare data fetch to see if any rows come back at all
+  const diagRes = await fetch(
+    `${B}/getStatsData?appId=${APP_ID}&statsDataId=${EXP_ID}&metaGetFlg=N&limit=3`,
+    { cache: 'no-store' }
+  )
+  const diagJson = await diagRes.json()
+  const diagVals = diagJson?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE ?? []
+  const diagStatus = diagJson?.GET_STATS_DATA?.RESULT?.STATUS
+  const diagMsg = diagJson?.GET_STATS_DATA?.RESULT?.ERROR_MSG
+  console.log('[Trade] diag fetch: status=', diagStatus, 'msg=', diagMsg, 'rows=', diagVals.length)
+  if (diagVals[0]) console.log('[Trade] diag row[0]:', JSON.stringify(diagVals[0]))
 
   const [expMeta, impMeta] = await Promise.all([getMeta(EXP_ID), getMeta(IMP_ID)])
 
