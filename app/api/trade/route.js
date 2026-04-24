@@ -2,270 +2,168 @@ export const dynamic = 'force-dynamic'
 
 const B = 'https://api.e-stat.go.jp/rest/3.0/app/json'
 
-// 概況品別国別表 — time axis is ANNUAL; monthly data lives in the TAB dimension
-const EXP_ID = '0003425295'  // 輸出 2021-2025
-const IMP_ID = '0003425296'  // 輸入 2021-2025
+// 概況品別国別表
+// - time axis: annual (2021000000 … 2025000000)
+// - cat01: 8-digit code = SITC string padded with trailing zeros to 8 chars
+// - cat02: 120=合計_金額, 140=1月_金額, 160=2月_金額, … 360=12月_金額  (pattern: 120 + M*20)
+// - area: 5-digit country/region code  50103=韓国 50105=中国 50304=米国 50000=世界計(est.)
 
-const COUNTRY = { USA: '304', China: '105', Korea: '103' }
-const TOP_CATS = ['0','1','2','3','4','5','6','7','8','9']
+const EXP_ID = '0003425295'
+const IMP_ID = '0003425296'
 
-// Export commodity cat01 codes
-const EXP_CAT = { auto: '70503', semicon: '703', machinery: '701', chemicals: '5' }
-// Import commodity cat01 codes
-const IMP_CAT = { crude_oil: '303', lng: '305', food: '0' }
+const sitc8 = (s) => String(s).padEnd(8, '0')
+const TOP_CATS = ['0','1','2','3','4','5','6','7','8','9'].map(sitc8)
+
+const EXP_CAT = {
+  auto:      sitc8('70503'),
+  semicon:   sitc8('703'),
+  machinery: sitc8('701'),
+  chemicals: sitc8('5'),
+}
+const IMP_CAT = {
+  crude_oil: sitc8('303'),
+  lng:       sitc8('305'),
+  food:      sitc8('0'),
+}
+
+const COUNTRY_AREA = { USA: '50304', China: '50105', Korea: '50103' }
+
+// reverse map: cat02 code → month (only 金額 codes 140,160,...,360)
+const MONTH_REV = {}
+for (let m = 1; m <= 12; m++) MONTH_REV[String(120 + m * 20)] = m
+// cat02 range covering all monthly values (130=1月数量 … 360=12月金額)
+const RANGE = { cat02From: '130', cat02To: '360' }
 
 export async function GET() {
   const APP_ID = process.env.ESTAT_APP_ID
 
-  // ── Metadata ───────────────────────────────────────────────────────────────
-  const getMeta = async (id) => {
-    const r = await fetch(`${B}/getMetaInfo?appId=${APP_ID}&statsDataId=${id}`, { cache: 'no-store' })
+  // ── Find world area code from metadata ───────────────────────────────────
+  const getWorldArea = async () => {
+    const r = await fetch(`${B}/getMetaInfo?appId=${APP_ID}&statsDataId=${EXP_ID}`, { cache: 'no-store' })
     const j = await r.json()
-    console.log(`[Trade] metaInfo raw keys (${id}):`, JSON.stringify(Object.keys(j ?? {})))
-    const top = j?.GET_META_INFO ?? j
-    const raw = top?.METADATA_INF?.CLASS_INF?.CLASS_OBJ ?? top?.CLASS_INF?.CLASS_OBJ ?? []
-    const arr = Array.isArray(raw) ? raw : (raw ? [raw] : [])
-    console.log(`[Trade] CLASS_OBJ dims (${id}):`, arr.map(o => `${o['@id']}(${(Array.isArray(o.CLASS)?o.CLASS:[o.CLASS]).length})`).join(', '))
-    if (arr[0]) {
-      const cls0 = Array.isArray(arr[0].CLASS) ? arr[0].CLASS : [arr[0].CLASS]
-      console.log(`[Trade] dim[${arr[0]['@id']}] first 5:`, cls0.slice(0,5).map(c=>`${c['@code']}=${c['@name']}`).join(' | '))
-    }
-    return arr
+    const objs = j?.GET_META_INFO?.METADATA_INF?.CLASS_INF?.CLASS_OBJ ?? []
+    const arr = Array.isArray(objs) ? objs : [objs]
+    const areaObj = arr.find(o => o['@id'] === 'area')
+    const cls = areaObj ? (Array.isArray(areaObj.CLASS) ? areaObj.CLASS : [areaObj.CLASS]) : []
+    const found = cls.find(c => /世界計|World/.test(c['@name']) || /^0+$/.test(c['@code']))
+    console.log('[Trade] areaList first 3:', cls.slice(0,3).map(c=>`${c['@code']}=${c['@name']}`).join(' | '))
+    console.log('[Trade] worldArea:', found?.['@code'] ?? '50000(fallback)')
+    return found?.['@code'] ?? '50000'
   }
 
-  // Also try a bare data fetch to see if any rows come back at all
-  const diagRes = await fetch(
-    `${B}/getStatsData?appId=${APP_ID}&statsDataId=${EXP_ID}&metaGetFlg=N&limit=3`,
-    { cache: 'no-store' }
-  )
-  const diagJson = await diagRes.json()
-  const diagVals = diagJson?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE ?? []
-  const diagStatus = diagJson?.GET_STATS_DATA?.RESULT?.STATUS
-  const diagMsg = diagJson?.GET_STATS_DATA?.RESULT?.ERROR_MSG
-  console.log('[Trade] diag fetch: status=', diagStatus, 'msg=', diagMsg, 'rows=', diagVals.length)
-  if (diagVals[0]) console.log('[Trade] diag row[0]:', JSON.stringify(diagVals[0]))
+  const WORLD = await getWorldArea()
 
-  const [expMeta, impMeta] = await Promise.all([getMeta(EXP_ID), getMeta(IMP_ID)])
-
-  const extractDims = (meta) => {
-    const dims = {}
-    for (const obj of meta) {
-      const cls = Array.isArray(obj.CLASS) ? obj.CLASS : (obj.CLASS ? [obj.CLASS] : [])
-      dims[obj['@id']] = cls
-    }
-    return dims
-  }
-
-  const expDims = extractDims(expMeta)
-  const impDims = extractDims(impMeta)
-
-  // Tab codes: month 1–12 → tab code for 金額 (value in 千円)
-  const buildMonthTabMap = (tabCls) => {
-    const map = {}   // month (1-12) → tab code
-    const rev = {}   // tab code → month (1-12)
-    for (const cls of tabCls) {
-      const name = cls['@name'] ?? ''
-      const m = name.match(/^(\d+)月/)
-      if (m && /金額/.test(name)) {
-        const month = parseInt(m[1])
-        map[month] = cls['@code']
-        rev[cls['@code']] = month
-      }
-    }
-    return { map, rev }
-  }
-
-  // Log ALL dimension codes for diagnosis
-  for (const [dimId, cls] of Object.entries(expDims)) {
-    console.log(`[Trade] EXP dim[${dimId}] (${cls.length}):`,
-      cls.slice(0, 8).map(c => `${c['@code']}=${c['@name']}`).join(' | '))
-  }
-
-  const { map: expMonthMap, rev: expMonthRev } = buildMonthTabMap(expDims.tab ?? [])
-  const { map: impMonthMap, rev: impMonthRev } = buildMonthTabMap(impDims.tab ?? [])
-
-  // Find total/world code in cat02 and cat01
-  const findTotal = (cls, names) => {
-    for (const n of names) {
-      const found = cls.find(c => c['@name'] === n)
-      if (found) return found['@code']
-    }
-    return null
-  }
-
-  const expTotalCat02 = findTotal(expDims.cat02 ?? [], ['合計', '世界計', 'World', '全世界'])
-  const impTotalCat02 = findTotal(impDims.cat02 ?? [], ['合計', '世界計', 'World', '全世界'])
-  const expTotalCat01 = findTotal(expDims.cat01 ?? [], ['合計', '総額', '輸出総額'])
-  const impTotalCat01 = findTotal(impDims.cat01 ?? [], ['合計', '総額', '輸入総額'])
-
-  const hasMonthlyTabs = Object.keys(expMonthMap).length >= 12
-
-  console.log('[Trade] hasMonthlyTabs:', hasMonthlyTabs,
-    '| expMonthMap keys:', Object.keys(expMonthMap).join(','),
-    '| expTotalCat02:', expTotalCat02,
-    '| expTotalCat01:', expTotalCat01)
-
-  // ── Data fetch ──────────────────────────────────────────────────────────────
-  const fetchRaw = async (id, { cat01, cat02, tab } = {}) => {
-    const p = new URLSearchParams({ appId: APP_ID, statsDataId: id, metaGetFlg: 'N', limit: '10000' })
-    if (cat01) p.set('cdCat01', cat01)
-    if (cat02) p.set('cdCat02', cat02)
-    if (tab)   p.set('cdTab', tab)
+  // ── Data fetch ───────────────────────────────────────────────────────────
+  const fetchRaw = async (statsDataId, { cat01, area, cat02From, cat02To } = {}) => {
+    const p = new URLSearchParams({ appId: APP_ID, statsDataId, metaGetFlg: 'N', limit: '2000' })
+    if (cat01)     p.set('cdCat01', cat01)
+    if (area)      p.set('cdArea', area)
+    if (cat02From) p.set('cdCat02From', cat02From)
+    if (cat02To)   p.set('cdCat02To', cat02To)
     const res = await fetch(`${B}/getStatsData?${p}`, { cache: 'no-store' })
     const json = await res.json()
     const vals = json?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE ?? []
-    if (!vals.length) console.warn(`[Trade] no data: id=${id} cat01=${cat01||'—'} cat02=${cat02||'—'} tab=${tab||'—'}`)
+    if (!vals.length) console.warn(`[Trade] no data: ${statsDataId} cat01=${cat01||'—'} area=${area||'—'}`)
     return vals
   }
 
-  // Parse rows (fetched with NO tab filter) into monthly time series using reverse tab map
-  // Each row has @time (annual YYYY000000), @tab (tab code), value
-  const parseMonthly = (rows, monthRevMap) => {
-    const m = {}
+  // Parse raw rows → date→value map (filters to 金額 months only via MONTH_REV)
+  const parseMonthly = (rows) => {
+    const map = {}
     for (const v of rows) {
-      const month = monthRevMap[v['@tab']]
+      const month = MONTH_REV[v['@cat02']]
       if (!month) continue
       const year = (v['@time'] ?? '').slice(0, 4)
       if (!year || year < '2021') continue
       const date = `${year}/${String(month).padStart(2, '0')}`
       const val = parseFloat(v['$'])
-      if (!isNaN(val)) m[date] = (m[date] ?? 0) + val
+      if (!isNaN(val)) map[date] = (map[date] ?? 0) + val
     }
-    return m
+    return map
   }
 
-  const mapToSeries = (map) =>
-    Object.entries(map).sort(([a],[b]) => a.localeCompare(b)).slice(-24).map(([date, value]) => ({ date, value }))
-
-  const mergeMapAdd = (...maps) => {
+  const addMaps = (...maps) => {
     const out = {}
     for (const m of maps) for (const [k, v] of Object.entries(m)) out[k] = (out[k] ?? 0) + v
     return out
   }
 
-  // ── Strategy A: tab-based (monthly in tab dimension) ──────────────────────
-  if (hasMonthlyTabs) {
-    // Total: sum TOP_CATS (no tab filter — parse all tabs in one pass per cat)
-    const [expTopRows, impTopRows] = await Promise.all([
-      Promise.all(TOP_CATS.map(c => fetchRaw(EXP_ID, { cat01: c, cat02: expTotalCat02 }))),
-      Promise.all(TOP_CATS.map(c => fetchRaw(IMP_ID, { cat01: c, cat02: impTotalCat02 }))),
-    ])
-    const expTotalMap = mergeMapAdd(...expTopRows.map(rows => parseMonthly(rows, expMonthRev)))
-    const impTotalMap = mergeMapAdd(...impTopRows.map(rows => parseMonthly(rows, impMonthRev)))
+  const toSeries = (map) =>
+    Object.entries(map).sort(([a],[b]) => a.localeCompare(b)).slice(-24).map(([date, value]) => ({ date, value }))
 
-    // Export breakdowns
-    const [expAutoR, expSeconR, expMachR, expChemR] = await Promise.all([
-      fetchRaw(EXP_ID, { cat01: EXP_CAT.auto,      cat02: expTotalCat02 }),
-      fetchRaw(EXP_ID, { cat01: EXP_CAT.semicon,   cat02: expTotalCat02 }),
-      fetchRaw(EXP_ID, { cat01: EXP_CAT.machinery, cat02: expTotalCat02 }),
-      fetchRaw(EXP_ID, { cat01: EXP_CAT.chemicals, cat02: expTotalCat02 }),
-    ])
-
-    // Import breakdowns
-    const [impCrudeR, impLngR, impFoodR] = await Promise.all([
-      fetchRaw(IMP_ID, { cat01: IMP_CAT.crude_oil, cat02: impTotalCat02 }),
-      fetchRaw(IMP_ID, { cat01: IMP_CAT.lng,       cat02: impTotalCat02 }),
-      fetchRaw(IMP_ID, { cat01: IMP_CAT.food,      cat02: impTotalCat02 }),
-    ])
-
-    // Country breakdowns — use totalCat01 if available, else sum TOP_CATS
-    const fetchCountry = async (id, countryCat02, monthRevMap, totalCat01, totalCat02) => {
-      if (totalCat01) {
-        const rows = await fetchRaw(id, { cat01: totalCat01, cat02: countryCat02 })
-        return parseMonthly(rows, monthRevMap)
-      }
-      const topRows = await Promise.all(TOP_CATS.map(c => fetchRaw(id, { cat01: c, cat02: countryCat02 })))
-      return mergeMapAdd(...topRows.map(r => parseMonthly(r, monthRevMap)))
-    }
-
-    const [eUSAm, eChinam, eKoream, iUSAm, iChinam, iKoream] = await Promise.all([
-      fetchCountry(EXP_ID, COUNTRY.USA,   expMonthRev, expTotalCat01, expTotalCat02),
-      fetchCountry(EXP_ID, COUNTRY.China, expMonthRev, expTotalCat01, expTotalCat02),
-      fetchCountry(EXP_ID, COUNTRY.Korea, expMonthRev, expTotalCat01, expTotalCat02),
-      fetchCountry(IMP_ID, COUNTRY.USA,   impMonthRev, impTotalCat01, impTotalCat02),
-      fetchCountry(IMP_ID, COUNTRY.China, impMonthRev, impTotalCat01, impTotalCat02),
-      fetchCountry(IMP_ID, COUNTRY.Korea, impMonthRev, impTotalCat01, impTotalCat02),
-    ])
-
-    const expTotal = mapToSeries(expTotalMap)
-    const impTotal = mapToSeries(impTotalMap)
-    const months = expTotal.map(v => v.date)
-
-    const computeNet = (eArr, iArr) => {
-      const im = Object.fromEntries(iArr.map(v => [v.date, v.value]))
-      return eArr.map(v => ({ date: v.date, value: v.value - (im[v.date] ?? 0) }))
-    }
-
-    const eUSA = mapToSeries(eUSAm), iUSA = mapToSeries(iUSAm)
-    const eChina = mapToSeries(eChinam), iChina = mapToSeries(iChinam)
-    const eKorea = mapToSeries(eKoream), iKorea = mapToSeries(iKoream)
-
-    return Response.json({
-      months,
-      export: {
-        total:     expTotal,
-        auto:      mapToSeries(parseMonthly(expAutoR,  expMonthRev)),
-        semicon:   mapToSeries(parseMonthly(expSeconR, expMonthRev)),
-        machinery: mapToSeries(parseMonthly(expMachR,  expMonthRev)),
-        chemicals: mapToSeries(parseMonthly(expChemR,  expMonthRev)),
-      },
-      import: {
-        total:     impTotal,
-        crude_oil: mapToSeries(parseMonthly(impCrudeR, impMonthRev)),
-        lng:       mapToSeries(parseMonthly(impLngR,   impMonthRev)),
-        food:      mapToSeries(parseMonthly(impFoodR,  impMonthRev)),
-      },
-      byDest: {
-        USA:   { export: eUSA,   import: iUSA,   net: computeNet(eUSA,   iUSA)   },
-        China: { export: eChina, import: iChina, net: computeNet(eChina, iChina) },
-        Korea: { export: eKorea, import: iKorea, net: computeNet(eKorea, iKorea) },
-      },
-    })
+  const computeNet = (expArr, impArr) => {
+    const im = Object.fromEntries(impArr.map(v => [v.date, v.value]))
+    return expArr.map(v => ({ date: v.date, value: v.value - (im[v.date] ?? 0) }))
   }
 
-  // ── Strategy B: fallback — monthly time axis (YYYY00MM00 format) ───────────
-  console.warn('[Trade] No tab-based monthly codes found, falling back to time-axis strategy')
-  const isMonthly = (v) => {
-    const t = v['@time']
-    if (!t || t.length !== 10) return false
-    return t.slice(4, 6) === '00' && parseInt(t.slice(6, 8)) >= 1 && parseInt(t.slice(6, 8)) <= 12
-  }
-  const fmtTime = (t) => t.slice(0, 4) + '/' + t.slice(6, 8)
+  // ── Phase 1: totals (sum TOP_CATS, world area) ───────────────────────────
+  const [expTopRows, impTopRows] = await Promise.all([
+    Promise.all(TOP_CATS.map(c => fetchRaw(EXP_ID, { cat01: c, area: WORLD, ...RANGE }))),
+    Promise.all(TOP_CATS.map(c => fetchRaw(IMP_ID, { cat01: c, area: WORLD, ...RANGE }))),
+  ])
+  const expTotalMap = addMaps(...expTopRows.map(parseMonthly))
+  const impTotalMap = addMaps(...impTopRows.map(parseMonthly))
 
-  const toSeriesFallback = (rows) => {
-    const m = {}
-    for (const v of rows) {
-      if (!isMonthly(v)) continue
-      const d = fmtTime(v['@time'])
-      const val = parseFloat(v['$'])
-      if (!isNaN(val)) m[d] = (m[d] ?? 0) + val
-    }
-    return Object.entries(m).sort(([a],[b]) => a.localeCompare(b)).slice(-24).map(([date, value]) => ({ date, value }))
-  }
-
-  const sumSeriesFallback = (...arrs) => {
-    const m = {}
-    for (const arr of arrs) for (const { date, value } of arr) m[date] = (m[date] ?? 0) + value
-    return Object.entries(m).sort(([a],[b]) => a.localeCompare(b)).map(([date, value]) => ({ date, value }))
-  }
-
-  const [expTopFb, impTopFb] = await Promise.all([
-    Promise.all(TOP_CATS.map(c => fetchRaw(EXP_ID, { cat01: c }).then(toSeriesFallback))),
-    Promise.all(TOP_CATS.map(c => fetchRaw(IMP_ID, { cat01: c }).then(toSeriesFallback))),
+  // ── Phase 2: commodity breakdowns ───────────────────────────────────────
+  const [expAutoR, expSeconR, expMachR, expChemR,
+         impCrudeR, impLngR, impFoodR] = await Promise.all([
+    fetchRaw(EXP_ID, { cat01: EXP_CAT.auto,      area: WORLD, ...RANGE }),
+    fetchRaw(EXP_ID, { cat01: EXP_CAT.semicon,   area: WORLD, ...RANGE }),
+    fetchRaw(EXP_ID, { cat01: EXP_CAT.machinery, area: WORLD, ...RANGE }),
+    fetchRaw(EXP_ID, { cat01: EXP_CAT.chemicals, area: WORLD, ...RANGE }),
+    fetchRaw(IMP_ID, { cat01: IMP_CAT.crude_oil, area: WORLD, ...RANGE }),
+    fetchRaw(IMP_ID, { cat01: IMP_CAT.lng,       area: WORLD, ...RANGE }),
+    fetchRaw(IMP_ID, { cat01: IMP_CAT.food,      area: WORLD, ...RANGE }),
   ])
 
-  const expTotal = sumSeriesFallback(...expTopFb).slice(-24)
-  const impTotal = sumSeriesFallback(...impTopFb).slice(-24)
-  const months = expTotal.map(v => v.date)
+  // ── Phase 3: country breakdowns (sum all TOP_CATS per country) ───────────
+  const fetchCountry = async (statsDataId, areaCode) => {
+    const rows = await Promise.all(TOP_CATS.map(c => fetchRaw(statsDataId, { cat01: c, area: areaCode, ...RANGE })))
+    return rows.flat()
+  }
+
+  const [eUSARows, iUSARows, eChinaRows, iChinaRows, eKoreaRows, iKoreaRows] = await Promise.all([
+    fetchCountry(EXP_ID, COUNTRY_AREA.USA),
+    fetchCountry(IMP_ID, COUNTRY_AREA.USA),
+    fetchCountry(EXP_ID, COUNTRY_AREA.China),
+    fetchCountry(IMP_ID, COUNTRY_AREA.China),
+    fetchCountry(EXP_ID, COUNTRY_AREA.Korea),
+    fetchCountry(IMP_ID, COUNTRY_AREA.Korea),
+  ])
+
+  const expTotal = toSeries(expTotalMap)
+  const impTotal = toSeries(impTotalMap)
+  const months   = expTotal.map(v => v.date)
+
+  const eUSA   = toSeries(addMaps(parseMonthly(eUSARows)))
+  const iUSA   = toSeries(addMaps(parseMonthly(iUSARows)))
+  const eChina = toSeries(addMaps(parseMonthly(eChinaRows)))
+  const iChina = toSeries(addMaps(parseMonthly(iChinaRows)))
+  const eKorea = toSeries(addMaps(parseMonthly(eKoreaRows)))
+  const iKorea = toSeries(addMaps(parseMonthly(iKoreaRows)))
+
+  console.log('[Trade] result: months=', months.length, 'expTotal rows=', expTotal.length,
+    'impTotal rows=', impTotal.length, 'eUSA rows=', eUSA.length)
 
   return Response.json({
     months,
-    export: { total: expTotal, auto: [], semicon: [], machinery: [], chemicals: [] },
-    import: { total: impTotal, crude_oil: [], lng: [], food: [] },
+    export: {
+      total:     expTotal,
+      auto:      toSeries(parseMonthly(expAutoR)),
+      semicon:   toSeries(parseMonthly(expSeconR)),
+      machinery: toSeries(parseMonthly(expMachR)),
+      chemicals: toSeries(parseMonthly(expChemR)),
+    },
+    import: {
+      total:     impTotal,
+      crude_oil: toSeries(parseMonthly(impCrudeR)),
+      lng:       toSeries(parseMonthly(impLngR)),
+      food:      toSeries(parseMonthly(impFoodR)),
+    },
     byDest: {
-      USA:   { export: [], import: [], net: [] },
-      China: { export: [], import: [], net: [] },
-      Korea: { export: [], import: [], net: [] },
+      USA:   { export: eUSA,   import: iUSA,   net: computeNet(eUSA,   iUSA)   },
+      China: { export: eChina, import: iChina, net: computeNet(eChina, iChina) },
+      Korea: { export: eKorea, import: iKorea, net: computeNet(eKorea, iKorea) },
     },
   })
 }
