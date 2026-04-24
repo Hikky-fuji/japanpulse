@@ -58,7 +58,7 @@ export async function GET() {
 
   // ── Data fetch ───────────────────────────────────────────────────────────
   const fetchRaw = async (statsDataId, { cat01, area, cat02From, cat02To } = {}) => {
-    const p = new URLSearchParams({ appId: APP_ID, statsDataId, metaGetFlg: 'N', limit: '2000' })
+    const p = new URLSearchParams({ appId: APP_ID, statsDataId, metaGetFlg: 'N', limit: '100000' })
     if (cat01)     p.set('cdCat01', cat01)
     if (area)      p.set('cdArea', area)
     if (cat02From) p.set('cdCat02From', cat02From)
@@ -99,24 +99,24 @@ export async function GET() {
     return expArr.map(v => ({ date: v.date, value: v.value - (im[v.date] ?? 0) }))
   }
 
-  // ── Phase 1: totals (sum TOP_CATS, world area) ───────────────────────────
+  // ── Phase 1: totals (sum TOP_CATS, no area filter = all countries) ───────
   const [expTopRows, impTopRows] = await Promise.all([
-    Promise.all(TOP_CATS.map(c => fetchRaw(EXP_ID, { cat01: c, area: WORLD, ...RANGE }))),
-    Promise.all(TOP_CATS.map(c => fetchRaw(IMP_ID, { cat01: c, area: WORLD, ...RANGE }))),
+    Promise.all(TOP_CATS.map(c => fetchRaw(EXP_ID, { cat01: c, ...RANGE }))),
+    Promise.all(TOP_CATS.map(c => fetchRaw(IMP_ID, { cat01: c, ...RANGE }))),
   ])
   const expTotalMap = addMaps(...expTopRows.map(parseMonthly))
   const impTotalMap = addMaps(...impTopRows.map(parseMonthly))
 
-  // ── Phase 2: commodity breakdowns ───────────────────────────────────────
+  // ── Phase 2: commodity breakdowns (no area filter = all destinations) ────
   const [expAutoR, expSeconR, expMachR, expChemR,
          impCrudeR, impLngR, impFoodR] = await Promise.all([
-    fetchRaw(EXP_ID, { cat01: EXP_CAT.auto,      area: WORLD, ...RANGE }),
-    fetchRaw(EXP_ID, { cat01: EXP_CAT.semicon,   area: WORLD, ...RANGE }),
-    fetchRaw(EXP_ID, { cat01: EXP_CAT.machinery, area: WORLD, ...RANGE }),
-    fetchRaw(EXP_ID, { cat01: EXP_CAT.chemicals, area: WORLD, ...RANGE }),
-    fetchRaw(IMP_ID, { cat01: IMP_CAT.crude_oil, area: WORLD, ...RANGE }),
-    fetchRaw(IMP_ID, { cat01: IMP_CAT.lng,       area: WORLD, ...RANGE }),
-    fetchRaw(IMP_ID, { cat01: IMP_CAT.food,      area: WORLD, ...RANGE }),
+    fetchRaw(EXP_ID, { cat01: EXP_CAT.auto,      ...RANGE }),
+    fetchRaw(EXP_ID, { cat01: EXP_CAT.semicon,   ...RANGE }),
+    fetchRaw(EXP_ID, { cat01: EXP_CAT.machinery, ...RANGE }),
+    fetchRaw(EXP_ID, { cat01: EXP_CAT.chemicals, ...RANGE }),
+    fetchRaw(IMP_ID, { cat01: IMP_CAT.crude_oil, ...RANGE }),
+    fetchRaw(IMP_ID, { cat01: IMP_CAT.lng,       ...RANGE }),
+    fetchRaw(IMP_ID, { cat01: IMP_CAT.food,      ...RANGE }),
   ])
 
   // ── Phase 3: country breakdowns (sum all TOP_CATS per country) ───────────
