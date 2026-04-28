@@ -255,7 +255,7 @@ export default function Watcher() {
           </span>
         </div>
         <span style={{ fontSize: '12px', color: '#888' }}>
-          Source: Cabinet Office (内閣府) · Latest: {latestDate}
+          Source: Cabinet Office (内閣府) · 季節調整値 · Latest: {latestDate}
         </span>
       </div>
 
@@ -269,7 +269,7 @@ export default function Watcher() {
       <div style={s.grid3}>
         {/* 現状判断DI */}
         <div style={s.card}>
-          <div style={s.cardLabel}>現状判断DI（全国・合計）</div>
+          <div style={s.cardLabel}>現状判断DI・季節調整値（全国・合計）</div>
           <div style={{ ...s.cardVal, color: diColor(latestCur?.value) }}>
             {watcher ? fmtVal(latestCur?.value) : SKELETON_H('36px')}
           </div>
@@ -281,7 +281,7 @@ export default function Watcher() {
 
         {/* 先行き判断DI */}
         <div style={s.card}>
-          <div style={s.cardLabel}>先行き判断DI（全国・合計）</div>
+          <div style={s.cardLabel}>先行き判断DI・季節調整値（全国・合計）</div>
           <div style={{ ...s.cardVal, color: diColor(latestOut?.value) }}>
             {watcher ? fmtVal(latestOut?.value) : SKELETON_H('36px')}
           </div>
@@ -306,7 +306,7 @@ export default function Watcher() {
 
       {/* ── Section 2: Long-term DI + Nikkei ── */}
       <div style={s.box}>
-        <div style={s.boxTitle}>Economy Watchers DI vs. Nikkei 225（過去5年）</div>
+        <div style={s.boxTitle}>Economy Watchers DI（季節調整値）vs. Nikkei 225（過去5年）</div>
         <div style={s.boxDesc}>
           景気ウォッチャーDIは消費・サービス業の現場（タクシー、小売、飲食等）に携わる人々への月次アンケート。
           50超 = 改善と判断する人が多数、50未満 = 悪化と判断する人が多数。Tankan（四半期）より速報性が高い。

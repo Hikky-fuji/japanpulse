@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 const BASE = 'https://api.e-stat.go.jp/rest/3.0/app/json'
-const STATS_ID = '0003348425'
+const STATS_ID = '0003348423' // 季節調整値 全国の分野・業種別DIの推移
 
 export async function GET(request) {
   const APP_ID = process.env.ESTAT_APP_ID
