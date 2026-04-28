@@ -3,15 +3,15 @@ export const dynamic = 'force-dynamic'
 const BASE = 'https://api.e-stat.go.jp/rest/3.0/app/json'
 const STATS_ID = '0003348423'
 
-// cat01=100: 現状判断SA, cat01=110: 先行き判断SA
-// cat02 sectors: 100=合計, 110=家計動向, 590=企業動向, 940=雇用
+// cat02=100: 現状判断SA, cat02=110: 先行き判断SA
+// cat01 sectors: 100=合計, 110=家計動向, 590=企業動向, 940=雇用
 
 export async function GET() {
   const APP_ID = process.env.ESTAT_APP_ID
 
-  const fetchByCat01 = async (cat01) => {
+  const fetchByCat02 = async (cat02) => {
     const url = `${BASE}/getStatsData?appId=${APP_ID}&statsDataId=${STATS_ID}`
-      + `&metaGetFlg=N&limit=9999&cdTab=140&cdCat01=${cat01}`
+      + `&metaGetFlg=N&limit=9999&cdTab=140&cdCat02=${cat02}`
     const res = await fetch(url, { cache: 'no-store' })
     const json = await res.json()
     return json?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE ?? []
@@ -19,8 +19,8 @@ export async function GET() {
 
   try {
     const [currentValues, outlookValues] = await Promise.all([
-      fetchByCat01('100'),
-      fetchByCat01('110'),
+      fetchByCat02('100'),
+      fetchByCat02('110'),
     ])
 
     const isMonthly = (v) => {
@@ -36,9 +36,9 @@ export async function GET() {
       return [...map.values()].sort((a, b) => a.date.localeCompare(b.date))
     }
 
-    const toSeries = (rows, cat2) => dedup(
+    const toSeries = (rows, cat1) => dedup(
       rows
-        .filter(v => v['@cat02'] === cat2 && isMonthly(v))
+        .filter(v => v['@cat01'] === cat1 && isMonthly(v))
         .sort((a, b) => a['@time'].localeCompare(b['@time']))
         .slice(-60)
         .map(v => ({ date: formatDate(v['@time']), value: parseFloat(v['$']) }))
