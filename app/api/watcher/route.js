@@ -7,17 +7,19 @@ export async function GET() {
   const APP_ID = process.env.ESTAT_APP_ID
 
   try {
-    // Fetch metadata to discover category code structure
-    const metaRes = await fetch(
-      `${BASE}/getMetaInfo?appId=${APP_ID}&statsDataId=${STATS_ID}`,
-      { cache: 'no-store' }
-    )
-    const metaJson = await metaRes.json()
-    const classObjs = metaJson?.GET_META_INFO?.METADATA_INF?.CLASS_INF?.CLASS_OBJ ?? []
+    // Fetch metadata and data in parallel
+    const [metaRes, dataRes] = await Promise.all([
+      fetch(`${BASE}/getMetaInfo?appId=${APP_ID}&statsDataId=${STATS_ID}`, { cache: 'no-store' }),
+      fetch(`${BASE}/getStatsData?appId=${APP_ID}&statsDataId=${STATS_ID}&metaGetFlg=N&limit=9999`, { cache: 'no-store' }),
+    ])
 
+    const metaJson = await metaRes.json()
+    const dataJson = await dataRes.json()
+
+    const classObjs = metaJson?.GET_META_INFO?.METADATA_INF?.CLASS_INF?.CLASS_OBJ ?? []
     if (!classObjs.length) throw new Error('Metadata unavailable for Economy Watchers dataset')
 
-    // Build code->label maps per classification dimension
+    // code->label maps per dimension
     const classMaps = {}
     for (const obj of classObjs) {
       const id = obj['@id']
@@ -26,15 +28,9 @@ export async function GET() {
     }
     const classIds = Object.keys(classMaps)
 
-    // Fetch all data records
-    const dataRes = await fetch(
-      `${BASE}/getStatsData?appId=${APP_ID}&statsDataId=${STATS_ID}&metaGetFlg=N&limit=9999`,
-      { cache: 'no-store' }
-    )
-    const dataJson = await dataRes.json()
     const rawValues = dataJson?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE ?? []
 
-    // Keep only monthly observations (time format: YYYY00MM00)
+    // Monthly only (time format: YYYY00MM00, length=10)
     const isMonthly = (v) => {
       const t = v['@time']
       return t?.length === 10 && t.slice(4, 6) === '00' &&
@@ -44,33 +40,30 @@ export async function GET() {
 
     const values = rawValues.filter(isMonthly)
 
-    // Concatenate all category labels for a row
-    const rowLabel = (v) =>
-      classIds.map(id => classMaps[id]?.[v[`@${id}`]] ?? '').join('|')
+    const rowLabel = (v) => classIds.map(id => classMaps[id]?.[v[`@${id}`]] ?? '').join('|')
 
-    // Extract a series matching all keyword patterns
+    // Unique labels for debugging
+    const uniqueLabels = [...new Set(values.map(rowLabel))].slice(0, 30)
+
     const matchSeries = (...keywords) =>
       values
-        .filter(v => {
-          const lbl = rowLabel(v)
-          return keywords.every(kw => lbl.includes(kw))
-        })
+        .filter(v => { const lbl = rowLabel(v); return keywords.every(kw => lbl.includes(kw)) })
         .sort((a, b) => a['@time'].localeCompare(b['@time']))
         .slice(-24)
         .map(v => ({ date: formatDate(v['@time']), value: parseFloat(v['$']) }))
         .filter(v => !isNaN(v.value))
 
-    const current_all  = matchSeries('現状判断', '全国', '合計')
-    const outlook_all  = matchSeries('先行き判断', '全国', '合計')
-    const current_hh   = matchSeries('現状判断', '全国', '家計')
-    const current_corp = matchSeries('現状判断', '全国', '企業')
-    const current_emp  = matchSeries('現状判断', '全国', '雇用')
+    // Match without requiring '全国' — this table is national-only
+    const current_all  = matchSeries('現状判断', '合計')
+    const outlook_all  = matchSeries('先行き判断', '合計')
+    const current_hh   = matchSeries('現状判断', '家計')
+    const current_corp = matchSeries('現状判断', '企業')
+    const current_emp  = matchSeries('現状判断', '雇用')
 
     if (!current_all.length) {
-      const sampleLabels = values.slice(0, 5).map(rowLabel)
       return Response.json({
         error: 'Could not match Economy Watchers series — check debug info',
-        debug: { sampleLabels, totalValues: rawValues.length, monthlyValues: values.length }
+        debug: { uniqueLabels, totalValues: rawValues.length, monthlyValues: values.length }
       }, { status: 500 })
     }
 
