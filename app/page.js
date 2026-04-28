@@ -89,6 +89,14 @@ const indicators = [
         desc:     { en: 'BOJ quarterly business sentiment survey. DI for large manufacturers and non-manufacturers, enterprise size breakdown, and forecast accuracy.',
                     ja: '日銀の四半期景況調査。大企業製造業・非製造業のDI、規模別内訳、予測精度を掲載。' },
       },
+      {
+        href: '/watcher',
+        title:    { en: 'Economy Watchers',             ja: '景気ウォッチャー調査' },
+        subtitle: { en: 'Current / Outlook DI vs. Nikkei', ja: '現状・先行きDI vs 日経平均' },
+        badge:    { en: 'Monthly',                       ja: '月次' },
+        desc:     { en: 'Cabinet Office street-level sentiment survey. Current and outlook DI by sector (households, corporate, employment) overlaid with Nikkei 225.',
+                    ja: '内閣府の景気ウォッチャー調査。家計・企業・雇用関連の現状・先行きDIと日経平均の推移を掲載。' },
+      },
     ],
   },
   {
