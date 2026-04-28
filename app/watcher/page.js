@@ -14,7 +14,6 @@ const s = {
   header:    { display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '20px', borderBottom: '1px solid #eee', paddingBottom: '12px', flexWrap: 'wrap', gap: '8px' },
   nav:       { fontSize: '12px', color: '#378ADD', textDecoration: 'none', marginRight: '16px' },
   grid3:     { display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px', marginBottom: '20px' },
-  grid2:     { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' },
   card:      { background: '#f8f8f6', borderRadius: '10px', padding: '14px 16px' },
   cardLabel: { fontSize: '10px', color: '#888', marginBottom: '4px', textTransform: 'uppercase', letterSpacing: '0.05em' },
   cardVal:   { fontSize: '28px', fontWeight: '600' },
@@ -29,12 +28,12 @@ const s = {
   th:        { textAlign: 'left', padding: '8px 10px', borderBottom: '2px solid #eee', color: '#555', fontWeight: '600', fontSize: '11px', textTransform: 'uppercase' },
   td:        { padding: '8px 10px', borderBottom: '1px solid #f0f0f0' },
   tdNum:     { padding: '8px 10px', borderBottom: '1px solid #f0f0f0', textAlign: 'right', fontVariantNumeric: 'tabular-nums' },
-  skeleton:  { background: '#f5f5f3', borderRadius: '8px', animation: 'pulse 1.5s ease-in-out infinite' },
+  skeleton:  { background: '#f5f5f3', borderRadius: '8px' },
 }
 
 const diColor   = (v) => v == null ? '#888' : v >= 50 ? '#1D9E75' : '#E24B4A'
 const diffColor = (v) => v == null ? '#888' : v > 0 ? '#1D9E75' : v < 0 ? '#E24B4A' : '#888'
-const fmtDiff   = (v) => v == null ? '--' : v > 0 ? `▲${Math.abs(v).toFixed(1)}` : v < 0 ? `▼${Math.abs(v).toFixed(1)}` : '±0.0'
+const fmtDiff   = (v) => v == null ? '--' : v > 0 ? `+${Math.abs(v).toFixed(1)}` : v < 0 ? `−${Math.abs(v).toFixed(1)}` : '0.0'
 const fmtVal    = (v) => v?.toFixed(1) ?? '--'
 
 const SKELETON_H = (h) => <div style={{ ...s.skeleton, height: h }} />
@@ -48,7 +47,7 @@ export default function Watcher() {
   useEffect(() => {
     fetch('/api/watcher')
       .then(r => r.json())
-      .then(d => { if (d.error) setWErr(d.error + (d.debug ? ' | labels: ' + JSON.stringify(d.debug.uniqueLabels?.slice(0,3)) : '')); else setWatcher(d) })
+      .then(d => { if (d.error) setWErr(d.error); else setWatcher(d) })
       .catch(e => setWErr(e.message))
 
     fetch('/api/nikkei')
@@ -58,11 +57,11 @@ export default function Watcher() {
   }, [])
 
   // ── Derived ─────────────────────────────────────────────────────────────
-  const cur = watcher?.current_all ?? []
-  const out = watcher?.outlook_all ?? []
-  const hh  = watcher?.current_hh  ?? []
-  const corp= watcher?.current_corp ?? []
-  const emp = watcher?.current_emp  ?? []
+  const cur  = watcher?.current_all ?? []
+  const out  = watcher?.outlook_all ?? []
+  const hh   = watcher?.current_hh  ?? []
+  const corp = watcher?.current_corp ?? []
+  const emp  = watcher?.current_emp  ?? []
 
   const latestCur = cur.at(-1)
   const prevCur   = cur.at(-2)
@@ -71,24 +70,21 @@ export default function Watcher() {
   const curDiff   = latestCur && prevCur ? parseFloat((latestCur.value - prevCur.value).toFixed(1)) : null
   const outDiff   = latestOut && prevOut ? parseFloat((latestOut.value - prevOut.value).toFixed(1)) : null
 
-  // Spread = 先行き - 現状 (forward-looking premium)
   const latestSpread = latestCur && latestOut ? parseFloat((latestOut.value - latestCur.value).toFixed(1)) : null
-  const prevSpread   = prevCur && prevOut     ? parseFloat((prevOut.value   - prevCur.value).toFixed(1))   : null
+  const prevSpread   = prevCur   && prevOut   ? parseFloat((prevOut.value  - prevCur.value).toFixed(1))   : null
   const spreadDiff   = latestSpread != null && prevSpread != null ? parseFloat((latestSpread - prevSpread).toFixed(1)) : null
 
   const latestDate = latestCur?.date ?? '...'
 
   // ── Chart 1: Long-term DI + Nikkei (dual Y) ─────────────────────────────
   const nikkeiMap  = Object.fromEntries((nikkei?.series ?? []).map(v => [v.date, v.value]))
-
-  // Use all available data (up to 60 months)
   const dualLabels = cur.map(v => v.date)
 
   const dualData = {
     labels: dualLabels,
     datasets: [
       {
-        label: '現状判断DI',
+        label: 'Current DI',
         data: cur.map(v => v.value),
         borderColor: '#378ADD',
         borderWidth: 2.5,
@@ -97,7 +93,7 @@ export default function Watcher() {
         yAxisID: 'y',
       },
       {
-        label: '先行き判断DI',
+        label: 'Outlook DI',
         data: dualLabels.map(d => out.find(v => v.date === d)?.value ?? null),
         borderColor: '#9B59B6',
         borderWidth: 2,
@@ -108,7 +104,7 @@ export default function Watcher() {
         yAxisID: 'y',
       },
       {
-        label: 'DI = 50（中立）',
+        label: 'DI = 50',
         data: dualLabels.map(() => 50),
         borderColor: '#ddd',
         borderWidth: 1,
@@ -117,7 +113,7 @@ export default function Watcher() {
         yAxisID: 'y',
       },
       ...(nErr ? [] : [{
-        label: '日経平均（右軸）',
+        label: 'Nikkei 225 (right)',
         data: dualLabels.map(d => nikkeiMap[d] ?? null),
         borderColor: '#E67E22',
         backgroundColor: 'rgba(230,126,34,0.05)',
@@ -145,12 +141,12 @@ export default function Watcher() {
       y2: {
         type: 'linear', position: 'right',
         grid: { drawOnChartArea: false },
-        title: { display: true, text: '日経平均 (¥)', font: { size: 11 } },
+        title: { display: true, text: 'Nikkei 225 (¥)', font: { size: 11 } },
       },
     },
   }
 
-  // ── Chart 2: Spread (先行き - 現状) ─────────────────────────────────────
+  // ── Chart 2: Spread (Outlook − Current) ──────────────────────────────────
   const spreadSeries = cur
     .map(v => {
       const o = out.find(u => u.date === v.date)
@@ -162,7 +158,7 @@ export default function Watcher() {
   const spreadData = {
     labels: spreadSeries.map(v => v.date),
     datasets: [{
-      label: '先行き − 現状 DI スプレッド',
+      label: 'Outlook − Current DI Spread',
       data: spreadSeries.map(v => v.value),
       backgroundColor: spreadSeries.map(v => v.value >= 0 ? 'rgba(29,158,117,0.7)' : 'rgba(226,75,74,0.7)'),
       borderColor:     spreadSeries.map(v => v.value >= 0 ? '#1D9E75'               : '#E24B4A'),
@@ -177,7 +173,7 @@ export default function Watcher() {
     scales: {
       x: { ticks: { maxTicksLimit: 12, maxRotation: 45 } },
       y: {
-        title: { display: true, text: 'スプレッド（ポイント）' },
+        title: { display: true, text: 'Spread (pts)' },
         grid: { color: ctx => ctx.tick.value === 0 ? '#aaa' : '#f0f0f0' },
       },
     },
@@ -185,28 +181,28 @@ export default function Watcher() {
 
   // ── Chart 3: Sector trends (line) ────────────────────────────────────────
   const sectorLabels = cur.slice(-24).map(v => v.date)
-  const hasSectors = hh.length > 0 || corp.length > 0 || emp.length > 0
+  const hasSectors   = hh.length > 0 || corp.length > 0 || emp.length > 0
 
   const sectorData = {
     labels: sectorLabels,
     datasets: [
       {
-        label: '合計',
+        label: 'Total',
         data: cur.slice(-24).map(v => v.value),
         borderColor: '#378ADD', borderWidth: 2, pointRadius: 2, tension: 0.2,
       },
       ...(hh.length ? [{
-        label: '家計動向関連',
+        label: 'Household',
         data: sectorLabels.map(d => hh.find(v => v.date === d)?.value ?? null),
         borderColor: '#E67E22', borderWidth: 2, pointRadius: 2, tension: 0.2, spanGaps: false,
       }] : []),
       ...(corp.length ? [{
-        label: '企業動向関連',
+        label: 'Corporate',
         data: sectorLabels.map(d => corp.find(v => v.date === d)?.value ?? null),
         borderColor: '#1D9E75', borderWidth: 2, pointRadius: 2, tension: 0.2, spanGaps: false,
       }] : []),
       ...(emp.length ? [{
-        label: '雇用関連',
+        label: 'Employment',
         data: sectorLabels.map(d => emp.find(v => v.date === d)?.value ?? null),
         borderColor: '#9B59B6', borderWidth: 2, pointRadius: 2, tension: 0.2, spanGaps: false,
       }] : []),
@@ -241,6 +237,8 @@ export default function Watcher() {
     return { date: v.date, cur: v.value, out: outVal, spread, diff }
   })
 
+  const fmtSpread = (v) => v == null ? '--' : v > 0 ? `+${v.toFixed(1)}` : v.toFixed(1)
+
   return (
     <main style={s.wrap}>
       {/* Header */}
@@ -255,137 +253,139 @@ export default function Watcher() {
           </span>
         </div>
         <span style={{ fontSize: '12px', color: '#888' }}>
-          Source: Cabinet Office via e-Stat · 季節調整値 · Latest: {latestDate}
+          Source: Cabinet Office via e-Stat · Seasonally Adjusted · Latest: {latestDate}
         </span>
       </div>
 
       {wErr && (
         <div style={{ background: '#FEF2F2', border: '1px solid #FCA5A5', borderRadius: '8px', padding: '12px 16px', marginBottom: '16px', fontSize: '12px', color: '#B91C1C' }}>
-          景気ウォッチャーデータ取得エラー: {wErr}
+          Error fetching Economy Watchers data: {wErr}
         </div>
       )}
 
       {/* ── Section 1: KPI Cards ── */}
       <div style={s.grid3}>
-        {/* 現状判断DI */}
         <div style={s.card}>
-          <div style={s.cardLabel}>現状判断DI・季節調整値（全国・合計）</div>
+          <div style={s.cardLabel}>Current Conditions DI (SA)</div>
           <div style={{ ...s.cardVal, color: diColor(latestCur?.value) }}>
             {watcher ? fmtVal(latestCur?.value) : SKELETON_H('36px')}
           </div>
           {watcher && <div style={s.cardSub}>
-            前月比: <span style={{ color: diffColor(curDiff), fontWeight: '600' }}>{fmtDiff(curDiff)}</span>
-            　前月: {fmtVal(prevCur?.value)}
+            M/M: <span style={{ color: diffColor(curDiff), fontWeight: '600' }}>{fmtDiff(curDiff)}</span>
+            &ensp;prev: {fmtVal(prevCur?.value)}
           </div>}
         </div>
 
-        {/* 先行き判断DI */}
         <div style={s.card}>
-          <div style={s.cardLabel}>先行き判断DI・季節調整値（全国・合計）</div>
+          <div style={s.cardLabel}>Outlook DI (SA)</div>
           <div style={{ ...s.cardVal, color: diColor(latestOut?.value) }}>
             {watcher ? fmtVal(latestOut?.value) : SKELETON_H('36px')}
           </div>
           {watcher && <div style={s.cardSub}>
-            前月比: <span style={{ color: diffColor(outDiff), fontWeight: '600' }}>{fmtDiff(outDiff)}</span>
-            　前月: {fmtVal(prevOut?.value)}
+            M/M: <span style={{ color: diffColor(outDiff), fontWeight: '600' }}>{fmtDiff(outDiff)}</span>
+            &ensp;prev: {fmtVal(prevOut?.value)}
           </div>}
         </div>
 
-        {/* スプレッド */}
         <div style={s.card}>
-          <div style={s.cardLabel}>先行き − 現状スプレッド</div>
+          <div style={s.cardLabel}>Outlook − Current Spread</div>
           <div style={{ ...s.cardVal, color: diffColor(latestSpread) }}>
-            {watcher ? (latestSpread != null ? (latestSpread > 0 ? `+${latestSpread.toFixed(1)}` : latestSpread.toFixed(1)) : '--') : SKELETON_H('36px')}
+            {watcher ? fmtSpread(latestSpread) : SKELETON_H('36px')}
           </div>
           {watcher && <div style={s.cardSub}>
-            前月: {prevSpread != null ? (prevSpread > 0 ? `+${prevSpread.toFixed(1)}` : prevSpread.toFixed(1)) : '--'}
-            　変化: <span style={{ color: diffColor(spreadDiff), fontWeight: '600' }}>{fmtDiff(spreadDiff)}</span>
+            prev: {fmtSpread(prevSpread)}
+            &ensp;chg: <span style={{ color: diffColor(spreadDiff), fontWeight: '600' }}>{fmtDiff(spreadDiff)}</span>
           </div>}
         </div>
       </div>
 
       {/* ── Section 2: Long-term DI + Nikkei ── */}
       <div style={s.box}>
-        <div style={s.boxTitle}>Economy Watchers DI（季節調整値）vs. Nikkei 225（過去5年）</div>
+        <div style={s.boxTitle}>Economy Watchers DI (SA) vs. Nikkei 225 — 5-Year View</div>
         <div style={s.boxDesc}>
-          景気ウォッチャーDIは消費・サービス業の現場（タクシー、小売、飲食等）に携わる人々への月次アンケート。
-          50超 = 改善と判断する人が多数、50未満 = 悪化と判断する人が多数。Tankan（四半期）より速報性が高い。
+          Monthly survey of street-level observers (taxi drivers, retailers, restaurants, etc.) on current and 2–3 month ahead business conditions.
+          DI above 50 = majority see improvement; below 50 = majority see deterioration. Higher frequency than Tankan (quarterly).
         </div>
         {wErr && !watcher
-          ? <div style={{ color: '#aaa', padding: '40px 0', textAlign: 'center', fontSize: '13px' }}>データ取得失敗</div>
+          ? <div style={{ color: '#aaa', padding: '40px 0', textAlign: 'center', fontSize: '13px' }}>Failed to load data</div>
           : !watcher
             ? SKELETON_H('320px')
             : <Line data={dualData} options={dualOpts} />
         }
-        {nErr && <div style={{ ...s.note, color: '#E24B4A' }}>日経平均取得エラー: {nErr}</div>}
+        {nErr && <div style={{ ...s.note, color: '#E24B4A' }}>Nikkei data error: {nErr}</div>}
         <div style={s.insightBox}>
-          📊 <b>マーケットの見方:</b> 日経平均は景気ウォッチャーDIに対して概ね3〜6ヶ月先行する傾向がある。
-          株高局面でDIが追随しない場合、消費・サービス業への恩恵が限定的であることを示唆する。
-          逆に日経が下落してもDIが高位を維持する局面は、実体経済の底堅さを示すサイン。
+          📊 <b>Market insight:</b> The Nikkei 225 tends to lead Economy Watchers DI by roughly 3–6 months.
+          When equities rally but DI fails to follow, it suggests the consumption and services sector is not yet benefiting.
+          Conversely, a resilient DI during a market sell-off signals underlying economic strength.
         </div>
       </div>
 
-      {/* ── Section 3: Spread (先行き - 現状) ── */}
+      {/* ── Section 3: Spread (Outlook − Current) ── */}
       <div style={s.box}>
-        <div style={s.boxTitle}>先行き − 現状スプレッド（景気転換シグナル）</div>
+        <div style={s.boxTitle}>Outlook − Current DI Spread — Cycle Turn Signal</div>
         <div style={s.boxDesc}>
-          先行きDIから現状DIを引いた値。プラス = 先行き楽観（現状より良くなると見る人が多い）、
-          マイナス = 先行き悲観（景気後退の兆候）。この指標がマイナスに転じてから1〜3ヶ月後に
-          現状DIが低下するパターンがよく観察される。
+          Outlook DI minus Current DI. Positive = forward optimism (respondents expect improvement); negative = forward pessimism.
+          Historically, the Current DI tends to follow the direction of this spread with a 1–3 month lag.
         </div>
         {wErr && !watcher
-          ? <div style={{ color: '#aaa', padding: '40px 0', textAlign: 'center', fontSize: '13px' }}>データ取得失敗</div>
+          ? <div style={{ color: '#aaa', padding: '40px 0', textAlign: 'center', fontSize: '13px' }}>Failed to load data</div>
           : !watcher
             ? SKELETON_H('200px')
             : <Bar data={spreadData} options={spreadOpts} />
         }
         <div style={s.insightBox}>
-          📉 <b>投資判断への活用:</b> スプレッドが2ヶ月連続でマイナスに転じた場合は景気後退の先行シグナルとして注目される。
-          現在 <b style={{ color: diffColor(latestSpread) }}>
-            {latestSpread != null ? (latestSpread >= 0 ? `+${latestSpread.toFixed(1)} pt（楽観優勢）` : `${latestSpread.toFixed(1)} pt（悲観優勢）`) : '--'}
-          </b>。
+          📉 <b>Investment signal:</b> Two consecutive months of negative spread has historically preceded an economic slowdown.
+          Current reading:&nbsp;
+          <b style={{ color: diffColor(latestSpread) }}>
+            {latestSpread != null
+              ? latestSpread >= 0
+                ? `+${latestSpread.toFixed(1)} pt (optimism dominant)`
+                : `${latestSpread.toFixed(1)} pt (pessimism dominant)`
+              : '--'}
+          </b>
         </div>
       </div>
 
       {/* ── Section 4: Sector trends ── */}
       <div style={s.box}>
-        <div style={s.boxTitle}>分野別 現状判断DI 推移（直近24ヶ月）</div>
+        <div style={s.boxTitle}>Current DI by Sector — Last 24 Months</div>
         <div style={s.boxDesc}>
-          家計動向関連（小売・飲食・旅行等）・企業動向関連（受注・採算等）・雇用関連（求人・雇用環境等）の比較。
-          分野間の乖離が大きい局面は、景気回復の偏りを示す。
+          Breakdown into Household (retail, dining, travel), Corporate (orders, profitability), and Employment (hiring, job conditions).
+          Wide divergence between sectors signals an uneven recovery.
         </div>
         {wErr && !watcher
-          ? <div style={{ color: '#aaa', padding: '40px 0', textAlign: 'center', fontSize: '13px' }}>データ取得失敗</div>
+          ? <div style={{ color: '#aaa', padding: '40px 0', textAlign: 'center', fontSize: '13px' }}>Failed to load data</div>
           : !watcher
             ? SKELETON_H('240px')
             : !hasSectors
               ? <div style={{ color: '#aaa', padding: '40px 0', textAlign: 'center', fontSize: '13px' }}>
-                  分野別データは別テーブルに存在する可能性があります（合計のみ表示中）
+                  Sector breakdown unavailable — showing aggregate only
                 </div>
               : <Line data={sectorData} options={sectorOpts} />
         }
         <div style={s.note}>
-          ※ 家計動向関連: スーパー・コンビニ・飲食・旅行代理店等の従業者による回答。
-          企業動向関連: 製造業・非製造業の受注・採算状況。雇用関連: 人材紹介・職安等からみた雇用環境。
+          Household: supermarkets, convenience stores, dining, travel agencies.
+          Corporate: manufacturing / non-manufacturing orders and margins.
+          Employment: staffing agencies and public employment offices.
         </div>
       </div>
 
       {/* ── Section 5: Trend table ── */}
       <div style={s.box}>
-        <div style={s.boxTitle}>過去12ヶ月トレンド</div>
+        <div style={s.boxTitle}>Last 12 Months — Trend Table</div>
         {wErr && !watcher
-          ? <div style={{ color: '#aaa', padding: '20px 0', textAlign: 'center', fontSize: '13px' }}>データ取得失敗</div>
+          ? <div style={{ color: '#aaa', padding: '20px 0', textAlign: 'center', fontSize: '13px' }}>Failed to load data</div>
           : !watcher
             ? SKELETON_H('240px')
             : (
           <table style={s.table}>
             <thead>
               <tr>
-                <th style={s.th}>年月</th>
-                <th style={{ ...s.th, textAlign: 'right' }}>現状判断DI</th>
-                <th style={{ ...s.th, textAlign: 'right' }}>先行き判断DI</th>
-                <th style={{ ...s.th, textAlign: 'right' }}>スプレッド</th>
-                <th style={{ ...s.th, textAlign: 'right' }}>前月差（現状）</th>
+                <th style={s.th}>Month</th>
+                <th style={{ ...s.th, textAlign: 'right' }}>Current DI</th>
+                <th style={{ ...s.th, textAlign: 'right' }}>Outlook DI</th>
+                <th style={{ ...s.th, textAlign: 'right' }}>Spread</th>
+                <th style={{ ...s.th, textAlign: 'right' }}>M/M (Current)</th>
               </tr>
             </thead>
             <tbody>
@@ -399,7 +399,7 @@ export default function Watcher() {
                     {fmtVal(row.out)}
                   </td>
                   <td style={{ ...s.tdNum, color: diffColor(row.spread) }}>
-                    {row.spread != null ? (row.spread > 0 ? `+${row.spread.toFixed(1)}` : row.spread.toFixed(1)) : '--'}
+                    {fmtSpread(row.spread)}
                   </td>
                   <td style={{ ...s.tdNum, color: diffColor(row.diff) }}>
                     {row.diff == null ? '--' : fmtDiff(row.diff)}
@@ -410,8 +410,7 @@ export default function Watcher() {
           </table>
         )}
         <div style={s.note}>
-          ※ 全国・合計。最新月を上に表示。<br/>
-          ※ 季節調整値はe-Stat公表値を使用。内閣府公式発表値とは季節調整係数の更新タイミング差により±1〜2pt程度異なる場合があります。
+          Seasonally adjusted values from e-Stat. May differ from Cabinet Office official release by ±1–2 pts due to SA factor update timing.
         </div>
       </div>
     </main>
