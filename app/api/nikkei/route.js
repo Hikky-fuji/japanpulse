@@ -3,7 +3,7 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     const res = await fetch(
-      'https://query1.finance.yahoo.com/v8/finance/chart/%5EN225?interval=1mo&range=2y',
+      'https://query1.finance.yahoo.com/v8/finance/chart/%5EN225?interval=1mo&range=5y',
       {
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; JapanPulseDashboard/1.0)' },
         cache: 'no-store',
