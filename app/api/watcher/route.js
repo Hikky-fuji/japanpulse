@@ -1,7 +1,7 @@
 export const dynamic = 'force-dynamic'
 
 const BASE = 'https://api.e-stat.go.jp/rest/3.0/app/json'
-const STATS_ID = '0003421524'
+const STATS_ID = '0003348425'
 
 export async function GET() {
   const APP_ID = process.env.ESTAT_APP_ID
