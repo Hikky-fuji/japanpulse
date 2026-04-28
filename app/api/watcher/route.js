@@ -37,41 +37,41 @@ export async function GET(request) {
     const formatDate = (t) => `${t.slice(0, 4)}/${t.slice(6, 8)}`
 
     const values = rawValues.filter(isMonthly)
-
     const rowLabel = (v) => classIds.map(id => classMaps[id]?.[v[`@${id}`]] ?? '').join('|')
 
-    // Deduplicate by date: keep last occurrence (revised value overwrites preliminary)
+    const uniqueLabels = [...new Set(values.map(rowLabel))].slice(0, 50)
+    console.log('[WATCHER] uniqueLabels sample:', JSON.stringify(uniqueLabels.slice(0, 10)))
+
+    // Deduplicate by date: keep last occurrence (revised value)
     const dedup = (arr) => {
       const map = new Map()
       arr.forEach(v => map.set(v.date, v))
       return [...map.values()].sort((a, b) => a.date.localeCompare(b.date))
     }
 
-    const matchSeries = (...keywords) => dedup(
+    // Match rows that include ALL of `include` keywords and NONE of `exclude` keywords
+    const matchSeries = (include, exclude = []) => dedup(
       values
-        .filter(v => { const lbl = rowLabel(v); return keywords.every(kw => lbl.includes(kw)) })
+        .filter(v => {
+          const lbl = rowLabel(v)
+          return include.every(kw => lbl.includes(kw)) &&
+                 exclude.every(kw => !lbl.includes(kw))
+        })
         .sort((a, b) => a['@time'].localeCompare(b['@time']))
         .slice(-60)
         .map(v => ({ date: formatDate(v['@time']), value: parseFloat(v['$']) }))
         .filter(v => !isNaN(v.value))
     )
 
-    const uniqueLabels = [...new Set(values.map(rowLabel))].slice(0, 40)
-    console.log('[WATCHER] uniqueLabels:', JSON.stringify(uniqueLabels))
-
-    // Try multiple keyword patterns for each sector
-    const current_all  = matchSeries('現状判断', '合計')
-    const outlook_all  = matchSeries('先行き判断', '合計')
-    // Try both full and partial names for sectors
-    const current_hh   = matchSeries('現状判断', '家計動向').length
-                          ? matchSeries('現状判断', '家計動向')
-                          : matchSeries('現状判断', '家計')
-    const current_corp = matchSeries('現状判断', '企業動向').length
-                          ? matchSeries('現状判断', '企業動向')
-                          : matchSeries('現状判断', '企業')
-    const current_emp  = matchSeries('現状判断', '雇用関連').length
-                          ? matchSeries('現状判断', '雇用関連')
-                          : matchSeries('現状判断', '雇用')
+    // 合計 = top-level total, not sub-totals within 家計/企業/雇用
+    const current_all  = matchSeries(['現状判断', '合計'], ['家計', '企業', '雇用'])
+    const outlook_all  = matchSeries(['先行き判断', '合計'], ['家計', '企業', '雇用'])
+    const current_hh   = matchSeries(['現状判断', '家計動向'], ['小売', '飲食', 'サービス', '住宅'])
+    const current_corp = matchSeries(['現状判断', '企業動向'], ['製造', '非製造'])
+    const current_emp  = matchSeries(['現状判断', '雇用'])
+    const outlook_hh   = matchSeries(['先行き判断', '家計動向'], ['小売', '飲食', 'サービス', '住宅'])
+    const outlook_corp = matchSeries(['先行き判断', '企業動向'], ['製造', '非製造'])
+    const outlook_emp  = matchSeries(['先行き判断', '雇用'])
 
     if (!current_all.length) {
       return Response.json({
@@ -80,7 +80,11 @@ export async function GET(request) {
       }, { status: 500 })
     }
 
-    const payload = { current_all, outlook_all, current_hh, current_corp, current_emp }
+    const payload = {
+      current_all, outlook_all,
+      current_hh, current_corp, current_emp,
+      outlook_hh, outlook_corp, outlook_emp,
+    }
     if (debug) payload._debug = { uniqueLabels }
     return Response.json(payload)
   } catch (e) {
