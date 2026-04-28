@@ -255,7 +255,7 @@ export default function Watcher() {
           </span>
         </div>
         <span style={{ fontSize: '12px', color: '#888' }}>
-          Source: Cabinet Office (内閣府) · 季節調整値 · Latest: {latestDate}
+          Source: Cabinet Office via e-Stat · 季節調整値 · Latest: {latestDate}
         </span>
       </div>
 
@@ -410,7 +410,8 @@ export default function Watcher() {
           </table>
         )}
         <div style={s.note}>
-          ※ 全国・合計。速報値が確報値に更新された場合は確報値を使用。最新月を上に表示。
+          ※ 全国・合計。最新月を上に表示。<br/>
+          ※ 季節調整値はe-Stat公表値を使用。内閣府公式発表値とは季節調整係数の更新タイミング差により±1〜2pt程度異なる場合があります。
         </div>
       </div>
     </main>
