@@ -39,8 +39,19 @@ export async function GET(request) {
     const values = rawValues.filter(isMonthly)
     const rowLabel = (v) => classIds.map(id => classMaps[id]?.[v[`@${id}`]] ?? '').join('|')
 
-    const uniqueLabels = [...new Set(values.map(rowLabel))].slice(0, 50)
-    console.log('[WATCHER] uniqueLabels sample:', JSON.stringify(uniqueLabels.slice(0, 10)))
+    // Raw code combinations (ASCII-safe for debugging)
+    const rawCodes = [...new Set(values.map(v =>
+      classIds.map(id => `${id}=${v[`@${id}`] ?? '?'}`).join('|')
+    ))].slice(0, 60)
+
+    // Code → label lookup for each dimension
+    const codeLabelMap = {}
+    for (const id of classIds) {
+      codeLabelMap[id] = classMaps[id]
+    }
+
+    console.log('[WATCHER] classIds:', classIds)
+    console.log('[WATCHER] rawCodes sample:', JSON.stringify(rawCodes.slice(0, 5)))
 
     // Deduplicate by date: keep last occurrence (revised value)
     const dedup = (arr) => {
@@ -49,18 +60,21 @@ export async function GET(request) {
       return [...map.values()].sort((a, b) => a.date.localeCompare(b.date))
     }
 
-    // Match rows that include ALL of `include` keywords and NONE of `exclude` keywords
-    const matchSeries = (include, exclude = []) => dedup(
-      values
-        .filter(v => {
-          const lbl = rowLabel(v)
-          return include.every(kw => lbl.includes(kw)) &&
-                 exclude.every(kw => !lbl.includes(kw))
-        })
+    const toSeries = (rows) => dedup(
+      rows
         .sort((a, b) => a['@time'].localeCompare(b['@time']))
         .slice(-60)
         .map(v => ({ date: formatDate(v['@time']), value: parseFloat(v['$']) }))
         .filter(v => !isNaN(v.value))
+    )
+
+    // Match rows by keyword patterns on decoded labels
+    const matchSeries = (include, exclude = []) => toSeries(
+      values.filter(v => {
+        const lbl = rowLabel(v)
+        return include.every(kw => lbl.includes(kw)) &&
+               exclude.every(kw => !lbl.includes(kw))
+      })
     )
 
     // 合計 = top-level total, not sub-totals within 家計/企業/雇用
@@ -75,8 +89,8 @@ export async function GET(request) {
 
     if (!current_all.length) {
       return Response.json({
-        error: 'Could not match Economy Watchers series — check debug info',
-        debug: { uniqueLabels, totalValues: rawValues.length, monthlyValues: values.length }
+        error: 'Could not match Economy Watchers series',
+        debug: { rawCodes, classIds, totalValues: rawValues.length }
       }, { status: 500 })
     }
 
@@ -85,7 +99,7 @@ export async function GET(request) {
       current_hh, current_corp, current_emp,
       outlook_hh, outlook_corp, outlook_emp,
     }
-    if (debug) payload._debug = { uniqueLabels }
+    if (debug) payload._debug = { rawCodes, classIds }
     return Response.json(payload)
   } catch (e) {
     return Response.json({ error: e.message }, { status: 500 })
