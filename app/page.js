@@ -57,6 +57,14 @@ const indicators = [
         desc:     { en: 'Index of manufacturing and mining production activity. Leading indicator for economic conditions.',
                     ja: '製造業・鉱業の生産活動指数。景気の先行指標。' },
       },
+      {
+        href: '/tsip',
+        title:    { en: 'Tertiary Sector Activity Index', ja: '第3次産業活動指数（TSIP）' },
+        subtitle: { en: 'TSIP by sector',               ja: '業種別' },
+        badge:    { en: 'Monthly',                       ja: '月次' },
+        desc:     { en: 'Service sector activity covering IT, retail, medical, hospitality and more. ~70% of Japan\'s GDP.',
+                    ja: 'サービス業の活動指数。情報通信・小売・医療・宿泊等。日本GDPの約70%を占めるサービス部門。' },
+      },
     ],
   },
   {
