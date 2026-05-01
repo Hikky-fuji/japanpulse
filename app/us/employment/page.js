@@ -1,6 +1,6 @@
 'use client'
 import React, { useEffect, useState } from 'react'
-import { Line, Bar, Doughnut } from 'react-chartjs-2'
+import { Line, Bar, Doughnut, Scatter } from 'react-chartjs-2'
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, PointElement,
@@ -8,6 +8,30 @@ import {
 } from 'chart.js'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend)
+
+// Inline plugin: draw sector labels on scatter chart
+const scatterLabelPlugin = {
+  id: 'scatterLabels',
+  afterDatasetsDraw(chart) {
+    const { ctx } = chart
+    chart.data.datasets.forEach((ds, i) => {
+      if (!ds.sectorLabels) return
+      chart.getDatasetMeta(i).data.forEach((pt, j) => {
+        const label = ds.sectorLabels[j]
+        if (!label) return
+        ctx.save()
+        ctx.fillStyle = '#444'
+        ctx.font = '10px sans-serif'
+        ctx.fillText(label, pt.x + 6, pt.y + 3)
+        ctx.restore()
+      })
+    })
+  },
+}
+ChartJS.register(scatterLabelPlugin)
+
+// Fed SEP long-run unemployment estimate (update quarterly after each SEP)
+const FED_SEP_LONGRUN = 4.2  // Dec 2024 SEP median
 
 export default function USEmploymentPage() {
   const [data, setData] = useState(null)
@@ -21,38 +45,25 @@ export default function USEmploymentPage() {
   }, [])
 
   if (error) return <div style={{ padding: '40px', fontFamily: 'sans-serif', color: '#E24B4A' }}>Error: {error}</div>
-  if (!data)  return <div style={{ padding: '40px', fontFamily: 'sans-serif', color: '#666' }}>Loading US Employment data…</div>
+  if (!data)  return <div style={{ padding: '40px', fontFamily: 'sans-serif', color: '#666' }}>Loading…</div>
 
   const { employment, sectors, sectorAhe } = data
   const { payems, unrate, u6rate, civpart, prime_part, ahe } = employment
 
   // ── helpers ──────────────────────────────────────────────────────────
-  const lat   = arr => arr?.length ? arr[arr.length - 1] : null
+  const lat    = arr => arr?.length ? arr[arr.length - 1] : null
   const momDiff = arr => arr?.length >= 2 ? arr[arr.length-1].value - arr[arr.length-2].value : null
   const momPct  = arr => arr?.length >= 2 ? (arr[arr.length-1].value / arr[arr.length-2].value - 1) * 100 : null
   const yoyVal  = arr => arr?.length >= 13 ? (arr[arr.length-1].value / arr[arr.length-13].value - 1) * 100 : null
 
   const fmtK    = v => v != null ? (v >= 0 ? '+' : '') + Math.round(v) + 'K' : '--'
-  const fmtPct  = (v, d=2) => v != null ? v.toFixed(d) + '%' : '--'
-  const fmtSign = (v, d=2, sfx='%') => v != null ? (v>=0?'+':'') + v.toFixed(d) + sfx : '--'
+  const fmtPct  = (v, d = 2) => v != null ? v.toFixed(d) + '%' : '--'
+  const fmtSign = (v, d = 2, sfx = '%') => v != null ? (v >= 0 ? '+' : '') + v.toFixed(d) + sfx : '--'
   const dc      = v => v == null ? '#888' : v >= 0 ? '#1D9E75' : '#E24B4A'
   const dcInv   = v => v == null ? '#888' : v <= 0 ? '#1D9E75' : '#E24B4A'
+  const cellClr = v => v == null ? '#888' : v >= 0 ? '#1D9E75' : '#E24B4A'
 
-  // ── Sector defs (for highlight table) ────────────────────────────────
-  const sectorRows = [
-    { key: 'goods',        label: 'Goods Producing',    indent: false, aheKey: 'goods' },
-    { key: 'construction', label: '  Construction',     indent: true,  aheKey: 'construction' },
-    { key: 'wholesale',    label: '  Wholesale',        indent: true,  aheKey: 'wholesale' },
-    { key: 'retail',       label: '  Retail Trade',     indent: true,  aheKey: 'retail' },
-    { key: 'info',         label: '  Information',      indent: true,  aheKey: 'info' },
-    { key: 'fire',         label: '  Financial',        indent: true,  aheKey: 'finance' },
-    { key: 'pbs',          label: '  Prof. & Bus.',     indent: true,  aheKey: 'professional' },
-    { key: 'ehs',          label: '  Edu & Health',     indent: true,  aheKey: 'eduHealth' },
-    { key: 'lah',          label: '  Leisure & Hosp.', indent: true,  aheKey: 'leisure' },
-    { key: 'govt',         label: 'Government',         indent: false, aheKey: null },
-  ]
-
-  // 3-month window: last 3 M/M changes → need 4 observations
+  // ── 3-month helpers ──────────────────────────────────────────────────
   const get3mChanges = arr => {
     if (!arr || arr.length < 4) return [null, null, null]
     const s = arr.slice(-4)
@@ -61,48 +72,88 @@ export default function USEmploymentPage() {
   const get3mMoMPct = arr => {
     if (!arr || arr.length < 4) return [null, null, null]
     const s = arr.slice(-4)
-    return [
-      (s[1].value / s[0].value - 1) * 100,
-      (s[2].value / s[1].value - 1) * 100,
-      (s[3].value / s[2].value - 1) * 100,
-    ]
+    return s.slice(1).map((v, i) => (v.value / s[i].value - 1) * 100)
   }
 
   const nfp3months = payems?.length >= 4 ? payems.slice(-4) : []
-  const m3labels = nfp3months.slice(1).map(v => {
+  const m3labels   = nfp3months.slice(1).map(v => {
     const d = new Date(v.date + 'T00:00:00')
     return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
   })
-
-  const nfp3changes   = get3mChanges(payems)
-  const aheMoM3       = get3mMoMPct(ahe)
-  const aheYoY3 = ahe?.length >= 14
+  const aheMoM3  = get3mMoMPct(ahe)
+  const aheYoY3  = ahe?.length >= 14
     ? [
         (ahe[ahe.length-3].value / ahe[ahe.length-15].value - 1) * 100,
         (ahe[ahe.length-2].value / ahe[ahe.length-14].value - 1) * 100,
         (ahe[ahe.length-1].value / ahe[ahe.length-13].value - 1) * 100,
       ]
     : [null, null, null]
-  const unr3  = unrate?.slice(-3).map(v => v.value) ?? [null, null, null]
+  const unr3  = unrate?.slice(-3).map(v => v.value)  ?? [null, null, null]
   const civ3  = civpart?.slice(-3).map(v => v.value) ?? [null, null, null]
 
-  // ── NFP 12M bar ──────────────────────────────────────────────────────
-  const nfp13    = payems?.length >= 13 ? payems.slice(-13) : []
-  const nfp12Lbs = nfp13.slice(1).map(v => v.date.slice(0, 7))
-  const nfp12Vls = nfp13.slice(1).map((v, i) => v.value - nfp13[i].value)
+  const sectorRows = [
+    { key: 'goods',          label: 'Goods Producing' },
+    { key: 'construction',   label: '  Construction',         indent: true },
+    { key: 'wholesale',      label: '  Wholesale',            indent: true },
+    { key: 'retail',         label: '  Retail Trade',         indent: true },
+    { key: 'transportation', label: '  Transportation',       indent: true },
+    { key: 'utilities',      label: '  Utilities',            indent: true },
+    { key: 'info',           label: '  Information',          indent: true },
+    { key: 'fire',           label: '  Financial',            indent: true },
+    { key: 'pbs',            label: '  Prof. & Bus.',         indent: true },
+    { key: 'ehs',            label: '  Edu & Health',         indent: true },
+    { key: 'lah',            label: '  Leisure & Hosp.',      indent: true },
+    { key: 'govt',           label: 'Government' },
+  ]
 
-  // ── Sector employment change bar (latest month, horizontal) ──────────
+  // ── NFP stacked bar: Goods / High Inc Svc / Low Inc Svc / Govt ───────
+  // High Inc Svc = Info + Fire + PBS + Utilities
+  // Low Inc Svc  = Retail + EHS + LAH + Wholesale + Transportation
+  const n = 14  // 14 obs → 13 M/M changes → show last 12
+  const trimLast = arr => arr?.slice(-n) || []
+
+  const addSeries = (keys, len = n) => {
+    const arrays = keys.map(k => trimLast(sectors[k]))
+    const result = []
+    for (let i = 0; i < len; i++) {
+      let sum = 0
+      for (const arr of arrays) sum += (arr[i]?.value ?? 0)
+      result.push({ date: arrays[0]?.[i]?.date ?? '', value: sum })
+    }
+    return result
+  }
+
+  const goodsSum   = addSeries(['goods'])
+  const highSvcSum = addSeries(['info', 'fire', 'pbs', 'utilities'])
+  const lowSvcSum  = addSeries(['retail', 'ehs', 'lah', 'wholesale', 'transportation'])
+  const govtSum    = addSeries(['govt'])
+
+  const momChg12 = arr => arr.slice(1, 14).map((v, i) => v.value - arr[i].value)
+  const stackLbls  = goodsSum.slice(1, 14).map(v => v.date.slice(0, 7))
+  const goodsChg   = momChg12(goodsSum)
+  const highSvcChg = momChg12(highSvcSum)
+  const lowSvcChg  = momChg12(lowSvcSum)
+  const govtChg    = momChg12(govtSum)
+
+  // ── NFP 12M bar (total) ──────────────────────────────────────────────
+  const nfp13   = payems?.length >= 13 ? payems.slice(-13) : []
+  const nfp12Lb = nfp13.slice(1).map(v => v.date.slice(0, 7))
+  const nfp12Vl = nfp13.slice(1).map((v, i) => v.value - nfp13[i].value)
+
+  // ── Sector employment change horizontal bar (latest month) ────────────
   const barSectorDefs = [
-    { key: 'goods',        label: 'Goods Prod.',    group: 'goods' },
-    { key: 'construction', label: 'Construction',   group: 'goods' },
-    { key: 'wholesale',    label: 'Wholesale',       group: 'highSvc' },
-    { key: 'retail',       label: 'Retail',          group: 'highSvc' },
-    { key: 'info',         label: 'Information',     group: 'highSvc' },
-    { key: 'fire',         label: 'Financial',       group: 'highSvc' },
-    { key: 'pbs',          label: 'Prof. & Bus.',    group: 'highSvc' },
-    { key: 'ehs',          label: 'Edu & Health',    group: 'lowSvc' },
-    { key: 'lah',          label: 'Leisure & Hosp.', group: 'lowSvc' },
-    { key: 'govt',         label: 'Government',      group: 'govt' },
+    { key: 'goods',          label: 'Goods Prod.',      group: 'goods' },
+    { key: 'construction',   label: 'Construction',     group: 'goods' },
+    { key: 'info',           label: 'Information',      group: 'highSvc' },
+    { key: 'fire',           label: 'Financial',        group: 'highSvc' },
+    { key: 'pbs',            label: 'Prof. & Bus.',     group: 'highSvc' },
+    { key: 'utilities',      label: 'Utilities',        group: 'highSvc' },
+    { key: 'wholesale',      label: 'Wholesale',        group: 'lowSvc' },
+    { key: 'retail',         label: 'Retail',           group: 'lowSvc' },
+    { key: 'transportation', label: 'Transport',        group: 'lowSvc' },
+    { key: 'ehs',            label: 'Edu & Health',     group: 'lowSvc' },
+    { key: 'lah',            label: 'Leisure & Hosp.',  group: 'lowSvc' },
+    { key: 'govt',           label: 'Government',       group: 'govt' },
   ]
   const groupColors = { goods: '#378ADD', highSvc: '#1D9E75', lowSvc: '#9B59B6', govt: '#F5A623' }
   const sectorLatestChg = barSectorDefs.map(d => momDiff(sectors[d.key]) ?? 0)
@@ -111,45 +162,78 @@ export default function USEmploymentPage() {
     return v >= 0 ? groupColors[d.group] + 'CC' : 'rgba(226,75,74,0.75)'
   })
 
-  // ── AHE by sector (horizontal bar, Y/Y) ─────────────────────────────
+  // ── AHE scatter (level $ vs YoY %) ───────────────────────────────────
+  const aheScatterDefs = [
+    { key: 'overall',       label: 'All Private',  color: '#333' },
+    { key: 'goods',         label: 'Goods Prod.',  color: '#378ADD' },
+    { key: 'construction',  label: 'Construction', color: '#378ADD' },
+    { key: 'wholesale',     label: 'Wholesale',    color: '#1D9E75' },
+    { key: 'retail',        label: 'Retail',       color: '#9B59B6' },
+    { key: 'transportation',label: 'Transport',    color: '#9B59B6' },
+    { key: 'utilities',     label: 'Utilities',    color: '#1D9E75' },
+    { key: 'info',          label: 'Information',  color: '#1D9E75' },
+    { key: 'finance',       label: 'Financial',    color: '#1D9E75' },
+    { key: 'professional',  label: 'Prof. Svcs',   color: '#1D9E75' },
+    { key: 'eduHealth',     label: 'Edu & Health', color: '#9B59B6' },
+    { key: 'leisure',       label: 'Leisure & Hosp.', color: '#9B59B6' },
+  ]
+  const scatterPoints = aheScatterDefs
+    .map(d => {
+      const arr = sectorAhe[d.key]
+      const level = lat(arr)?.value
+      const yoy   = yoyVal(arr)
+      if (level == null || yoy == null) return null
+      return { x: level, y: yoy, label: d.label, color: d.color }
+    })
+    .filter(Boolean)
+
+  // ── AHE YoY horizontal bar ────────────────────────────────────────────
   const aheSectorDefs = [
-    { key: 'goods',        label: 'Goods Prod.' },
-    { key: 'construction', label: 'Construction' },
-    { key: 'wholesale',    label: 'Wholesale' },
-    { key: 'retail',       label: 'Retail' },
-    { key: 'info',         label: 'Information' },
-    { key: 'finance',      label: 'Financial' },
-    { key: 'professional', label: 'Prof. Services' },
-    { key: 'eduHealth',    label: 'Edu & Health' },
-    { key: 'leisure',      label: 'Leisure & Hosp.' },
+    { key: 'overall',       label: 'All Private (CES05)' },
+    { key: 'goods',         label: 'Goods Prod.' },
+    { key: 'construction',  label: 'Construction' },
+    { key: 'wholesale',     label: 'Wholesale' },
+    { key: 'retail',        label: 'Retail' },
+    { key: 'transportation',label: 'Transportation' },
+    { key: 'utilities',     label: 'Utilities' },
+    { key: 'info',          label: 'Information' },
+    { key: 'finance',       label: 'Financial' },
+    { key: 'professional',  label: 'Prof. Services' },
+    { key: 'eduHealth',     label: 'Edu & Health' },
+    { key: 'leisure',       label: 'Leisure & Hosp.' },
   ]
   const aheYoYs = aheSectorDefs.map(d => yoyVal(sectorAhe[d.key]) ?? 0)
 
-  // ── Employment by sector donut (latest, grouped) ─────────────────────
+  // ── Employment by sector donut ────────────────────────────────────────
   const donutGroups = [
-    { label: 'Goods Producing', color: '#378ADD', keys: ['goods'] },
-    { label: 'High Income Svc', color: '#1D9E75', keys: ['info', 'fire', 'pbs', 'wholesale'] },
-    { label: 'Low Income Svc',  color: '#9B59B6', keys: ['ehs', 'lah', 'retail'] },
-    { label: 'Government',      color: '#F5A623', keys: ['govt'] },
+    { label: 'Goods Producing',   color: '#378ADD', keys: ['goods'] },
+    { label: 'High Income Svc',   color: '#1D9E75', keys: ['info', 'fire', 'pbs', 'utilities'] },
+    { label: 'Low Income Svc',    color: '#9B59B6', keys: ['ehs', 'lah', 'retail', 'wholesale', 'transportation'] },
+    { label: 'Government',        color: '#F5A623', keys: ['govt'] },
   ]
   const donutVals = donutGroups.map(g =>
     g.keys.reduce((sum, k) => sum + (lat(sectors[k])?.value ?? 0), 0)
   )
   const totalEmp = donutVals.reduce((a, b) => a + b, 0)
 
-  // ── U3 / U6 24M ──────────────────────────────────────────────────────
-  const unr24   = unrate?.slice(-24) || []
-  const u6_24   = u6rate?.slice(-24) || []
-  const unrLbls = unr24.map(v => v.date.slice(0, 7))
+  // ── Long-term U-3 (10Y) + SEP reference line ─────────────────────────
+  const unrAll   = unrate?.slice(-120) || []
+  const unrAllLb = unrAll.map(v => v.date.slice(0, 7))
+  const sepLine  = Array(unrAll.length).fill(FED_SEP_LONGRUN)
 
-  // ── Labor participation 24M ───────────────────────────────────────────
-  const civ24   = civpart?.slice(-24) || []
-  const prm24   = prime_part?.slice(-24) || []
-  const civLbls = civ24.map(v => v.date.slice(0, 7))
+  // ── U-3 vs U-6 (5Y / 60M) ────────────────────────────────────────────
+  const unr60   = unrate?.slice(-60) || []
+  const u6_60   = u6rate?.slice(-60) || []
+  const unr60Lb = unr60.map(v => v.date.slice(0, 7))
+
+  // ── Labor participation long-term (10Y) ───────────────────────────────
+  const civ120   = civpart?.slice(-120) || []
+  const prm120   = prime_part?.slice(-120) || []
+  const civ120Lb = civ120.map(v => v.date.slice(0, 7))
 
   // ── Cumulative employment since Jan 2022 ─────────────────────────────
-  const refIdx = payems?.findIndex(v => v.date.slice(0, 7) === '2022-01') ?? -1
-  const cumData  = refIdx >= 0 ? payems.slice(refIdx).map(v => v.value - payems[refIdx].value) : []
+  const refIdx    = payems?.findIndex(v => v.date.slice(0, 7) === '2022-01') ?? -1
+  const cumData   = refIdx >= 0 ? payems.slice(refIdx).map(v => v.value - payems[refIdx].value) : []
   const cumLabels = refIdx >= 0 ? payems.slice(refIdx).map(v => v.date.slice(0, 7)) : []
 
   // ── Styles ───────────────────────────────────────────────────────────
@@ -176,7 +260,7 @@ export default function USEmploymentPage() {
   const lineOpts = {
     responsive: true,
     plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } },
-    scales: { y: { ticks: { callback: v => v.toFixed(1) + '%' } } },
+    scales:  { y: { ticks: { callback: v => v.toFixed(1) + '%' } } },
   }
 
   const nfpBarOpts = {
@@ -188,11 +272,23 @@ export default function USEmploymentPage() {
     scales: { y: { ticks: { callback: v => (v >= 0 ? '+' : '') + Math.round(v) + 'K' } } },
   }
 
+  const stackedBarOpts = {
+    responsive: true,
+    plugins: {
+      legend:  { position: 'top' },
+      tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => `${ctx.dataset.label}: ${(ctx.parsed.y >= 0 ? '+' : '')}${Math.round(ctx.parsed.y)}K` } },
+    },
+    scales: {
+      x: { stacked: true },
+      y: { stacked: true, ticks: { callback: v => (v >= 0 ? '+' : '') + Math.round(v) + 'K' } },
+    },
+  }
+
   const hbarEmpOpts = {
     indexAxis: 'y',
     responsive: true,
     plugins: {
-      legend: { display: false },
+      legend:  { display: false },
       tooltip: { callbacks: { label: ctx => (ctx.parsed.x >= 0 ? '+' : '') + Math.round(ctx.parsed.x) + 'K' } },
     },
     scales: { x: { ticks: { callback: v => (v >= 0 ? '+' : '') + Math.round(v) + 'K' } } },
@@ -202,10 +298,29 @@ export default function USEmploymentPage() {
     indexAxis: 'y',
     responsive: true,
     plugins: {
-      legend: { display: false },
+      legend:  { display: false },
       tooltip: { callbacks: { label: ctx => ctx.parsed.x.toFixed(2) + '%' } },
     },
     scales: { x: { ticks: { callback: v => v.toFixed(1) + '%' } } },
+  }
+
+  const scatterOpts = {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const pt = ctx.raw
+            return `${pt.label}: $${pt.x.toFixed(2)}/hr · YoY ${pt.y.toFixed(2)}%`
+          },
+        },
+      },
+    },
+    scales: {
+      x: { title: { display: true, text: 'Avg Hourly Earnings ($)', font: { size: 11 } }, ticks: { callback: v => '$' + v.toFixed(0) } },
+      y: { title: { display: true, text: 'AHE YoY (%)',            font: { size: 11 } }, ticks: { callback: v => v.toFixed(1) + '%' } },
+    },
   }
 
   const doughnutOpts = {
@@ -225,7 +340,19 @@ export default function USEmploymentPage() {
     scales: { y: { ticks: { callback: v => (v >= 0 ? '+' : '') + (v / 1000).toFixed(1) + 'M' } } },
   }
 
-  const cellColor = v => v == null ? '#888' : v >= 0 ? '#1D9E75' : '#E24B4A'
+  const sepChartOpts = {
+    responsive: true,
+    plugins: {
+      legend:  { position: 'top' },
+      tooltip: { mode: 'index', intersect: false },
+    },
+    scales: {
+      y: {
+        min: 2,
+        ticks: { callback: v => v.toFixed(1) + '%' },
+      },
+    },
+  }
 
   return (
     <main style={s.wrap}>
@@ -239,12 +366,8 @@ export default function USEmploymentPage() {
             <a href="/us" style={{ color: '#aaa', textDecoration: 'none' }}>🇺🇸 US</a>
             {' → Employment'}
           </div>
-          <h1 style={{ fontSize: '18px', fontWeight: '600', color: '#111', margin: 0 }}>
-            US Employment Dashboard
-          </h1>
-          <div style={{ fontSize: '11px', color: '#aaa', marginTop: '3px' }}>
-            BLS via FRED · SA · Monthly
-          </div>
+          <h1 style={{ fontSize: '18px', fontWeight: '600', color: '#111', margin: 0 }}>US Employment Dashboard</h1>
+          <div style={{ fontSize: '11px', color: '#aaa', marginTop: '3px' }}>BLS via FRED · SA · Monthly</div>
         </div>
         <a href="/us" style={{ fontSize: '12px', color: '#555', textDecoration: 'none' }}>← US Home</a>
       </div>
@@ -253,10 +376,30 @@ export default function USEmploymentPage() {
       <div style={s.sec}>Headline</div>
       <div style={s.grid4}>
         {[
-          { label: 'NFP M/M Change (SA)',         val: fmtK(momDiff(payems)),   sub: nfp3changes[1] != null ? 'Prior: ' + fmtK(nfp3changes[1]) : '', color: dc(momDiff(payems)) },
-          { label: 'Unemployment U-3 (SA)',        val: fmtPct(lat(unrate)?.value, 1), sub: unrate?.length >= 2 ? fmtSign(lat(unrate).value - unrate[unrate.length-2].value, 1, 'pp') + ' vs prior' : '', color: dcInv(momDiff(unrate)) },
-          { label: 'Broad Unemployment U-6 (SA)', val: fmtPct(lat(u6rate)?.value, 1), sub: u6rate?.length >= 2  ? fmtSign(lat(u6rate).value - u6rate[u6rate.length-2].value, 1, 'pp') + ' vs prior' : '',  color: dcInv(momDiff(u6rate)) },
-          { label: 'AHE YoY — All Private (SA)',  val: fmtPct(yoyVal(ahe)),     sub: 'M/M: ' + fmtSign(momPct(ahe), 2), color: dc(yoyVal(ahe)) },
+          {
+            label: 'NFP M/M Change (SA)',
+            val: fmtK(momDiff(payems)),
+            sub: nfp13.length >= 3 ? 'Prior: ' + fmtK(nfp13[nfp13.length-2].value - nfp13[nfp13.length-3].value) : '',
+            color: dc(momDiff(payems)),
+          },
+          {
+            label: 'Unemployment U-3 (SA)',
+            val: fmtPct(lat(unrate)?.value, 1),
+            sub: unrate?.length >= 2 ? fmtSign(lat(unrate).value - unrate[unrate.length-2].value, 1, 'pp') + ' vs prior' : '',
+            color: dcInv(momDiff(unrate)),
+          },
+          {
+            label: 'Broad Unemployment U-6 (SA)',
+            val: fmtPct(lat(u6rate)?.value, 1),
+            sub: u6rate?.length >= 2 ? fmtSign(lat(u6rate).value - u6rate[u6rate.length-2].value, 1, 'pp') + ' vs prior' : '',
+            color: dcInv(momDiff(u6rate)),
+          },
+          {
+            label: 'AHE YoY — All Private (SA)',
+            val: fmtPct(yoyVal(ahe)),
+            sub: 'M/M: ' + fmtSign(momPct(ahe), 2),
+            color: dc(yoyVal(ahe)),
+          },
         ].map(k => (
           <div key={k.label} style={s.card}>
             <div style={s.cardLbl}>{k.label}</div>
@@ -266,11 +409,9 @@ export default function USEmploymentPage() {
         ))}
       </div>
 
-      {/* ── Section 2: Highlight Table + NFP 12M bar ── */}
+      {/* ── Section 2: Highlight Tables ── */}
       <div style={s.sec}>Establishment Survey — Last 3 Months</div>
       <div style={s.grid2}>
-
-        {/* Highlight Table */}
         <div style={s.box}>
           <div style={s.boxTitle}>Employment Change by Sector (K, SA)</div>
           <div style={s.boxSub}>Level M/M difference · FRED</div>
@@ -290,7 +431,7 @@ export default function USEmploymentPage() {
                       {row.label}
                     </td>
                     {changes.map((v, i) => (
-                      <td key={i} style={{ ...s.tdR, color: cellColor(v), fontWeight: '500' }}>
+                      <td key={i} style={{ ...s.tdR, color: cellClr(v), fontWeight: '500' }}>
                         {v != null ? (v >= 0 ? '+' : '') + Math.round(v) : '--'}
                       </td>
                     ))}
@@ -301,14 +442,13 @@ export default function USEmploymentPage() {
           </table>
         </div>
 
-        {/* AHE table */}
         <div style={s.box}>
-          <div style={s.boxTitle}>Avg Hourly Earnings — M/M % Change (SA)</div>
-          <div style={s.boxSub}>CES series · FRED</div>
+          <div style={s.boxTitle}>Avg Hourly Earnings (SA)</div>
+          <div style={s.boxSub}>CES0500000003 · FRED</div>
           <table style={s.table}>
             <thead>
               <tr>
-                <th style={s.thL}>Series</th>
+                <th style={s.thL}>Metric</th>
                 {m3labels.map(m => <th key={m} style={s.th}>{m}</th>)}
               </tr>
             </thead>
@@ -316,7 +456,7 @@ export default function USEmploymentPage() {
               <tr>
                 <td style={{ ...s.td, fontWeight: '600' }}>AHE M/M (All Private)</td>
                 {aheMoM3.map((v, i) => (
-                  <td key={i} style={{ ...s.tdR, color: cellColor(v), fontWeight: '600' }}>
+                  <td key={i} style={{ ...s.tdR, color: cellClr(v), fontWeight: '600' }}>
                     {v != null ? fmtSign(v, 2) : '--'}
                   </td>
                 ))}
@@ -324,92 +464,84 @@ export default function USEmploymentPage() {
               <tr>
                 <td style={{ ...s.td, fontWeight: '600' }}>AHE Y/Y (All Private)</td>
                 {aheYoY3.map((v, i) => (
-                  <td key={i} style={{ ...s.tdR, color: '#333', fontWeight: '600' }}>
+                  <td key={i} style={{ ...s.tdR, fontWeight: '600' }}>
                     {v != null ? fmtPct(v) : '--'}
                   </td>
                 ))}
               </tr>
-              <tr>
-                <td style={{ ...s.td, color: '#aaa' }} colSpan={4}>&nbsp;</td>
-              </tr>
+              <tr><td colSpan={4} style={{ ...s.td, padding: '4px 0' }} /></tr>
               <tr>
                 <td style={{ ...s.td, fontWeight: '600' }}>Unemployment (U-3)</td>
-                {unr3.map((v, i) => (
-                  <td key={i} style={{ ...s.tdR, fontWeight: '500' }}>
-                    {v != null ? v.toFixed(1) + '%' : '--'}
-                  </td>
+                {unr3.map((v, i) => <td key={i} style={s.tdR}>{v != null ? v.toFixed(1) + '%' : '--'}</td>)}
+              </tr>
+              <tr>
+                <td style={{ ...s.td, fontWeight: '600' }}>Fed SEP Long-Run Est.</td>
+                {[0,1,2].map(i => (
+                  <td key={i} style={{ ...s.tdR, color: '#D85A30', fontWeight: '500' }}>{FED_SEP_LONGRUN.toFixed(1)}%</td>
                 ))}
               </tr>
               <tr>
                 <td style={{ ...s.td, fontWeight: '600' }}>Labor Participation</td>
-                {civ3.map((v, i) => (
-                  <td key={i} style={{ ...s.tdR, fontWeight: '500' }}>
-                    {v != null ? v.toFixed(1) + '%' : '--'}
-                  </td>
-                ))}
+                {civ3.map((v, i) => <td key={i} style={s.tdR}>{v != null ? v.toFixed(1) + '%' : '--'}</td>)}
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* ── Section 3: NFP 12M bar + Sector bar ── */}
-      <div style={s.sec}>Employment Change</div>
+      {/* ── Section 3: NFP Stacked Bar by Group ── */}
+      <div style={s.sec}>NFP Change — by Sector Group (Last 12M)</div>
       <div style={s.box}>
-        <div style={s.boxTitle}>NFP Monthly Change — Last 12 Months (K, SA)</div>
-        <div style={s.boxSub}>SA · PAYEMS M/M level difference (FRED)</div>
+        <div style={s.boxTitle}>Monthly NFP Change — Goods / High Income Svc / Low Income Svc / Government (K, SA)</div>
+        <div style={s.boxSub}>SA · High Inc Svc = Info + Financial + Prof. + Utilities · Low Inc Svc = Retail + Edu&Health + Leisure + Wholesale + Transport</div>
         <Bar
           data={{
-            labels: nfp12Lbs,
-            datasets: [{
-              label: 'NFP Change (K)',
-              data:  nfp12Vls,
-              backgroundColor: nfp12Vls.map(v => v >= 0 ? 'rgba(55,138,221,0.75)' : 'rgba(226,75,74,0.75)'),
-            }],
+            labels: stackLbls,
+            datasets: [
+              { label: 'Goods Producing', data: goodsChg,   backgroundColor: 'rgba(55,138,221,0.8)',  stack: 'nfp' },
+              { label: 'High Income Svc', data: highSvcChg, backgroundColor: 'rgba(29,158,117,0.8)',  stack: 'nfp' },
+              { label: 'Low Income Svc',  data: lowSvcChg,  backgroundColor: 'rgba(155,89,182,0.8)',  stack: 'nfp' },
+              { label: 'Government',      data: govtChg,    backgroundColor: 'rgba(245,166,35,0.8)',  stack: 'nfp' },
+            ],
           }}
-          options={nfpBarOpts}
+          options={stackedBarOpts}
         />
       </div>
 
+      {/* ── Section 4: Sector bar + AHE scatter ── */}
+      <div style={s.sec}>Sector Detail — Latest Month</div>
       <div style={s.grid2}>
-        {/* Sector employment change — latest month horizontal bar */}
         <div style={s.box}>
-          <div style={s.boxTitle}>Sector Employment Change — Latest Month (K, SA)</div>
-          <div style={s.boxSub}>Blue = Goods · Green = High Inc. Svc · Purple = Low Inc. Svc · Orange = Govt</div>
+          <div style={s.boxTitle}>Sector Employment Change M/M (K, SA)</div>
+          <div style={s.boxSub}>Blue=Goods · Green=High Inc · Purple=Low Inc · Orange=Govt · Red=negative</div>
           <Bar
             data={{
               labels: barSectorDefs.map(d => d.label),
-              datasets: [{
-                data: sectorLatestChg,
-                backgroundColor: sectorBarColors,
-              }],
+              datasets: [{ data: sectorLatestChg, backgroundColor: sectorBarColors }],
             }}
             options={hbarEmpOpts}
           />
         </div>
 
-        {/* Employment by sector donut */}
         <div style={s.box}>
-          <div style={s.boxTitle}>Employment by Sector — Latest Month</div>
-          <div style={s.boxSub}>
-            SA · Total: {totalEmp > 0 ? (totalEmp / 1000).toFixed(1) + 'M' : '--'} · Grouped sectors (FRED)
-          </div>
-          <Doughnut
+          <div style={s.boxTitle}>AHE Level ($) vs YoY Growth (%) by Sector</div>
+          <div style={s.boxSub}>SA · Hover for sector name · CES series (FRED)</div>
+          <Scatter
             data={{
-              labels: donutGroups.map(g => g.label),
               datasets: [{
-                data: donutVals,
-                backgroundColor: donutGroups.map(g => g.color + 'CC'),
-                borderWidth: 2,
-                borderColor: '#fff',
+                data: scatterPoints.map(p => ({ x: p.x, y: p.y })),
+                sectorLabels: scatterPoints.map(p => p.label),
+                pointBackgroundColor: scatterPoints.map(p => p.color),
+                pointRadius: 7,
+                pointHoverRadius: 9,
               }],
             }}
-            options={doughnutOpts}
+            options={scatterOpts}
           />
         </div>
       </div>
 
-      {/* ── Section 4: Wage Growth by Sector ── */}
+      {/* ── Section 5: AHE YoY by sector ── */}
       <div style={s.sec}>Wage Growth by Sector (AHE YoY)</div>
       <div style={s.box}>
         <div style={s.boxTitle}>Average Hourly Earnings — Year-over-Year % by Sector (SA)</div>
@@ -426,36 +558,52 @@ export default function USEmploymentPage() {
         />
       </div>
 
-      {/* ── Section 5: Household Survey ── */}
-      <div style={s.sec}>Household Survey</div>
-      <div style={s.grid2}>
+      {/* ── Section 6: Unemployment Long-Term + SEP ── */}
+      <div style={s.sec}>Unemployment Rate — Long Term</div>
+      <div style={s.box}>
+        <div style={s.boxTitle}>Unemployment Rate U-3 — 10 Years (SA)</div>
+        <div style={s.boxSub}>
+          SA · UNRATE (FRED) · Dashed line = Fed SEP Long-Run Estimate {FED_SEP_LONGRUN}% (Dec 2024 SEP, update quarterly)
+        </div>
+        <Line
+          data={{
+            labels: unrAllLb,
+            datasets: [
+              { label: 'U-3 Unemployment', data: unrAll.map(v => v.value), borderColor: '#378ADD', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+              { label: `Fed SEP Long-Run (${FED_SEP_LONGRUN}%)`, data: sepLine, borderColor: '#D85A30', borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0, tension: 0 },
+            ],
+          }}
+          options={sepChartOpts}
+        />
+      </div>
 
-        {/* U3 / U6 line */}
+      {/* ── Section 7: U-3 vs U-6 (5Y) ── */}
+      <div style={s.grid2}>
         <div style={s.box}>
-          <div style={s.boxTitle}>Unemployment Rate U-3 vs U-6 (24M)</div>
+          <div style={s.boxTitle}>U-3 vs U-6 — 5 Years (SA)</div>
           <div style={s.boxSub}>SA · UNRATE / U6RATE (FRED)</div>
           <Line
             data={{
-              labels: unrLbls,
+              labels: unr60Lb,
               datasets: [
-                { label: 'U-3 (Headline)', data: unr24.map(v => v.value), borderColor: '#378ADD', borderWidth: 2, pointRadius: 0, tension: 0.3 },
-                { label: 'U-6 (Broad)',    data: u6_24.map(v => v.value), borderColor: '#D85A30', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+                { label: 'U-3 (Headline)', data: unr60.map(v => v.value), borderColor: '#378ADD', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+                { label: 'U-6 (Broad)',    data: u6_60.map(v => v.value), borderColor: '#D85A30', borderWidth: 2, pointRadius: 0, tension: 0.3 },
               ],
             }}
             options={lineOpts}
           />
         </div>
 
-        {/* Participation rate line */}
+        {/* ── Section 8: Labor participation long-term ── */}
         <div style={s.box}>
-          <div style={s.boxTitle}>Labor Force Participation Rate (24M)</div>
+          <div style={s.boxTitle}>Labor Force Participation Rate — 10 Years (SA)</div>
           <div style={s.boxSub}>SA · CIVPART / LNS11300060 (FRED)</div>
           <Line
             data={{
-              labels: civLbls,
+              labels: civ120Lb,
               datasets: [
-                { label: 'Overall (16+)',   data: civ24.map(v => v.value), borderColor: '#1D9E75', borderWidth: 2, pointRadius: 0, tension: 0.3 },
-                { label: 'Prime Age 25-54', data: prm24.map(v => v.value), borderColor: '#9B59B6', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+                { label: 'Overall (16+)',   data: civ120.map(v => v.value), borderColor: '#1D9E75', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+                { label: 'Prime Age 25-54', data: prm120.map(v => v.value), borderColor: '#9B59B6', borderWidth: 2, pointRadius: 0, tension: 0.3 },
               ],
             }}
             options={lineOpts}
@@ -463,31 +611,56 @@ export default function USEmploymentPage() {
         </div>
       </div>
 
-      {/* ── Section 6: Cumulative Employment Growth ── */}
-      <div style={s.sec}>Cumulative Employment Growth Since Jan 2022</div>
-      <div style={s.box}>
-        <div style={s.boxTitle}>Cumulative Nonfarm Payroll Change Since January 2022 (K, SA)</div>
-        <div style={s.boxSub}>SA · PAYEMS (FRED) · Base = 0 at Jan 2022</div>
-        {cumData.length > 0 ? (
-          <Line
+      {/* ── Section 9: Sector donut + Cumulative growth ── */}
+      <div style={s.sec}>Employment Composition &amp; Trend</div>
+      <div style={s.grid2}>
+        <div style={s.box}>
+          <div style={s.boxTitle}>Employment by Sector Group — Latest Month</div>
+          <div style={s.boxSub}>
+            SA · Total: {totalEmp > 0 ? (totalEmp / 1000).toFixed(1) + 'M' : '--'} · Grouped (FRED)
+          </div>
+          <Doughnut
             data={{
-              labels: cumLabels,
+              labels: donutGroups.map(g => g.label),
               datasets: [{
-                label: 'Cumulative Change',
-                data:  cumData,
-                borderColor: '#378ADD',
-                backgroundColor: 'rgba(55,138,221,0.08)',
+                data: donutVals,
+                backgroundColor: donutGroups.map(g => g.color + 'CC'),
                 borderWidth: 2,
-                pointRadius: 0,
-                tension: 0.3,
-                fill: true,
+                borderColor: '#fff',
               }],
             }}
-            options={cumOpts}
+            options={doughnutOpts}
           />
-        ) : (
-          <div style={{ color: '#aaa', fontSize: 13, padding: '20px 0' }}>Not enough data to compute cumulative series.</div>
-        )}
+        </div>
+
+        <div style={s.box}>
+          <div style={s.boxTitle}>Cumulative NFP Growth Since January 2022 (K, SA)</div>
+          <div style={s.boxSub}>SA · PAYEMS (FRED) · Base = 0 at Jan 2022</div>
+          {cumData.length > 0 ? (
+            <Line
+              data={{
+                labels: cumLabels,
+                datasets: [{
+                  label: 'Cumulative Change',
+                  data: cumData,
+                  borderColor: '#378ADD',
+                  backgroundColor: 'rgba(55,138,221,0.08)',
+                  borderWidth: 2,
+                  pointRadius: 0,
+                  tension: 0.3,
+                  fill: true,
+                }],
+              }}
+              options={{
+                responsive: true,
+                plugins: { legend: { display: false }, tooltip: { mode: 'index', intersect: false, callbacks: { label: ctx => (ctx.parsed.y >= 0 ? '+' : '') + Math.round(ctx.parsed.y) + 'K' } } },
+                scales:  { y: { ticks: { callback: v => (v >= 0 ? '+' : '') + (v / 1000).toFixed(1) + 'M' } } },
+              }}
+            />
+          ) : (
+            <div style={{ color: '#aaa', fontSize: 13 }}>Not enough data.</div>
+          )}
+        </div>
       </div>
 
       {/* ── Footer ── */}
