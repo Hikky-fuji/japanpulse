@@ -12,21 +12,21 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 export default function Labour() {
   const [labour, setLabour] = useState(null)
   const [wages,  setWages]  = useState(null)
-  const [cpi,    setCpi]    = useState(null)
 
   useEffect(() => {
     fetch('/api/labour').then(r => r.json()).then(setLabour)
     fetch('/api/wages').then(r => r.json()).then(setWages)
-    fetch('/api/cpi').then(r => r.json()).then(setCpi)
   }, [])
 
-  if (!labour?.length) return (
+  if (!labour?.data?.length) return (
     <div style={{ padding: '40px', fontFamily: 'sans-serif', color: '#666' }}>Loading...</div>
   )
 
-  const dates  = labour.map(d => d.date)
-  const latest = labour.at(-1)
-  const prev   = labour.at(-2)
+  const { data: labourData, scatter: scatterRaw } = labour
+
+  const dates  = labourData.map(d => d.date)
+  const latest = labourData.at(-1)
+  const prev   = labourData.at(-2)
 
   const urDiff = latest.unemploymentRate != null && prev?.unemploymentRate != null
     ? parseFloat((latest.unemploymentRate - prev.unemploymentRate).toFixed(1)) : null
@@ -54,7 +54,7 @@ export default function Labour() {
     datasets: [
       {
         label: 'Unemployment Rate SA (%)',
-        data: labour.map(d => d.unemploymentRate),
+        data: labourData.map(d => d.unemploymentRate),
         borderColor: '#E74C3C',
         borderWidth: 2,
         pointRadius: 2,
@@ -98,7 +98,7 @@ export default function Labour() {
     datasets: [
       {
         label: 'Employed Persons YoY (%)',
-        data: labour.map(d => d.employedYoY),
+        data: labourData.map(d => d.employedYoY),
         borderColor: '#1A56DB',
         borderWidth: 2,
         pointRadius: 2,
@@ -149,7 +149,7 @@ export default function Labour() {
     datasets: [
       {
         label: 'Labor Force Participation Rate (%)',
-        data: labour.map(d => d.participationRate),
+        data: labourData.map(d => d.participationRate),
         borderColor: '#27AE60',
         borderWidth: 2,
         pointRadius: 2,
@@ -173,17 +173,13 @@ export default function Labour() {
     },
   }
 
-  // Chart 4: Scatter — Unemployment Rate vs Core CPI (Phillips curve)
-  const cpiMap = {}
-  ;(cpi?.core ?? []).forEach(d => { cpiMap[d.date] = d.value })
-  const scatterPoints = labour
-    .filter(d => d.unemploymentRate != null && cpiMap[d.date] != null)
-    .map((d, i, arr) => ({
-      x: d.unemploymentRate,
-      y: cpiMap[d.date],
-      date: d.date,
-      alpha: 0.3 + 0.7 * i / arr.length,
-    }))
+  // Chart 4: Scatter — Unemployment Rate vs Core CPI (Phillips curve, full history)
+  const scatterPoints = (scatterRaw ?? []).map((d, i, arr) => ({
+    x: d.unemploymentRate,
+    y: d.cpiCore,
+    date: d.date,
+    alpha: 0.2 + 0.8 * i / arr.length,
+  }))
 
   const chart4 = {
     datasets: [
@@ -283,21 +279,21 @@ export default function Labour() {
         <div style={s.note}>※ 就業者数前年比（左軸・青）と実質賃金前年比（右軸・赤）。労働需給の逼迫が賃金に転嫁されているかを確認。日銀の利上げ判断文脈。Source: 総務省 労働力調査 / 厚生労働省</div>
       </div>
 
-      {/* Chart 3 + Chart 4 side by side */}
-      <div style={s.grid2}>
-        <div style={s.box}>
-          <div style={s.boxTitle}>労働参加率 推移（24ヶ月）</div>
-          <Line data={chart3} options={chart3Opts} />
-          <div style={s.note}>※ 労働力人口比率（15歳以上人口に対する労働力人口の割合）。Source: 総務省 労働力調査</div>
-        </div>
-        {scatterPoints.length > 0 && (
-          <div style={s.box}>
-            <div style={s.boxTitle}>フィリップス曲線（失業率 vs コアCPI、直近24ヶ月）</div>
-            <Scatter data={chart4} options={chart4Opts} />
-            <div style={s.note}>※ X軸: 完全失業率 / Y軸: コアCPI前年比。点の濃さが時間の流れ（薄=過去、濃=直近）。Source: 総務省 / 総務省</div>
-          </div>
-        )}
+      {/* Chart 3: Participation Rate */}
+      <div style={s.box}>
+        <div style={s.boxTitle}>労働参加率 推移（24ヶ月）</div>
+        <Line data={chart3} options={chart3Opts} />
+        <div style={s.note}>※ 労働力人口比率（15歳以上人口に対する労働力人口の割合）。Source: 総務省 労働力調査</div>
       </div>
+
+      {/* Chart 4: Phillips Curve — full history, full width */}
+      {scatterPoints.length > 0 && (
+        <div style={s.box}>
+          <div style={s.boxTitle}>フィリップス曲線（完全失業率 vs コアCPI前年比、{scatterPoints[0]?.date}〜{scatterPoints.at(-1)?.date}）</div>
+          <Scatter data={chart4} options={chart4Opts} />
+          <div style={s.note}>※ X軸: 完全失業率（SA） / Y軸: コアCPI前年比。点の濃さが時間の流れ（薄=過去、濃=直近）。Source: 総務省 労働力調査 / 総務省 消費者物価指数</div>
+        </div>
+      )}
     </main>
   )
 }
