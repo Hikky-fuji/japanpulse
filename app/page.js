@@ -252,6 +252,9 @@ export default function HomePage() {
       <div style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid #eee', fontSize: 11, color: '#aaa', textAlign: 'center' }}>
         Data Source: Statistics Bureau MIC / Cabinet Office / Bank of Japan · e-Stat API
       </div>
+      <div style={{ marginTop: 12, textAlign: 'center' }}>
+        <a href="/us-macro" style={{ fontSize: 11, color: '#aaa', textDecoration: 'none', opacity: 0.6 }}>🇺🇸 US Macro</a>
+      </div>
     </main>
   )
 }
