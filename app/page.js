@@ -68,6 +68,22 @@ const indicators = [
     ],
   },
   {
+    group: { en: '企業行動 / Corporate Activity', ja: '企業行動' },
+    color: '#7C3AED',
+    bg: '#F5F3FF',
+    border: '#A78BFA',
+    items: [
+      {
+        href: '/machine-orders',
+        title:    { en: '⚙️ Machine Orders',              ja: '⚙️ 機械受注' },
+        subtitle: { en: 'Core Private Orders (ex-Ships/Elec)', ja: '民需（船舶・電力除く）' },
+        badge:    { en: 'Monthly',                         ja: '月次' },
+        desc:     { en: 'Leading indicator for capital expenditure, 6-9M ahead of GDP capex.',
+                    ja: 'GDP設備投資の6〜9ヶ月先行指標。コア機械受注の前年比・前月比。' },
+      },
+    ],
+  },
+  {
     group: { en: 'Private Consumption', ja: '個人消費' },
     color: '#9B59B6',
     bg: '#FAF0FF',
