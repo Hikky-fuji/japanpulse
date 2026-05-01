@@ -183,17 +183,28 @@ export default function HomePage() {
                 : '日本の主要マクロ経済指標をリアルタイムで追跡。e-Stat（政府統計）から自動更新。'}
             </p>
           </div>
-          <button
-            onClick={() => setLang(l => l === 'en' ? 'ja' : 'en')}
-            style={{
-              marginLeft: 16, flexShrink: 0,
-              fontSize: 12, fontWeight: 600, padding: '5px 12px',
-              border: '1px solid #ddd', borderRadius: 6,
-              background: '#fff', cursor: 'pointer', color: '#444',
-            }}
-          >
-            {lang === 'en' ? '日本語' : 'English'}
-          </button>
+          <div style={{ display: 'flex', gap: 8, marginLeft: 16, flexShrink: 0 }}>
+            <a
+              href="/us"
+              style={{
+                fontSize: 12, fontWeight: 600, padding: '5px 12px',
+                border: '1px solid #6B8FE8', borderRadius: 6,
+                background: '#F0F4FF', textDecoration: 'none', color: '#1A56DB',
+              }}
+            >
+              🇺🇸 US
+            </a>
+            <button
+              onClick={() => setLang(l => l === 'en' ? 'ja' : 'en')}
+              style={{
+                fontSize: 12, fontWeight: 600, padding: '5px 12px',
+                border: '1px solid #ddd', borderRadius: 6,
+                background: '#fff', cursor: 'pointer', color: '#444',
+              }}
+            >
+              {lang === 'en' ? '日本語' : 'English'}
+            </button>
+          </div>
         </div>
       </div>
 
