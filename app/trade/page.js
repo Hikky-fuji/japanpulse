@@ -294,7 +294,7 @@ export default function Trade() {
     plugins: { legend: { position: 'top', labels: { font: { size: 10 } } }, tooltip: { mode: 'index', intersect: false } },
     scales: {
       x: { stacked: true, ticks: { maxTicksLimit: 12 } },
-      y: { stacked: true, ticks: { callback: v => v.toFixed(1) + '兆' }, grid: { color: ctx => ctx.tick.value === 0 ? '#999' : '#eee' } }
+      y: { stacked: true, ticks: { callback: v => v.toFixed(1) + 'T' }, grid: { color: ctx => ctx.tick.value === 0 ? '#999' : '#eee' } }
     }
   }
   // Heatmap data
@@ -380,7 +380,7 @@ export default function Trade() {
       {/* ② Stacked Chart */}
       <div style={s.box}>
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px'}}>
-          <span style={s.boxTitle}>Trade by {chartMode === 'country' ? 'Destination/Origin' : 'Commodity'} — Export (+) / Import (−) 兆円</span>
+          <span style={s.boxTitle}>Trade by {chartMode === 'country' ? 'Destination/Origin' : 'Commodity'} — Export (+) / Import (−) ¥T</span>
           <div style={{display:'flex', gap:'6px'}}>
             <button style={s.toggleBtn(chartMode === 'country')} onClick={() => setChartMode('country')}>Country</button>
             <button style={s.toggleBtn(chartMode === 'product')} onClick={() => setChartMode('product')}>Product</button>

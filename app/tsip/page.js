@@ -54,7 +54,7 @@ export default function TsipPage() {
     labels: dates,
     datasets: [
       {
-        label: '第３次産業総合 前年比 (%)',
+        label: 'TSIP Total YoY (%)',
         data: total.data.map(d => d.yoy),
         borderColor: '#1A56DB',
         borderWidth: 2,
@@ -63,7 +63,7 @@ export default function TsipPage() {
         fill: false,
       },
       {
-        label: '0% 参照線',
+        label: '0% Reference',
         data: dates.map(() => 0),
         borderColor: '#bbb',
         borderWidth: 1,
@@ -96,7 +96,7 @@ export default function TsipPage() {
     labels: sectorLabels,
     datasets: [
       {
-        label: `業種別 前年比 (%) — ${latestDate}`,
+        label: `Sector YoY (%) — ${latestDate}`,
         data: sectorYoY,
         backgroundColor: sectorColors,
         borderRadius: 4,
@@ -147,7 +147,7 @@ export default function TsipPage() {
     labels: dates,
     datasets: [
       {
-        label: '第３次産業総合 MoM SA (%)',
+        label: 'TSIP Total MoM SA (%)',
         data: total.data.map(d => d.mom),
         borderColor: '#27AE60',
         borderWidth: 2,
@@ -156,7 +156,7 @@ export default function TsipPage() {
         fill: false,
       },
       {
-        label: '0% 参照線',
+        label: '0% Reference',
         data: dates.map(() => 0),
         borderColor: '#bbb',
         borderWidth: 1,
@@ -187,37 +187,37 @@ export default function TsipPage() {
           <a href="/iip" style={s.nav}>IIP</a>
           <a href="/gdp" style={s.nav}>GDP</a>
           <span style={{ fontSize: '20px', fontWeight: '600', color: '#111' }}>
-            第3次産業活動指数 (TSIP)
+            Tertiary Sector Activity Index (TSIP)
             <span style={s.badge}>Monthly</span>
           </span>
         </div>
         <span style={{ fontSize: '12px', color: '#888' }}>
-          Source: 経済産業省 · Latest: {latest.date}
+          Source: METI · Latest: {latest.date}
         </span>
       </div>
 
       {/* KPI cards */}
       <div style={s.grid3}>
         <div style={s.card}>
-          <div style={s.cardLabel}>前年比 (NSA)</div>
+          <div style={s.cardLabel}>YoY (NSA)</div>
           <div style={{ ...s.cardVal, color: latest.yoy != null ? (latest.yoy >= 0 ? '#1D9E75' : '#E24B4A') : '#111' }}>
             {latest.yoy != null ? (latest.yoy >= 0 ? '+' : '') + latest.yoy.toFixed(1) + '%' : '--'}
           </div>
           <div style={{ fontSize: '11px', marginTop: '3px', color: yoyDiff === null ? '#888' : yoyDiff > 0 ? '#1D9E75' : yoyDiff < 0 ? '#E24B4A' : '#888' }}>
-            {yoyDiff !== null ? (yoyDiff > 0 ? '+' : '') + yoyDiff.toFixed(1) + 'pp MoM比較' : ''}
+            {yoyDiff !== null ? (yoyDiff > 0 ? '+' : '') + yoyDiff.toFixed(1) + 'pp vs prev mo' : ''}
           </div>
         </div>
         <div style={s.card}>
-          <div style={s.cardLabel}>前月比 (SA)</div>
+          <div style={s.cardLabel}>MoM (SA)</div>
           <div style={{ ...s.cardVal, color: latest.mom != null ? (latest.mom >= 0 ? '#1D9E75' : '#E24B4A') : '#111' }}>
             {latest.mom != null ? (latest.mom >= 0 ? '+' : '') + latest.mom.toFixed(1) + '%' : '--'}
           </div>
           <div style={{ fontSize: '11px', marginTop: '3px', color: momDiff === null ? '#888' : momDiff > 0 ? '#1D9E75' : momDiff < 0 ? '#E24B4A' : '#888' }}>
-            {momDiff !== null ? (momDiff > 0 ? '+' : '') + momDiff.toFixed(1) + 'pp MoM比較' : ''}
+            {momDiff !== null ? (momDiff > 0 ? '+' : '') + momDiff.toFixed(1) + 'pp vs prev mo' : ''}
           </div>
         </div>
         <div style={s.card}>
-          <div style={s.cardLabel}>原指数 (2020=100)</div>
+          <div style={s.cardLabel}>Index (2020=100)</div>
           <div style={s.cardVal}>
             {latest.nsa != null ? latest.nsa.toFixed(1) : '--'}
           </div>
@@ -229,30 +229,30 @@ export default function TsipPage() {
 
       {/* Chart 1: Total YoY */}
       <div style={s.box}>
-        <div style={s.boxTitle}>第３次産業総合 前年比推移（24ヶ月、原指数）</div>
+        <div style={s.boxTitle}>TSIP Total YoY — 24 Months (NSA)</div>
         <Line data={chart1} options={chart1Opts} />
-        <div style={s.note}>※ 前年同月比。点線: 0%参照線。Source: 経済産業省 第3次産業活動指数</div>
+        <div style={s.note}>Year-on-year change. Dashed: 0% reference. Source: METI Tertiary Sector Activity Index</div>
       </div>
 
       {/* Chart 2: Sector bar */}
       <div style={s.box}>
-        <div style={s.boxTitle}>業種別 前年比（{latestDate}）— 直近月の内訳</div>
+        <div style={s.boxTitle}>Sector YoY ({latestDate}) — Latest Month Breakdown</div>
         <Bar data={chart2} options={chart2Opts} />
-        <div style={s.note}>※ 青=プラス、赤=マイナス。Source: 経済産業省 第3次産業活動指数</div>
+        <div style={s.note}>Blue = positive, Red = negative. Source: METI Tertiary Sector Activity Index</div>
       </div>
 
       {/* Chart 3: Sector multi-line YoY */}
       <div style={s.box}>
-        <div style={s.boxTitle}>業種別 前年比推移（24ヶ月）— 全業種</div>
+        <div style={s.boxTitle}>Sector YoY Trends — 24 Months (All Sectors)</div>
         <Line data={chart3} options={chart3Opts} />
-        <div style={s.note}>※ 前年同月比（原指数ベース）。業種ごとの色は凡例参照。Source: 経済産業省</div>
+        <div style={s.note}>Year-on-year change (NSA basis). Colors per sector in legend. Source: METI</div>
       </div>
 
       {/* Chart 4: SA MoM */}
       <div style={s.box}>
-        <div style={s.boxTitle}>第３次産業総合 前月比推移（24ヶ月、季節調整済）</div>
+        <div style={s.boxTitle}>TSIP Total MoM — 24 Months (SA)</div>
         <Line data={chart4} options={chart4Opts} />
-        <div style={s.note}>※ 季節調整済指数ベースの前月比。点線: 0%参照線。Source: 経済産業省 第3次産業活動指数</div>
+        <div style={s.note}>Month-on-month change on SA basis. Dashed: 0% reference. Source: METI Tertiary Sector Activity Index</div>
       </div>
     </main>
   )

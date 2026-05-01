@@ -131,14 +131,14 @@ export default function Labour() {
         type: 'linear',
         position: 'left',
         ticks: { callback: v => v.toFixed(1) + '%' },
-        title: { display: true, text: '就業者数 YoY (%)', color: '#1A56DB', font: { size: 11 } },
+        title: { display: true, text: 'Employed Persons YoY (%)', color: '#1A56DB', font: { size: 11 } },
       },
       y1: {
         type: 'linear',
         position: 'right',
         ticks: { callback: v => v.toFixed(1) + '%' },
         grid: { drawOnChartArea: false },
-        title: { display: true, text: '実質賃金 YoY (%)', color: '#E74C3C', font: { size: 11 } },
+        title: { display: true, text: 'Real Wages YoY (%)', color: '#E74C3C', font: { size: 11 } },
       },
     },
   }
@@ -200,18 +200,18 @@ export default function Labour() {
         callbacks: {
           label: (ctx) => {
             const p = scatterPoints[ctx.dataIndex]
-            return p ? `${p.date}  失業率 ${p.x}%  / Core CPI ${p.y.toFixed(1)}%` : ''
+            return p ? `${p.date}  Unemp. ${p.x}%  / Core CPI ${p.y.toFixed(1)}%` : ''
           },
         },
       },
     },
     scales: {
       x: {
-        title: { display: true, text: '完全失業率 (%)' },
+        title: { display: true, text: 'Unemployment Rate (%)' },
         ticks: { callback: v => v.toFixed(1) + '%' },
       },
       y: {
-        title: { display: true, text: 'コア CPI 前年比 (%)' },
+        title: { display: true, text: 'Core CPI YoY (%)' },
         ticks: { callback: v => v.toFixed(1) + '%' },
       },
     },
@@ -230,14 +230,14 @@ export default function Labour() {
           </span>
         </div>
         <span style={{ fontSize: '12px', color: '#888' }}>
-          Source: 総務省 労働力調査 · Latest: {latest.date}
+          Source: MIC Labour Force Survey · Latest: {latest.date}
         </span>
       </div>
 
       {/* KPI cards */}
       <div style={s.grid3}>
         <div style={s.card}>
-          <div style={s.cardLabel}>完全失業率 (SA)</div>
+          <div style={s.cardLabel}>Unemployment Rate (SA)</div>
           <div style={s.cardVal}>
             {latest.unemploymentRate != null ? latest.unemploymentRate.toFixed(1) + '%' : '--'}
           </div>
@@ -246,16 +246,16 @@ export default function Labour() {
           </div>
         </div>
         <div style={s.card}>
-          <div style={s.cardLabel}>就業者数 前年比</div>
+          <div style={s.cardLabel}>Employed Persons YoY</div>
           <div style={{ ...s.cardVal, color: latest.employedYoY != null ? (latest.employedYoY >= 0 ? '#1D9E75' : '#E24B4A') : '#111' }}>
             {latest.employedYoY != null ? (latest.employedYoY >= 0 ? '+' : '') + latest.employedYoY.toFixed(1) + '%' : '--'}
           </div>
           <div style={{ fontSize: '11px', marginTop: '3px', color: '#888' }}>
-            {latest.employed != null ? latest.employed.toLocaleString() + ' 万人' : ''}
+            {latest.employed != null ? (latest.employed / 100).toFixed(1) + ' mn' : ''}
           </div>
         </div>
         <div style={s.card}>
-          <div style={s.cardLabel}>労働参加率</div>
+          <div style={s.cardLabel}>Participation Rate</div>
           <div style={s.cardVal}>
             {latest.participationRate != null ? latest.participationRate.toFixed(1) + '%' : '--'}
           </div>
@@ -267,31 +267,31 @@ export default function Labour() {
 
       {/* Chart 1: Unemployment Rate */}
       <div style={s.box}>
-        <div style={s.boxTitle}>完全失業率 推移（24ヶ月、Seasonally Adjusted）</div>
+        <div style={s.boxTitle}>Unemployment Rate — 24 Months (SA)</div>
         <Line data={chart1} options={chart1Opts} />
-        <div style={s.note}>※ SA = 季節調整値。点線: 3.0%参照線。Source: 総務省 労働力調査</div>
+        <div style={s.note}>SA = seasonally adjusted. Dashed: 3.0% reference. Source: MIC Labour Force Survey</div>
       </div>
 
       {/* Chart 2: Dual axis */}
       <div style={s.box}>
-        <div style={s.boxTitle}>就業者数 YoY(%) vs 実質賃金 YoY(%) — 労働需給と賃金転嫁</div>
+        <div style={s.boxTitle}>Employed Persons YoY (%) vs Real Wages YoY (%) — Labor Supply & Wage Pass-through</div>
         <Line data={chart2} options={chart2Opts} />
-        <div style={s.note}>※ 就業者数前年比（左軸・青）と実質賃金前年比（右軸・赤）。労働需給の逼迫が賃金に転嫁されているかを確認。日銀の利上げ判断文脈。Source: 総務省 労働力調査 / 厚生労働省</div>
+        <div style={s.note}>Employed persons YoY (left, blue) vs real wages YoY (right, red). Monitors whether tight labor market is feeding through to wages — key for BoJ rate decisions. Source: MIC / MHLW</div>
       </div>
 
       {/* Chart 3: Participation Rate */}
       <div style={s.box}>
-        <div style={s.boxTitle}>労働参加率 推移（24ヶ月）</div>
+        <div style={s.boxTitle}>Labor Force Participation Rate — 24 Months</div>
         <Line data={chart3} options={chart3Opts} />
-        <div style={s.note}>※ 労働力人口比率（15歳以上人口に対する労働力人口の割合）。Source: 総務省 労働力調査</div>
+        <div style={s.note}>Labor force as a share of population aged 15+. Source: MIC Labour Force Survey</div>
       </div>
 
       {/* Chart 4: Phillips Curve — full history, full width */}
       {scatterPoints.length > 0 && (
         <div style={s.box}>
-          <div style={s.boxTitle}>フィリップス曲線（完全失業率 vs コアCPI前年比、{scatterPoints[0]?.date}〜{scatterPoints.at(-1)?.date}）</div>
+          <div style={s.boxTitle}>Phillips Curve (Unemployment Rate vs Core CPI YoY, {scatterPoints[0]?.date}–{scatterPoints.at(-1)?.date})</div>
           <Scatter data={chart4} options={chart4Opts} />
-          <div style={s.note}>※ X軸: 完全失業率（SA） / Y軸: コアCPI前年比。点の濃さが時間の流れ（薄=過去、濃=直近）。Source: 総務省 労働力調査 / 総務省 消費者物価指数</div>
+          <div style={s.note}>X-axis: unemployment rate (SA). Y-axis: core CPI YoY. Point opacity shows time (faded = older, dark = recent). Source: MIC Labour Force Survey / MIC CPI</div>
         </div>
       )}
     </main>
