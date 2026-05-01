@@ -113,6 +113,14 @@ const indicators = [
         desc:     { en: 'Nominal/real wage index (Y/Y), scheduled wages, part-time ratio. Published by MHLW.',
                     ja: '名目・実質賃金指数（Y/Y）、所定内給与、パート比率。厚生労働省公表。' },
       },
+      {
+        href: '/labour',
+        title:    { en: 'Labour Force Survey',          ja: '労働力調査' },
+        subtitle: { en: 'Unemployment / Employment / Participation', ja: '完全失業率 / 就業者数 / 労働参加率' },
+        badge:    { en: 'Monthly · SA',                 ja: '月次 · 季調済' },
+        desc:     { en: 'Unemployment rate (SA), employed persons (YoY), labor force participation rate. Source: Statistics Bureau.',
+                    ja: '完全失業率（季節調整値）、就業者数（前年比）、労働参加率。総務省 統計局。' },
+      },
     ],
   },
   {
