@@ -145,6 +145,14 @@ const indicators = [
         desc:     { en: 'Unemployment rate (SA), employed persons (YoY), labor force participation rate. Source: Statistics Bureau.',
                     ja: '完全失業率（季節調整値）、就業者数（前年比）、労働参加率。総務省 統計局。' },
       },
+      {
+        href: '/job-ratio',
+        title:    { en: 'Job-to-Applicant Ratio',       ja: '有効求人倍率' },
+        subtitle: { en: 'Job Market Tightness',         ja: '需給バランス' },
+        badge:    { en: 'Monthly · SA',                 ja: '月次 · 季調済' },
+        desc:     { en: 'Effective job-to-applicant ratio (SA). Key indicator of labor demand-supply balance watched by BOJ.',
+                    ja: '有効求人倍率（季節調整値）。日銀が注目する労働需給バランスの主要指標。' },
+      },
     ],
   },
   {
