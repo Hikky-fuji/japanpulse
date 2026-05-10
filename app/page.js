@@ -68,14 +68,14 @@ const indicators = [
     ],
   },
   {
-    group: { en: '企業行動 / Corporate Activity', ja: '企業行動' },
+    group: { en: 'Corporate Activity', ja: '企業行動' },
     color: '#7C3AED',
     bg: '#F5F3FF',
     border: '#A78BFA',
     items: [
       {
         href: '/machine-orders',
-        title:    { en: '⚙️ Machine Orders',              ja: '⚙️ 機械受注' },
+        title:    { en: 'Machine Orders',                  ja: '機械受注' },
         subtitle: { en: 'Core Private Orders (ex-Ships/Elec)', ja: '民需（船舶・電力除く）' },
         badge:    { en: 'Monthly',                         ja: '月次' },
         desc:     { en: 'Leading indicator for capital expenditure, 6-9M ahead of GDP capex.',
