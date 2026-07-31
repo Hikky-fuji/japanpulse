@@ -377,13 +377,23 @@ a {
   transform: translateY(-1px);
 }
 
-.indicator-card > div:first-child > div:first-child {
+.indicator-card__title {
   color: #ffffff !important;
   font-weight: 750 !important;
 }
 
-.indicator-card > div:nth-of-type(3) {
+.indicator-card__description {
   color: #d5dade !important;
+}
+
+.dashboard-hub__breadcrumb,
+.dashboard-hub__breadcrumb a,
+.dashboard-hub__footer {
+  color: #d0d5d8 !important;
+}
+
+.dashboard-hub__footer {
+  border-color: var(--jp-line) !important;
 }
 
 @media (max-width: 760px) {

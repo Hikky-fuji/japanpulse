@@ -62,7 +62,7 @@ export default function USHomePage() {
 
       <div className="dashboard-hub__hero" style={{ marginBottom: 40 }}>
         <div className="dashboard-hub__eyebrow">United States / Macro Workspace</div>
-        <div style={{ fontSize: 12, color: '#aaa', marginBottom: 8 }}>
+        <div className="dashboard-hub__breadcrumb" style={{ fontSize: 12, color: '#aaa', marginBottom: 8 }}>
           <a href="/" style={{ color: '#aaa', textDecoration: 'none' }}>🇯🇵 Japan Macro Dashboard</a>
           {' → '}
           <span style={{ color: '#333' }}>🇺🇸 US Macro Dashboard</span>
@@ -105,18 +105,18 @@ export default function USHomePage() {
                 onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{item.title}</div>
-                  <span style={{
+                  <div className="indicator-card__title" style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{item.title}</div>
+                  <span className="indicator-card__badge" style={{
                     fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 10,
                     background: group.color, color: '#fff', whiteSpace: 'nowrap', marginLeft: 8, marginTop: 2,
                   }}>
                     {item.badge}
                   </span>
                 </div>
-                <div style={{ fontSize: 12, color: group.color, fontWeight: 600, marginBottom: 6 }}>
+                <div className="indicator-card__subtitle" style={{ fontSize: 12, color: group.color, fontWeight: 600, marginBottom: 6 }}>
                   {item.subtitle}
                 </div>
-                <div style={{ fontSize: 12, color: '#555', lineHeight: 1.6 }}>
+                <div className="indicator-card__description" style={{ fontSize: 12, color: '#555', lineHeight: 1.6 }}>
                   {item.desc}
                 </div>
               </a>
@@ -125,7 +125,7 @@ export default function USHomePage() {
         </div>
       ))}
 
-      <div style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid #eee', fontSize: 11, color: '#aaa', textAlign: 'center' }}>
+      <div className="dashboard-hub__footer" style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid #eee', fontSize: 11, color: '#aaa', textAlign: 'center' }}>
         Data: FRED (Federal Reserve Bank of St. Louis) · Personal use only
       </div>
     </main>

@@ -250,8 +250,8 @@ export default function HomePage() {
                 onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'}
               >
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{t(item.title)}</div>
-                  <span style={{
+                  <div className="indicator-card__title" style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{t(item.title)}</div>
+                  <span className="indicator-card__badge" style={{
                     fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 10,
                     background: item.badgeColor ?? group.color, color: '#fff',
                     whiteSpace: 'nowrap', marginLeft: 8, marginTop: 2,
@@ -259,10 +259,10 @@ export default function HomePage() {
                     {t(item.badge)}
                   </span>
                 </div>
-                <div style={{ fontSize: 12, color: group.color, fontWeight: 600, marginBottom: 6 }}>
+                <div className="indicator-card__subtitle" style={{ fontSize: 12, color: group.color, fontWeight: 600, marginBottom: 6 }}>
                   {t(item.subtitle)}
                 </div>
-                <div style={{ fontSize: 12, color: '#555', lineHeight: 1.6 }}>
+                <div className="indicator-card__description" style={{ fontSize: 12, color: '#555', lineHeight: 1.6 }}>
                   {t(item.desc)}
                 </div>
               </a>
@@ -271,7 +271,7 @@ export default function HomePage() {
         </div>
       ))}
 
-      <div style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid #eee', fontSize: 11, color: '#aaa', textAlign: 'center' }}>
+      <div className="dashboard-hub__footer" style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid #eee', fontSize: 11, color: '#aaa', textAlign: 'center' }}>
         Data Source: Statistics Bureau MIC / Cabinet Office / Bank of Japan · e-Stat API
       </div>
       <div style={{ marginTop: 12, textAlign: 'center' }}>
