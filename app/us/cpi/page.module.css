@@ -1,13 +1,13 @@
 .page {
-  --ink: #e9edf0;
-  --muted: #9ca5ab;
-  --line: #34393d;
-  --panel: #101214;
-  --canvas: #050505;
-  --navy: #101214;
-  --blue: #56a7d8;
-  --teal: #5ac59b;
-  --orange: #f1a11a;
+  --ink: #e5e9ed;
+  --muted: #aab2b8;
+  --line: #3d4449;
+  --panel: #202428;
+  --canvas: #171a1d;
+  --navy: #202428;
+  --blue: #42a9bc;
+  --teal: #6abf91;
+  --orange: #f08a24;
   --red: #ff6b6b;
   min-height: 100vh;
   background: var(--canvas);
@@ -60,13 +60,13 @@
   position: relative;
   overflow: hidden;
   border: 1px solid #50575c;
-  border-left: 3px solid var(--orange);
-  border-radius: 2px;
+  border-top: 2px solid var(--orange);
+  border-radius: 4px;
   padding: 22px 24px;
   color: white;
   background:
-    linear-gradient(100deg, rgba(241, 161, 26, .08), transparent 38%),
-    #0d0f10;
+    linear-gradient(105deg, rgba(240, 138, 36, .055), transparent 36%),
+    #202428;
   box-shadow: none;
 }
 
@@ -93,7 +93,7 @@
 .hero p {
   max-width: 670px;
   margin: 0;
-  color: #aab2b7;
+  color: #b4bbc0;
   font-size: 14px;
   line-height: 1.65;
 }
@@ -102,7 +102,7 @@
   justify-content: flex-start;
   flex-wrap: wrap;
   margin-top: 22px;
-  color: #9ca5ab;
+  color: #aab2b8;
   font-size: 11px;
 }
 
@@ -133,7 +133,8 @@
 }
 
 .kpiCard {
-  border-radius: 2px;
+  border-top: 2px solid #64717a;
+  border-radius: 4px;
   padding: 18px;
 }
 
@@ -226,7 +227,7 @@
 
 .panel {
   min-width: 0;
-  border-radius: 2px;
+  border-radius: 4px;
   padding: 18px;
 }
 
@@ -253,7 +254,7 @@
 }
 
 .insight {
-  border-radius: 2px;
+  border-radius: 4px;
   padding: 18px;
 }
 
@@ -305,10 +306,10 @@
   align-items: flex-start;
   gap: 12px;
   margin-top: 14px;
-  border-color: #66532d;
-  border-radius: 2px;
+  border-color: #69543a;
+  border-radius: 4px;
   padding: 14px 16px;
-  background: #1a1710;
+  background: #2b261f;
 }
 
 .noticeIcon {
@@ -317,9 +318,9 @@
   width: 26px;
   height: 26px;
   place-items: center;
-  border-radius: 2px;
-  background: #3c301b;
-  color: #f1a11a;
+  border-radius: 3px;
+  background: #4a3825;
+  color: #f0a252;
   font-weight: 800;
 }
 
@@ -410,7 +411,7 @@
 .stateCard {
   max-width: 520px;
   border: 1px solid var(--line);
-  border-radius: 2px;
+  border-radius: 4px;
   padding: 28px;
   background: var(--panel);
 }

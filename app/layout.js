@@ -5,7 +5,7 @@ import './globals.css'
 
 export const metadata = {
   title: {
-    default: 'JapanPulse Macro Terminal',
+    default: 'JapanPulse Macro Workspace',
     template: '%s | JapanPulse',
   },
   description: 'Japan macroeconomic indicators dashboard powered by e-Stat and Bank of Japan API',
