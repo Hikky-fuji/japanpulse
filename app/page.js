@@ -178,10 +178,11 @@ export default function HomePage() {
   const t = (obj) => obj[lang]
 
   return (
-    <main style={{ maxWidth: 860, margin: '0 auto', padding: '40px 16px', fontFamily: 'system-ui, sans-serif' }}>
-      <div style={{ marginBottom: 40 }}>
+    <main className="dashboard-hub" style={{ maxWidth: 860, margin: '0 auto', padding: '40px 16px', fontFamily: 'system-ui, sans-serif' }}>
+      <div className="dashboard-hub__hero" style={{ marginBottom: 40 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <div>
+            <div className="dashboard-hub__eyebrow">Japan / Macro Workspace</div>
             <h1 style={{ fontSize: 26, fontWeight: 700, color: '#111', margin: '0 0 6px' }}>
               Japan Macro Dashboard
             </h1>
@@ -234,9 +235,11 @@ export default function HomePage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
             {group.items.map(item => (
               <a
+                className="indicator-card"
                 key={item.href}
                 href={item.href}
                 style={{
+                  '--card-accent': group.color,
                   display: 'block', textDecoration: 'none',
                   background: '#fff', border: `1px solid ${group.border}`,
                   borderRadius: 10, padding: '16px 18px',

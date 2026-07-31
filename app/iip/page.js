@@ -260,7 +260,7 @@ export default function IIP() {
   const fmt = (v, suffix='') => v != null ? `${v > 0 ? '+' : ''}${v.toFixed(1)}${suffix}` : '--'
 
   return (
-    <main style={s.wrap}>
+    <main className="dashboard-page" style={s.wrap}>
       <div style={s.header}>
         <div>
           <a href="/" style={s.nav}>← Home</a>

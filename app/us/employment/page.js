@@ -387,7 +387,7 @@ export default function USEmploymentPage() {
   }
 
   return (
-    <main style={s.wrap}>
+    <main className="dashboard-page" style={s.wrap}>
 
       {/* ── Header ── */}
       <div style={s.header}>

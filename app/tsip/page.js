@@ -180,7 +180,7 @@ export default function TsipPage() {
   }
 
   return (
-    <main style={s.wrap}>
+    <main className="dashboard-page" style={s.wrap}>
       <div style={s.header}>
         <div>
           <a href="/" style={s.nav}>← Home</a>

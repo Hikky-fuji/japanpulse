@@ -1,14 +1,14 @@
 .page {
-  --ink: #17202a;
-  --muted: #68717d;
-  --line: #e4e8ed;
-  --panel: #ffffff;
-  --canvas: #f4f6f8;
-  --navy: #153a5b;
-  --blue: #2774ae;
-  --teal: #188977;
-  --orange: #d97706;
-  --red: #c94444;
+  --ink: #e9edf0;
+  --muted: #9ca5ab;
+  --line: #34393d;
+  --panel: #101214;
+  --canvas: #050505;
+  --navy: #101214;
+  --blue: #56a7d8;
+  --teal: #5ac59b;
+  --orange: #f1a11a;
+  --red: #ff6b6b;
   min-height: 100vh;
   background: var(--canvas);
   color: var(--ink);
@@ -59,13 +59,15 @@
 .hero {
   position: relative;
   overflow: hidden;
-  border-radius: 20px;
-  padding: 30px 32px;
+  border: 1px solid #50575c;
+  border-left: 3px solid var(--orange);
+  border-radius: 2px;
+  padding: 22px 24px;
   color: white;
   background:
-    radial-gradient(circle at 85% 15%, rgba(71, 171, 194, .34), transparent 30%),
-    linear-gradient(135deg, #102f49 0%, #194b6f 60%, #226579 100%);
-  box-shadow: 0 16px 36px rgba(20, 50, 75, .16);
+    linear-gradient(100deg, rgba(241, 161, 26, .08), transparent 38%),
+    #0d0f10;
+  box-shadow: none;
 }
 
 .eyebrow,
@@ -77,7 +79,7 @@
 }
 
 .eyebrow {
-  color: #9fd7df;
+  color: var(--orange);
   font-size: 11px;
 }
 
@@ -91,7 +93,7 @@
 .hero p {
   max-width: 670px;
   margin: 0;
-  color: #d6e6ec;
+  color: #aab2b7;
   font-size: 14px;
   line-height: 1.65;
 }
@@ -100,7 +102,7 @@
   justify-content: flex-start;
   flex-wrap: wrap;
   margin-top: 22px;
-  color: #c3d8e1;
+  color: #9ca5ab;
   font-size: 11px;
 }
 
@@ -127,11 +129,11 @@
 .insight {
   border: 1px solid var(--line);
   background: var(--panel);
-  box-shadow: 0 5px 16px rgba(30, 48, 65, .045);
+  box-shadow: none;
 }
 
 .kpiCard {
-  border-radius: 15px;
+  border-radius: 2px;
   padding: 18px;
 }
 
@@ -224,7 +226,7 @@
 
 .panel {
   min-width: 0;
-  border-radius: 15px;
+  border-radius: 2px;
   padding: 18px;
 }
 
@@ -251,7 +253,7 @@
 }
 
 .insight {
-  border-radius: 15px;
+  border-radius: 2px;
   padding: 18px;
 }
 
@@ -303,10 +305,10 @@
   align-items: flex-start;
   gap: 12px;
   margin-top: 14px;
-  border-color: #efd49b;
-  border-radius: 13px;
+  border-color: #66532d;
+  border-radius: 2px;
   padding: 14px 16px;
-  background: #fffaf0;
+  background: #1a1710;
 }
 
 .noticeIcon {
@@ -315,21 +317,21 @@
   width: 26px;
   height: 26px;
   place-items: center;
-  border-radius: 8px;
-  background: #f5e5bf;
-  color: #8a5b00;
+  border-radius: 2px;
+  background: #3c301b;
+  color: #f1a11a;
   font-weight: 800;
 }
 
 .notice strong {
   display: block;
-  color: #73521a;
+  color: #e8c77f;
   font-size: 11px;
 }
 
 .notice p {
   margin: 3px 0 0;
-  color: #7b6845;
+  color: #b9aa8a;
   font-size: 10px;
   line-height: 1.5;
 }
@@ -372,7 +374,7 @@
 .seriesId {
   display: block;
   margin-top: 2px;
-  color: #9aa1a8;
+  color: #778087;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 8px;
 }
@@ -391,7 +393,7 @@
   gap: 20px;
   margin-top: 28px;
   padding: 18px 2px 0;
-  border-top: 1px solid #dce1e6;
+  border-top: 1px solid var(--line);
   color: var(--muted);
   font-size: 10px;
   line-height: 1.5;
@@ -408,9 +410,9 @@
 .stateCard {
   max-width: 520px;
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 2px;
   padding: 28px;
-  background: white;
+  background: var(--panel);
 }
 
 .stateCard h1 {

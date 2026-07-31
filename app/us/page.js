@@ -58,9 +58,10 @@ const indicators = [
 
 export default function USHomePage() {
   return (
-    <main style={{ maxWidth: 860, margin: '0 auto', padding: '40px 16px', fontFamily: 'system-ui, sans-serif' }}>
+    <main className="dashboard-hub" style={{ maxWidth: 860, margin: '0 auto', padding: '40px 16px', fontFamily: 'system-ui, sans-serif' }}>
 
-      <div style={{ marginBottom: 40 }}>
+      <div className="dashboard-hub__hero" style={{ marginBottom: 40 }}>
+        <div className="dashboard-hub__eyebrow">United States / Macro Workspace</div>
         <div style={{ fontSize: 12, color: '#aaa', marginBottom: 8 }}>
           <a href="/" style={{ color: '#aaa', textDecoration: 'none' }}>🇯🇵 Japan Macro Dashboard</a>
           {' → '}
@@ -89,9 +90,11 @@ export default function USHomePage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
             {group.items.map(item => (
               <a
+                className="indicator-card"
                 key={item.href + item.title}
                 href={item.href}
                 style={{
+                  '--card-accent': group.color,
                   display: 'block', textDecoration: 'none',
                   background: '#fff', border: `1px solid ${group.border}`,
                   borderRadius: 10, padding: '16px 18px',

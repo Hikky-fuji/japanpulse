@@ -135,7 +135,7 @@ function chartOptions({ stacked = false, percentAxis = true } = {}) {
     plugins: {
       legend: {
         position: 'bottom',
-        labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 7, color: '#52606d', font: { size: 10 } },
+        labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 7, color: '#a7afb4', font: { size: 10 } },
       },
       tooltip: {
         backgroundColor: '#142b3c',
@@ -149,13 +149,13 @@ function chartOptions({ stacked = false, percentAxis = true } = {}) {
       x: {
         stacked,
         grid: { display: false },
-        ticks: { maxTicksLimit: 12, color: '#7c8792', font: { size: 9 } },
+        ticks: { maxTicksLimit: 12, color: '#8f989e', font: { size: 9 } },
       },
       y: {
         stacked,
-        grid: { color: '#edf0f3' },
+        grid: { color: '#292e31' },
         ticks: {
-          color: '#7c8792',
+          color: '#8f989e',
           font: { size: 9 },
           callback: value => percentAxis ? `${value}%` : value,
         },
@@ -322,7 +322,7 @@ export default function USCpiDashboard() {
                       {
                         label: '2% reference',
                         data: model.trendData.labels.map(() => 2),
-                        borderColor: '#aeb6bf',
+                        borderColor: '#626b71',
                         borderDash: [5, 5],
                         borderWidth: 1,
                         pointRadius: 0,

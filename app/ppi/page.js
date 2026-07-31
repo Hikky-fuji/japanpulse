@@ -126,7 +126,7 @@ export default function PPI() {
   const fmt = (v, s='') => v != null ? `${v > 0 ? '+' : ''}${v.toFixed(1)}${s}` : '--'
 
   return (
-    <main style={s.wrap}>
+    <main className="dashboard-page" style={s.wrap}>
       <div style={s.header}>
         <div>
           <a href="/" style={s.nav}>← Home</a>

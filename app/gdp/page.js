@@ -46,7 +46,7 @@ export default function GDPPage() {
   const latestYoy = data?.gdp_yoy?.at(-1)
 
   return (
-    <main style={s.wrap}>
+    <main className="dashboard-page" style={s.wrap}>
       <div style={s.header}>
         <h1 style={{ fontSize: 20, fontWeight: 600, color: '#111', margin: 0 }}>Japan GDP Dashboard</h1>
         <div style={s.nav}>

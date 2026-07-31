@@ -180,7 +180,7 @@ export default function Home() {
   }
 
   return (
-    <main style={s.wrap}>
+    <main className="dashboard-page" style={s.wrap}>
       <div style={s.header}>
     <h1 style={{fontSize:'20px',fontWeight:'600',color:'#111'}}>Japan CPI Dashboard</h1>
     <div style={{display:'flex',alignItems:'center',gap:'16px'}}>

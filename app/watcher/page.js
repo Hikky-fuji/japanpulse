@@ -240,7 +240,7 @@ export default function Watcher() {
   const fmtSpread = (v) => v == null ? '--' : v > 0 ? `+${v.toFixed(1)}` : v.toFixed(1)
 
   return (
-    <main style={s.wrap}>
+    <main className="dashboard-page" style={s.wrap}>
       {/* Header */}
       <div style={s.header}>
         <div>
