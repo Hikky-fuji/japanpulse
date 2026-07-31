@@ -1,6 +1,7 @@
 'use client'
 import React, { useEffect, useState } from 'react'
 import { Line, Bar } from 'react-chartjs-2'
+import { DashboardFreshness } from '../components/DashboardStatus'
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, PointElement, LineElement, BarElement,
@@ -47,6 +48,7 @@ export default function GDPPage() {
 
   return (
     <main className="dashboard-page" style={s.wrap}>
+      {data ? <DashboardFreshness data={data} source="Cabinet Office · e-Stat" /> : null}
       <div style={s.header}>
         <h1 style={{ fontSize: 20, fontWeight: 600, color: '#111', margin: 0 }}>Japan GDP Dashboard</h1>
         <div style={s.nav}>

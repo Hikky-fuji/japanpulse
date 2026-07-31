@@ -38,14 +38,14 @@ const indicators = [
     border: '#5DBF80',
     items: [
       {
-        href: '/us-macro',
+        href: '/us-macro#growth',
         title: 'GDP & Retail Sales',
         subtitle: 'GDP QoQ SAAR / Retail YoY',
         badge: 'Quarterly / Monthly',
         desc: 'Nominal GDP growth (Q/Q SAAR) and advance retail sales year-over-year. Source: BEA / Census via FRED.',
       },
       {
-        href: '/us-macro',
+        href: '/us-macro#fed-policy',
         title: 'Fed Policy',
         subtitle: 'Fed Funds Rate / FOMC',
         badge: 'Monthly',

@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Line, Scatter } from 'react-chartjs-2'
+import { DashboardFreshness, DashboardState } from '../components/DashboardStatus'
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, PointElement,
@@ -19,7 +20,7 @@ export default function Labour() {
   }, [])
 
   if (!labour?.data?.length) return (
-    <div style={{ padding: '40px', fontFamily: 'sans-serif', color: '#666' }}>Loading...</div>
+    <DashboardState />
   )
 
   const { data: labourData, scatter: scatterRaw } = labour
@@ -219,6 +220,7 @@ export default function Labour() {
 
   return (
     <main className="dashboard-page" style={s.wrap}>
+      <DashboardFreshness data={{ labour, wages }} source="MIC / MHLW · e-Stat" />
       <div style={s.header}>
         <div>
           <a href="/" style={s.nav}>← Home</a>

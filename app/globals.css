@@ -43,6 +43,12 @@ a {
   color: inherit;
 }
 
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--jp-orange);
+  outline-offset: 3px;
+}
+
 .terminal-header {
   position: sticky;
   z-index: 30;
@@ -156,18 +162,9 @@ a {
   white-space: nowrap;
 }
 
-.terminal-statusbar__live {
-  color: var(--jp-green);
-}
-
-.terminal-statusbar__live::before {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 6px;
-  border-radius: 50%;
-  background: currentColor;
-  content: "";
+.terminal-statusbar__sources {
+  color: var(--jp-orange);
+  font-weight: 700;
 }
 
 .site-content {
@@ -197,7 +194,8 @@ a {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
 }
 
-.dashboard-page > div:first-child {
+.dashboard-page > div:first-child:not(.dashboard-freshness),
+.dashboard-page > .dashboard-freshness + div {
   min-height: 52px;
   margin-bottom: 12px !important;
   padding: 10px 12px !important;
@@ -221,6 +219,7 @@ a {
 }
 
 .dashboard-page table {
+  max-width: 100%;
   color: var(--jp-text);
 }
 
@@ -279,6 +278,93 @@ a {
 
 .dashboard-page canvas {
   filter: saturate(.88) brightness(1.12);
+}
+
+.dashboard-anchor {
+  scroll-margin-top: 96px;
+}
+
+.dashboard-freshness {
+  display: flex;
+  min-height: 34px;
+  margin-bottom: 12px;
+  padding: 8px 11px;
+  align-items: center;
+  gap: 16px;
+  overflow-x: auto;
+  border: 1px solid #424a4f;
+  background: #202529;
+  color: #bec5c9;
+  font: 650 9px/1.35 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  letter-spacing: .035em;
+  white-space: nowrap;
+  scrollbar-width: thin;
+}
+
+.dashboard-freshness__source {
+  color: var(--jp-orange);
+  text-transform: uppercase;
+}
+
+.dashboard-state {
+  display: flex;
+  width: min(720px, calc(100% - 24px));
+  min-height: 150px;
+  margin: 32px auto;
+  padding: 24px;
+  align-items: center;
+  gap: 18px;
+  border: 1px solid var(--jp-line);
+  border-top: 2px solid var(--jp-orange);
+  background: var(--jp-surface);
+  color: var(--jp-text);
+}
+
+.dashboard-state__mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  place-items: center;
+  border: 1px solid var(--jp-line-strong);
+  color: var(--jp-orange);
+  font: 800 13px/1 ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.dashboard-state strong {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+
+.dashboard-state p {
+  margin: 0;
+  color: var(--jp-muted);
+  font-size: 12px;
+}
+
+.dashboard-state__retry {
+  margin-top: 13px;
+  padding: 7px 12px;
+  border: 1px solid var(--jp-line-strong);
+  border-radius: 2px;
+  background: var(--jp-surface-raised);
+  color: var(--jp-text);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.dashboard-state__retry:hover {
+  border-color: var(--jp-orange);
+}
+
+.dashboard-state--error {
+  border-top-color: var(--jp-red);
+}
+
+.dashboard-state--error .dashboard-state__mark {
+  color: var(--jp-red);
 }
 
 .dashboard-hub {
@@ -505,19 +591,8 @@ a {
   white-space: nowrap;
 }
 
-.macro-workspace__summary .macro-workspace__live {
-  color: #66d394;
-}
-
-.macro-workspace__live i,
-.macro-tile__status i {
-  display: inline-block;
-  width: 6px;
-  height: 6px;
-  margin-right: 6px;
-  border-radius: 50%;
-  background: #4fd183;
-  box-shadow: 0 0 7px rgba(79, 209, 131, 0.5);
+.macro-workspace__summary .macro-workspace__refresh {
+  color: #f1f4f5;
 }
 
 .macro-workspace__body {
@@ -693,8 +768,8 @@ a {
   letter-spacing: 0.03em;
 }
 
-.macro-tile__status {
-  color: #70d99b;
+.macro-tile__destination {
+  color: #c9cfd2;
   white-space: nowrap;
 }
 
@@ -735,6 +810,29 @@ a {
   .dashboard-page,
   .dashboard-hub {
     width: calc(100% - 20px) !important;
+  }
+
+  .dashboard-page {
+    overflow-x: hidden;
+  }
+
+  .dashboard-page table {
+    display: block;
+    width: 100% !important;
+    overflow-x: auto;
+    white-space: nowrap;
+    scrollbar-width: thin;
+  }
+
+  .dashboard-page [style*="font-size: 9px"],
+  .dashboard-page [style*="fontSize: '9px'"],
+  .dashboard-page [style*="font-size: 10px"],
+  .dashboard-page [style*="fontSize: '10px'"] {
+    font-size: 11px !important;
+  }
+
+  .dashboard-freshness {
+    margin-bottom: 10px;
   }
 
   .macro-workspace {

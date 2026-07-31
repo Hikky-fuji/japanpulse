@@ -1,6 +1,7 @@
 'use client'
 import React, { useEffect, useState } from 'react'
 import { Line, Bar, Doughnut, Scatter } from 'react-chartjs-2'
+import { DashboardFreshness, DashboardState } from '../../components/DashboardStatus'
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, PointElement,
@@ -43,8 +44,8 @@ export default function USEmploymentPage() {
       .catch(e => setError(String(e)))
   }, [])
 
-  if (error) return <div style={{ padding: '40px', fontFamily: 'sans-serif', color: '#E24B4A' }}>Error: {error}</div>
-  if (!data)  return <div style={{ padding: '40px', fontFamily: 'sans-serif', color: '#666' }}>Loading…</div>
+  if (error) return <DashboardState type="error" message={error} />
+  if (!data) return <DashboardState message="Connecting to BLS and FRED data…" />
 
   const { employment, sectors, sectorAhe, sep } = data
   const { payems, unrate, u6rate, civpart, prime_part, ahe } = employment
@@ -390,6 +391,7 @@ export default function USEmploymentPage() {
 
   return (
     <main className="dashboard-page" style={s.wrap}>
+      <DashboardFreshness data={data} source="BLS · FRED" />
 
       {/* ── Header ── */}
       <div style={s.header}>

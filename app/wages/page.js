@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Line } from 'react-chartjs-2'
+import { DashboardFreshness, DashboardState } from '../components/DashboardStatus'
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, PointElement,
@@ -17,7 +18,7 @@ export default function Wages() {
   }, [])
 
   if (!data?.nominal?.length) return (
-    <div style={{ padding: '40px', fontFamily: 'sans-serif', color: '#666' }}>Loading...</div>
+    <DashboardState />
   )
 
   const { nominal, real, scheduled, parttime_ratio, nominal_same, scheduled_same, latest_date } = data
@@ -166,6 +167,7 @@ export default function Wages() {
 
   return (
     <main className="dashboard-page" style={s.wrap}>
+      <DashboardFreshness data={data} source="MHLW · e-Stat" />
       <div style={s.header}>
         <div>
           <a href="/" style={s.nav}>← Home</a>

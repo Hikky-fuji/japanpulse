@@ -1,6 +1,7 @@
 'use client'
 import React, { useEffect, useState } from 'react'
 import { Line, Bar, Doughnut } from 'react-chartjs-2'
+import { DashboardFreshness, DashboardState } from '../components/DashboardStatus'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -29,7 +30,7 @@ export default function Home() {
   }, [])
 
   if (!data || !data.headline?.length) return (
-    <div style={{padding:'40px',fontFamily:'sans-serif',color:'#666'}}>Loading...</div>
+    <DashboardState />
   )
 
   const {
@@ -181,6 +182,7 @@ export default function Home() {
 
   return (
     <main className="dashboard-page" style={s.wrap}>
+      <DashboardFreshness data={data} source="MIC · e-Stat" />
       <div style={s.header}>
     <h1 style={{fontSize:'20px',fontWeight:'600',color:'#111'}}>Japan CPI Dashboard</h1>
     <div style={{display:'flex',alignItems:'center',gap:'16px'}}>

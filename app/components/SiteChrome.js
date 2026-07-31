@@ -39,7 +39,7 @@ export function SiteHeader() {
       </div>
       <div className="terminal-statusbar">
         <div className="terminal-statusbar__inner">
-          <span className="terminal-statusbar__live">Live data connections</span>
+          <span className="terminal-statusbar__sources">Official data sources</span>
           <span>Japan · e-Stat / BOJ</span>
           <span>United States · FRED / BLS / BEA</span>
           <span>Workspace · Macro Monitor</span>
@@ -53,7 +53,7 @@ export function SiteFooter() {
   return (
     <footer className="terminal-footer">
       <span>JapanPulse · Macro Data Workspace</span>
-      <span>Personal research use</span>
+      <span>Official-source economic data</span>
     </footer>
   )
 }

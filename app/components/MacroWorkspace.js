@@ -43,6 +43,10 @@ function toneForGroup(groupName) {
   return 'tone-blue'
 }
 
+function sourceForPath(path, fallback) {
+  return SOURCE_BY_PATH[path.split('#')[0]] ?? fallback
+}
+
 export default function MacroWorkspace({
   country,
   countryCode,
@@ -85,8 +89,8 @@ export default function MacroWorkspace({
 
       <section className="macro-workspace__summary" aria-label={`${country} workspace summary`}>
         <div>
-          <span>Coverage</span>
-          <strong>{indicatorCount} indicators</strong>
+          <span>Dashboards</span>
+          <strong>{indicatorCount} dashboards</strong>
         </div>
         <div>
           <span>Sections</span>
@@ -97,8 +101,8 @@ export default function MacroWorkspace({
           <strong>{sourceNetwork}</strong>
         </div>
         <div>
-          <span>Pipeline</span>
-          <strong className="macro-workspace__live"><i /> Auto update</strong>
+          <span>Refresh</span>
+          <strong className="macro-workspace__refresh">On page load</strong>
         </div>
       </section>
 
@@ -131,7 +135,7 @@ export default function MacroWorkspace({
                     <i />
                     <h2>{groupName}</h2>
                   </div>
-                  <span>{group.items.length} {group.items.length === 1 ? 'view' : 'views'}</span>
+                  <span>{group.items.length} {group.items.length === 1 ? 'dashboard' : 'dashboards'}</span>
                 </header>
 
                 <div className="macro-section__grid">
@@ -143,13 +147,13 @@ export default function MacroWorkspace({
                     >
                       <div className="macro-tile__topline">
                         <span>{t(item.badge)}</span>
-                        <b aria-hidden="true">↗</b>
+                        <b aria-hidden="true">→</b>
                       </div>
                       <h3>{t(item.title)}</h3>
                       <p>{t(item.subtitle)}</p>
                       <footer>
-                        <span>{SOURCE_BY_PATH[item.href] ?? sourceNetwork}</span>
-                        <span className="macro-tile__status"><i /> LIVE</span>
+                        <span>{sourceForPath(item.href, sourceNetwork)}</span>
+                        <span className="macro-tile__destination">Open dashboard</span>
                       </footer>
                     </Link>
                   ))}

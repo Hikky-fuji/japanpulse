@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState, useRef } from 'react'
 import { Bar } from 'react-chartjs-2'
+import { DashboardFreshness, DashboardState } from '../components/DashboardStatus'
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, PointElement,
@@ -193,13 +194,10 @@ export default function Trade() {
   }, [])
 
   if (!data) return (
-    <div style={{padding:'40px', fontFamily:'sans-serif', color:'#666'}}>Loading...</div>
+    <DashboardState />
   )
   if (!data.months?.length) return (
-    <div style={{padding:'40px', fontFamily:'sans-serif', color:'#666'}}>
-      <div style={{marginBottom:'8px', fontWeight:'600'}}>Trade data unavailable</div>
-      {data.error && <div style={{fontSize:'12px', color:'#aaa'}}>{data.error}</div>}
-    </div>
+    <DashboardState type="error" message={data.error || 'Trade data is currently unavailable.'} />
   )
 
   const { months, export: exp, import: imp, byDest } = data
@@ -335,6 +333,7 @@ export default function Trade() {
 
   return (
     <main className="dashboard-page" style={s.wrap}>
+      <DashboardFreshness data={data} source="MOF · e-Stat" />
       <div style={s.header}>
         <div>
           <a href="/" style={s.nav}>← Home</a>
