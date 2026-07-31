@@ -1,13 +1,13 @@
 :root {
   color-scheme: dark;
-  --jp-black: #171a1d;
-  --jp-surface: #202428;
-  --jp-surface-raised: #252a2e;
-  --jp-surface-hover: #2d3337;
-  --jp-line: #3d4449;
-  --jp-line-strong: #555d63;
-  --jp-text: #e5e9ed;
-  --jp-muted: #aab2b8;
+  --jp-black: #1c2023;
+  --jp-surface: #272c30;
+  --jp-surface-raised: #30363a;
+  --jp-surface-hover: #383f44;
+  --jp-line: #4a5258;
+  --jp-line-strong: #687178;
+  --jp-text: #f5f7f8;
+  --jp-muted: #c7cdd1;
   --jp-orange: #f08a24;
   --jp-blue: #42a9bc;
   --jp-green: #6abf91;
@@ -48,7 +48,7 @@ a {
   z-index: 30;
   top: 0;
   border-bottom: 1px solid var(--jp-line);
-  background: rgba(37, 41, 45, .97);
+  background: rgba(42, 47, 51, .97);
   backdrop-filter: blur(14px);
 }
 
@@ -106,7 +106,7 @@ a {
   position: relative;
   border-right: 1px solid #343a3e;
   padding: 0 14px;
-  color: var(--jp-muted);
+  color: #d0d5d8;
   font-size: 11px;
   text-decoration: none;
   white-space: nowrap;
@@ -149,7 +149,7 @@ a {
   align-items: center;
   gap: 22px;
   overflow: hidden;
-  color: #9fa7ad;
+  color: #c0c6ca;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 9px;
   letter-spacing: .04em;
@@ -182,7 +182,7 @@ a {
   justify-content: space-between;
   gap: 16px;
   border-top: 1px solid var(--jp-line);
-  color: #858e94;
+  color: #abb2b7;
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 9px;
   letter-spacing: .04em;
@@ -375,6 +375,15 @@ a {
   background: var(--jp-surface-hover) !important;
   box-shadow: 0 10px 24px rgba(0, 0, 0, .16) !important;
   transform: translateY(-1px);
+}
+
+.indicator-card > div:first-child > div:first-child {
+  color: #ffffff !important;
+  font-weight: 750 !important;
+}
+
+.indicator-card > div:nth-of-type(3) {
+  color: #d5dade !important;
 }
 
 @media (max-width: 760px) {

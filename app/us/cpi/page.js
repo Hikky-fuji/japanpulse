@@ -135,7 +135,7 @@ function chartOptions({ stacked = false, percentAxis = true } = {}) {
     plugins: {
       legend: {
         position: 'bottom',
-        labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 7, color: '#aab2b8', font: { size: 10 } },
+        labels: { usePointStyle: true, pointStyle: 'circle', boxWidth: 7, color: '#c7cdd1', font: { size: 10 } },
       },
       tooltip: {
         backgroundColor: '#142b3c',
@@ -149,13 +149,13 @@ function chartOptions({ stacked = false, percentAxis = true } = {}) {
       x: {
         stacked,
         grid: { display: false },
-        ticks: { maxTicksLimit: 12, color: '#98a1a7', font: { size: 9 } },
+        ticks: { maxTicksLimit: 12, color: '#bac1c6', font: { size: 9 } },
       },
       y: {
         stacked,
-        grid: { color: '#3a4044' },
+        grid: { color: '#495157' },
         ticks: {
-          color: '#98a1a7',
+          color: '#bac1c6',
           font: { size: 9 },
           callback: value => percentAxis ? `${value}%` : value,
         },

@@ -1,10 +1,10 @@
 .page {
-  --ink: #e5e9ed;
-  --muted: #aab2b8;
-  --line: #3d4449;
-  --panel: #202428;
-  --canvas: #171a1d;
-  --navy: #202428;
+  --ink: #f5f7f8;
+  --muted: #c7cdd1;
+  --line: #4a5258;
+  --panel: #30363a;
+  --canvas: #1c2023;
+  --navy: #272c30;
   --blue: #42a9bc;
   --teal: #6abf91;
   --orange: #f08a24;
@@ -66,7 +66,7 @@
   color: white;
   background:
     linear-gradient(105deg, rgba(240, 138, 36, .055), transparent 36%),
-    #202428;
+    #272c30;
   box-shadow: none;
 }
 
@@ -93,7 +93,7 @@
 .hero p {
   max-width: 670px;
   margin: 0;
-  color: #b4bbc0;
+  color: #d2d7da;
   font-size: 14px;
   line-height: 1.65;
 }
@@ -102,7 +102,7 @@
   justify-content: flex-start;
   flex-wrap: wrap;
   margin-top: 22px;
-  color: #aab2b8;
+  color: #c7cdd1;
   font-size: 11px;
 }
 
