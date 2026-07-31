@@ -30,17 +30,7 @@ const scatterLabelPlugin = {
 }
 ChartJS.register(scatterLabelPlugin)
 
-// Fed SEP long-run unemployment estimate (update quarterly after each SEP)
-const FED_SEP_LONGRUN = 4.2  // Dec 2024 SEP median
-
-// Fed SEP year-end projections (update after each quarterly SEP release)
-const SEP_RELEASE = 'Mar 2026'
-const SEP_DOTS = [
-  { date: '2026-12', value: 4.4 },
-  { date: '2027-12', value: 4.2 },
-  { date: '2028-12', value: 4.2 },
-  { date: '2029-12', value: 4.2 },
-]
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 export default function USEmploymentPage() {
   const [data, setData] = useState(null)
@@ -56,7 +46,7 @@ export default function USEmploymentPage() {
   if (error) return <div style={{ padding: '40px', fontFamily: 'sans-serif', color: '#E24B4A' }}>Error: {error}</div>
   if (!data)  return <div style={{ padding: '40px', fontFamily: 'sans-serif', color: '#666' }}>Loading…</div>
 
-  const { employment, sectors, sectorAhe } = data
+  const { employment, sectors, sectorAhe, sep } = data
   const { payems, unrate, u6rate, civpart, prime_part, ahe } = employment
 
   // ── helpers ──────────────────────────────────────────────────────────
@@ -71,6 +61,16 @@ export default function USEmploymentPage() {
   const dc      = v => v == null ? '#888' : v >= 0 ? '#1D9E75' : '#E24B4A'
   const dcInv   = v => v == null ? '#888' : v <= 0 ? '#1D9E75' : '#E24B4A'
   const cellClr = v => v == null ? '#888' : v >= 0 ? '#1D9E75' : '#E24B4A'
+  const sepYearEnd = sep?.yearEnd || []
+  const latestSepLongRun = lat(sep?.longRun)
+  const sepLongRunValue = latestSepLongRun?.value ?? null
+  const sepReleaseLabel = latestSepLongRun?.date
+    ? `${MONTH_NAMES[Number(latestSepLongRun.date.slice(5, 7)) - 1]} ${latestSepLongRun.date.slice(0, 4)}`
+    : null
+  const sepDots = sepYearEnd.map(point => ({
+    date: `${point.date.slice(0, 4)}-12`,
+    value: point.value,
+  }))
 
   // ── 3-month helpers ──────────────────────────────────────────────────
   const get3mChanges = arr => {
@@ -229,7 +229,7 @@ export default function USEmploymentPage() {
   const unrPostCovid = (unrate || []).filter(v => v.date >= '2021-01-01')
   const histLabels   = unrPostCovid.map(v => v.date.slice(0, 7))
 
-  // Generate monthly labels from next month through Dec 2029
+  // Generate monthly labels through the final year available in the latest SEP.
   const lastHistDate = histLabels.length ? histLabels[histLabels.length - 1] : '2025-01'
   const genFutureMonths = (fromYM, toYM) => {
     const months = []
@@ -243,13 +243,15 @@ export default function USEmploymentPage() {
     }
     return months
   }
-  const futureMonths = genFutureMonths(lastHistDate, '2029-12')
+  const latestSepDot = lat(sepDots)
+  const forecastEnd = latestSepDot?.date ?? lastHistDate
+  const futureMonths = genFutureMonths(lastHistDate, forecastEnd)
   const allUnrLabels = [...histLabels, ...futureMonths]
   const unrLineData  = [...unrPostCovid.map(v => v.value), ...Array(futureMonths.length).fill(null)]
-  const sepLongRunData = allUnrLabels.map(() => FED_SEP_LONGRUN)
+  const sepLongRunData = allUnrLabels.map(() => sepLongRunValue)
+  const sepDotMap = new Map(sepDots.map(dot => [dot.date, dot.value]))
   const sepDotData   = allUnrLabels.map(l => {
-    const dot = SEP_DOTS.find(d => d.date === l)
-    return dot ? dot.value : null
+    return sepDotMap.get(l) ?? null
   })
 
   // ── U-3 vs U-6 (5Y / 60M) ────────────────────────────────────────────
@@ -509,7 +511,9 @@ export default function USEmploymentPage() {
               <tr>
                 <td style={{ ...s.td, fontWeight: '600' }}>Fed SEP Long-Run Est.</td>
                 {[0,1,2].map(i => (
-                  <td key={i} style={{ ...s.tdR, color: '#D85A30', fontWeight: '500' }}>{FED_SEP_LONGRUN.toFixed(1)}%</td>
+                  <td key={i} style={{ ...s.tdR, color: '#D85A30', fontWeight: '500' }}>
+                    {sepLongRunValue != null ? `${sepLongRunValue.toFixed(1)}%` : '--'}
+                  </td>
                 ))}
               </tr>
               <tr>
@@ -597,7 +601,9 @@ export default function USEmploymentPage() {
       <div style={s.box}>
         <div style={s.boxTitle}>Unemployment Rate U-3 — Post-COVID (2021–) + Fed SEP Path (SA)</div>
         <div style={s.boxSub}>
-          SA · UNRATE (FRED) · Orange dots = Fed SEP year-end projections ({SEP_RELEASE}) · Dashed = Long-Run estimate {FED_SEP_LONGRUN}%
+          SA · UNRATE / UNRATEMD / UNRATEMDLR (FRED) · Orange dots = SEP year-end median
+          {sepReleaseLabel ? ` · Updated ${sepReleaseLabel}` : ''}
+          {sepLongRunValue != null ? ` · Dashed = Long-Run ${sepLongRunValue.toFixed(1)}%` : ''}
         </div>
         <Line
           data={{
@@ -609,12 +615,12 @@ export default function USEmploymentPage() {
                 borderColor: '#378ADD', borderWidth: 2, pointRadius: 0, tension: 0.3,
               },
               {
-                label: `Fed SEP Long-Run (${FED_SEP_LONGRUN}%)`,
+                label: `Fed SEP Long-Run${sepLongRunValue != null ? ` (${sepLongRunValue.toFixed(1)}%)` : ''}`,
                 data: sepLongRunData,
                 borderColor: '#D85A30', borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0, tension: 0,
               },
               {
-                label: `SEP Year-End Path (${SEP_RELEASE})`,
+                label: 'SEP Year-End Path',
                 data: sepDotData,
                 borderColor: '#D85A30', backgroundColor: '#D85A30',
                 borderWidth: 0, pointRadius: 8, pointHoverRadius: 10,
