@@ -1,5 +1,4 @@
-'use client'
-import React, { useState } from 'react'
+import MacroWorkspace from './components/MacroWorkspace'
 
 const indicators = [
   {
@@ -174,109 +173,18 @@ const indicators = [
 ]
 
 export default function HomePage() {
-  const [lang, setLang] = useState('en')
-  const t = (obj) => obj[lang]
-
   return (
-    <main className="dashboard-hub" style={{ maxWidth: 860, margin: '0 auto', padding: '40px 16px', fontFamily: 'system-ui, sans-serif' }}>
-      <div className="dashboard-hub__hero" style={{ marginBottom: 40 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <div className="dashboard-hub__eyebrow">Japan / Macro Workspace</div>
-            <h1 style={{ fontSize: 26, fontWeight: 700, color: '#111', margin: '0 0 6px' }}>
-              Japan Macro Dashboard
-            </h1>
-            <p style={{ fontSize: 14, color: '#666', margin: 0 }}>
-              {lang === 'en'
-                ? "Tracking Japan's key macroeconomic indicators in real time. Data auto-updated from e-Stat (government statistics)."
-                : '日本の主要マクロ経済指標をリアルタイムで追跡。e-Stat（政府統計）から自動更新。'}
-            </p>
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginLeft: 16, flexShrink: 0 }}>
-            <a
-              href="/us"
-              style={{
-                fontSize: 12, fontWeight: 600, padding: '5px 12px',
-                border: '1px solid #6B8FE8', borderRadius: 6,
-                background: '#F0F4FF', textDecoration: 'none', color: '#1A56DB',
-              }}
-            >
-              🇺🇸 US
-            </a>
-            <button
-              onClick={() => setLang(l => l === 'en' ? 'ja' : 'en')}
-              style={{
-                fontSize: 12, fontWeight: 600, padding: '5px 12px',
-                border: '1px solid #ddd', borderRadius: 6,
-                background: '#fff', cursor: 'pointer', color: '#444',
-              }}
-            >
-              {lang === 'en' ? '日本語' : 'English'}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {indicators.map(group => (
-        <div key={group.group.en} style={{ marginBottom: 36 }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14,
-            paddingBottom: 8, borderBottom: `2px solid ${group.border}`
-          }}>
-            <span style={{
-              width: 10, height: 10, borderRadius: '50%',
-              background: group.color, display: 'inline-block'
-            }} />
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: group.color, margin: 0 }}>
-              {t(group.group)}
-            </h2>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
-            {group.items.map(item => (
-              <a
-                className="indicator-card"
-                key={item.href}
-                href={item.href}
-                style={{
-                  '--card-accent': group.color,
-                  display: 'block', textDecoration: 'none',
-                  background: '#fff', border: `1px solid ${group.border}`,
-                  borderRadius: 10, padding: '16px 18px',
-                  transition: 'box-shadow 0.15s',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                }}
-                onMouseEnter={e => e.currentTarget.style.boxShadow = `0 4px 12px ${group.color}30`}
-                onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'}
-              >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div className="indicator-card__title" style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{t(item.title)}</div>
-                  <span className="indicator-card__badge" style={{
-                    fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 10,
-                    background: item.badgeColor ?? group.color, color: '#fff',
-                    whiteSpace: 'nowrap', marginLeft: 8, marginTop: 2,
-                  }}>
-                    {t(item.badge)}
-                  </span>
-                </div>
-                <div className="indicator-card__subtitle" style={{ fontSize: 12, color: group.color, fontWeight: 600, marginBottom: 6 }}>
-                  {t(item.subtitle)}
-                </div>
-                <div className="indicator-card__description" style={{ fontSize: 12, color: '#555', lineHeight: 1.6 }}>
-                  {t(item.desc)}
-                </div>
-              </a>
-            ))}
-          </div>
-        </div>
-      ))}
-
-      <div className="dashboard-hub__footer" style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid #eee', fontSize: 11, color: '#aaa', textAlign: 'center' }}>
-        Data Source: Statistics Bureau MIC / Cabinet Office / Bank of Japan · e-Stat API
-      </div>
-      <div style={{ marginTop: 12, textAlign: 'center' }}>
-        <a href="/us-macro" style={{ fontSize: 11, color: '#aaa', textDecoration: 'none', opacity: 0.6 }}>🇺🇸 US Macro</a>
-      </div>
-    </main>
+    <MacroWorkspace
+      country="Japan"
+      countryCode="JP"
+      title="Japan Macro Dashboard"
+      description={{
+        en: "A high-density view of Japan's key economic indicators, updated from official sources.",
+        ja: '日本の主要経済指標を、公的統計から自動更新する高密度ダッシュボード。',
+      }}
+      indicators={indicators}
+      bilingual
+      sourceNetwork="e-Stat · BOJ · MOF"
+    />
   )
 }
