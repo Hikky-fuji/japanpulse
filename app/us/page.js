@@ -24,11 +24,11 @@ const indicators = [
     border: '#F0A050',
     items: [
       {
-        href: '/us-macro',
+        href: '/us/cpi',
         title: 'CPI & Inflation',
-        subtitle: 'CPI / Core CPI (ex. Food & Energy)',
+        subtitle: 'Headline / Core / Services ex Shelter',
         badge: 'Monthly',
-        desc: 'Consumer price index year-over-year trends. Headline and core (ex. food & energy). Source: BLS via FRED.',
+        desc: 'Headline, core, supercore proxy, category momentum and inflation contributions. Source: BLS via FRED.',
       },
     ],
   },
