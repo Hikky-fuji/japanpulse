@@ -98,12 +98,23 @@ function WorldMap({ byDest, year }) {
 
       // Trading partner geographic centers
       const partnerMeta = {
-        USA:        { coord: [-98, 39], label: 'US',          japanPort: [9, -9],  curve: -0.18 },
-        China:      { coord: [105, 35], label: 'China',       japanPort: [-10, -5], curve: 0.23 },
-        Korea:      { coord: [128, 36], label: 'Korea',       japanPort: [-3, -12], curve: -0.34 },
-        EU:         { coord: [10, 51],   label: 'EU',          japanPort: [-11, 2],  curve: -0.16 },
-        ASEAN:      { coord: [112, 5],   label: 'ASEAN',      japanPort: [-2, 11],  curve: 0.22 },
-        MiddleEast: { coord: [45, 25],   label: 'Middle East', japanPort: [-10, 8],  curve: 0.16 },
+        USA:         { coord: [-98, 39],   japanPort: [10, -8],  curve: -0.18 },
+        China:       { coord: [105, 35],   japanPort: [-11, -5], curve: 0.23 },
+        Korea:       { coord: [128, 36],   japanPort: [-4, -13], curve: -0.34 },
+        Taiwan:      { coord: [121, 23.7], japanPort: [-8, 9],   curve: 0.32 },
+        HongKong:    { coord: [114, 22.3], japanPort: [-11, 7],  curve: -0.28 },
+        Thailand:    { coord: [101, 15],   japanPort: [-6, 12],  curve: 0.22 },
+        Singapore:   { coord: [103.8, 1.4], japanPort: [0, 13],  curve: -0.18 },
+        Malaysia:    { coord: [102, 4],    japanPort: [-3, 13],  curve: 0.28 },
+        Philippines: { coord: [122, 12],   japanPort: [5, 12],   curve: -0.32 },
+        Indonesia:   { coord: [118, -2],   japanPort: [3, 13],   curve: 0.18 },
+        India:       { coord: [79, 22],    japanPort: [-10, 9],  curve: -0.16 },
+        UK:          { coord: [-3, 55],    japanPort: [-11, -1], curve: 0.14 },
+        Germany:     { coord: [10, 51],    japanPort: [-12, 2],  curve: -0.16 },
+        Canada:      { coord: [-106, 56],  japanPort: [8, -11],  curve: 0.18 },
+        Mexico:      { coord: [-102, 23],  japanPort: [12, -3],  curve: -0.14 },
+        Australia:   { coord: [134, -25],  japanPort: [8, 10],   curve: 0.16 },
+        Vietnam:     { coord: [108, 16],   japanPort: [-8, 11],  curve: -0.22 },
       }
 
       const japanXY = projection([137, 36])
@@ -132,6 +143,10 @@ function WorldMap({ byDest, year }) {
         if (netLatest === 0 && expLatest === 0) return []
 
         return [{ country, destData, meta, pXY, netLatest, expLatest, impLatest }]
+      }).sort((a, b) => {
+        const distanceA = Math.hypot(a.pXY[0] - japanXY[0], a.pXY[1] - japanXY[1])
+        const distanceB = Math.hypot(b.pXY[0] - japanXY[0], b.pXY[1] - japanXY[1])
+        return distanceB - distanceA
       })
       const maxMagnitude = Math.max(...flows.map(flow => Math.abs(flow.netLatest)), 1)
 
@@ -190,24 +205,13 @@ function WorldMap({ byDest, year }) {
         })
         arc.on('mouseleave', () => tooltip.style('display', 'none'))
 
-        // Partner dots and labels make each route's endpoint explicit.
+        // A small endpoint dot supports hover without duplicating map labels.
         svg.append('circle')
           .attr('cx', pXY[0]).attr('cy', pXY[1])
           .attr('r', 3.5)
           .attr('fill', color)
           .attr('stroke', '#fff')
           .attr('stroke-width', 1.5)
-
-        svg.append('text')
-          .attr('x', pXY[0] + 6).attr('y', pXY[1] - 6)
-          .attr('font-size', '10px')
-          .attr('fill', '#243444')
-          .attr('font-weight', '700')
-          .attr('paint-order', 'stroke')
-          .attr('stroke', '#F5F8FB')
-          .attr('stroke-width', 3)
-          .attr('stroke-linejoin', 'round')
-          .text(meta.label)
       }
 
       // Japan marker
@@ -215,11 +219,6 @@ function WorldMap({ byDest, year }) {
         .attr('cx', japanXY[0]).attr('cy', japanXY[1])
         .attr('r', 7).attr('fill', '#378ADD').attr('stroke', '#fff').attr('stroke-width', 1.5)
 
-      svg.append('text')
-        .attr('x', japanXY[0] + 10).attr('y', japanXY[1] + 4)
-        .attr('font-size', '12px').attr('fill', '#1769B0').attr('font-weight', '700')
-        .attr('paint-order', 'stroke').attr('stroke', '#fff').attr('stroke-width', 3)
-        .text('Japan')
     }
 
     draw().catch(console.error)
