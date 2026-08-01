@@ -78,26 +78,32 @@ function WorldMap({ byDest, year }) {
         .attr('stroke', '#fff')
         .attr('stroke-width', 0.4)
 
-      // Arrow markers
+      // Fixed-size arrow markers. markerUnits prevents thick flows from
+      // producing oversized arrowheads that cover Japan and nearby partners.
       const defs = svg.append('defs')
       for (const [id, clr] of [['arrG', '#1D9E75'], ['arrR', '#E24B4A']]) {
         defs.append('marker')
           .attr('id', id)
-          .attr('viewBox', '0 0 10 6')
-          .attr('refX', 9).attr('refY', 3)
-          .attr('markerWidth', 6).attr('markerHeight', 6)
+          .attr('markerUnits', 'userSpaceOnUse')
+          .attr('viewBox', '0 0 12 10')
+          .attr('refX', 11).attr('refY', 5)
+          .attr('markerWidth', 12).attr('markerHeight', 10)
           .attr('orient', 'auto')
-          .append('path').attr('d', 'M0,0 L10,3 L0,6 Z').attr('fill', clr)
+          .append('path')
+          .attr('d', 'M0,0 L12,5 L0,10 Z')
+          .attr('fill', clr)
+          .attr('stroke', '#fff')
+          .attr('stroke-width', 0.8)
       }
 
       // Trading partner geographic centers
-      const partnerCoords = {
-        USA:        [-98,  39],
-        China:      [105,  35],
-        Korea:      [128,  36],
-        EU:         [10,   51],
-        ASEAN:      [112,   5],
-        MiddleEast: [45,   25],
+      const partnerMeta = {
+        USA:        { coord: [-98, 39], label: 'US',          japanPort: [9, -9],  curve: -0.18 },
+        China:      { coord: [105, 35], label: 'China',       japanPort: [-10, -5], curve: 0.23 },
+        Korea:      { coord: [128, 36], label: 'Korea',       japanPort: [-3, -12], curve: -0.34 },
+        EU:         { coord: [10, 51],   label: 'EU',          japanPort: [-11, 2],  curve: -0.16 },
+        ASEAN:      { coord: [112, 5],   label: 'ASEAN',      japanPort: [-2, 11],  curve: 0.22 },
+        MiddleEast: { coord: [45, 25],   label: 'Middle East', japanPort: [-10, 8],  curve: 0.16 },
       }
 
       const japanXY = projection([137, 36])
@@ -114,39 +120,63 @@ function WorldMap({ byDest, year }) {
         .style('pointer-events', 'none')
         .style('display', 'none')
 
-      // Draw arcs per trading partner
-      for (const [country, destData] of Object.entries(byDest)) {
-        const coord = partnerCoords[country]
-        if (!coord) continue
-        const pXY = projection(coord)
-        if (!pXY) continue
+      const flows = Object.entries(byDest).flatMap(([country, destData]) => {
+        const meta = partnerMeta[country]
+        if (!meta) return []
+        const pXY = projection(meta.coord)
+        if (!pXY) return []
 
-        // Use latest year data
         const netLatest = destData.net?.at(-1)?.value ?? 0
         const expLatest = destData.export?.at(-1)?.value ?? 0
         const impLatest = destData.import?.at(-1)?.value ?? 0
-        if (netLatest === 0 && expLatest === 0) continue
+        if (netLatest === 0 && expLatest === 0) return []
+
+        return [{ country, destData, meta, pXY, netLatest, expLatest, impLatest }]
+      })
+      const maxMagnitude = Math.max(...flows.map(flow => Math.abs(flow.netLatest)), 1)
+
+      // Draw arcs per trading partner
+      for (const flow of flows) {
+        const { country, meta, pXY, netLatest, expLatest, impLatest } = flow
+        if (!pXY) continue
 
         const isDeficit = netLatest < 0
         const magnitude = Math.abs(netLatest)
-        const strokeW = Math.max(1, Math.min(10, magnitude / 1e6))  // scale: 1 unit = ¥1T equiv
+        const strokeW = 2.5 + 4.5 * Math.sqrt(magnitude / maxMagnitude)
         const color = isDeficit ? '#E24B4A' : '#1D9E75'
         const markerId = isDeficit ? 'arrR' : 'arrG'
+        const japanPort = [japanXY[0] + meta.japanPort[0], japanXY[1] + meta.japanPort[1]]
 
         // Arrow from surplus-country → Japan, or Japan → deficit-country
-        const [x1, y1] = isDeficit ? japanXY : pXY
-        const [x2, y2] = isDeficit ? pXY : japanXY
+        const [x1, y1] = isDeficit ? japanPort : pXY
+        const [x2, y2] = isDeficit ? pXY : japanPort
 
-        // Quadratic bezier with upward control point
+        // Give each route its own lane so nearby Asia flows remain distinct.
+        const dx = x2 - x1
+        const dy = y2 - y1
+        const length = Math.hypot(dx, dy) || 1
         const cx = (x1 + x2) / 2
-        const cy = Math.min(y1, y2) - Math.abs(x2 - x1) * 0.25
+          + (-dy / length) * length * meta.curve
+        const cy = (y1 + y2) / 2
+          + (dx / length) * length * meta.curve
+        const route = `M${x1},${y1} Q${cx},${cy} ${x2},${y2}`
+
+        // White casing separates intersecting red/green routes from each other.
+        svg.append('path')
+          .attr('d', route)
+          .attr('fill', 'none')
+          .attr('stroke', '#FFFFFF')
+          .attr('stroke-width', strokeW + 4)
+          .attr('stroke-opacity', 0.92)
+          .attr('stroke-linecap', 'round')
 
         const arc = svg.append('path')
-          .attr('d', `M${x1},${y1} Q${cx},${cy} ${x2},${y2}`)
+          .attr('d', route)
           .attr('fill', 'none')
           .attr('stroke', color)
           .attr('stroke-width', strokeW)
-          .attr('stroke-opacity', 0.75)
+          .attr('stroke-opacity', 0.94)
+          .attr('stroke-linecap', 'round')
           .attr('marker-end', `url(#${markerId})`)
           .style('cursor', 'pointer')
 
@@ -159,6 +189,25 @@ function WorldMap({ byDest, year }) {
             .html(`<b>${country}</b><br>Export ¥${toT(expLatest)}T · Import ¥${toT(impLatest)}T<br>Net ${netLatest >= 0 ? '+' : ''}¥${toT(netLatest)}T`)
         })
         arc.on('mouseleave', () => tooltip.style('display', 'none'))
+
+        // Partner dots and labels make each route's endpoint explicit.
+        svg.append('circle')
+          .attr('cx', pXY[0]).attr('cy', pXY[1])
+          .attr('r', 3.5)
+          .attr('fill', color)
+          .attr('stroke', '#fff')
+          .attr('stroke-width', 1.5)
+
+        svg.append('text')
+          .attr('x', pXY[0] + 6).attr('y', pXY[1] - 6)
+          .attr('font-size', '10px')
+          .attr('fill', '#243444')
+          .attr('font-weight', '700')
+          .attr('paint-order', 'stroke')
+          .attr('stroke', '#F5F8FB')
+          .attr('stroke-width', 3)
+          .attr('stroke-linejoin', 'round')
+          .text(meta.label)
       }
 
       // Japan marker
@@ -168,7 +217,8 @@ function WorldMap({ byDest, year }) {
 
       svg.append('text')
         .attr('x', japanXY[0] + 10).attr('y', japanXY[1] + 4)
-        .attr('font-size', '11px').attr('fill', '#378ADD').attr('font-weight', '600')
+        .attr('font-size', '12px').attr('fill', '#1769B0').attr('font-weight', '700')
+        .attr('paint-order', 'stroke').attr('stroke', '#fff').attr('stroke-width', 3)
         .text('Japan')
     }
 

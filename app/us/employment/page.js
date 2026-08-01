@@ -20,10 +20,19 @@ const scatterLabelPlugin = {
       chart.getDatasetMeta(i).data.forEach((pt, j) => {
         const label = ds.sectorLabels[j]
         if (!label) return
+        const placeLeft = pt.x > chart.chartArea.right - 105
+        const x = placeLeft ? pt.x - 9 : pt.x + 9
+        const y = pt.y - 7
         ctx.save()
-        ctx.fillStyle = '#444'
-        ctx.font = '10px sans-serif'
-        ctx.fillText(label, pt.x + 6, pt.y + 3)
+        ctx.font = '600 11px sans-serif'
+        ctx.textAlign = placeLeft ? 'right' : 'left'
+        ctx.textBaseline = 'middle'
+        ctx.lineJoin = 'round'
+        ctx.lineWidth = 4
+        ctx.strokeStyle = 'rgba(255,255,255,0.96)'
+        ctx.strokeText(label, x, y)
+        ctx.fillStyle = '#17212B'
+        ctx.fillText(label, x, y)
         ctx.restore()
       })
     })
@@ -336,11 +345,21 @@ export default function USEmploymentPage() {
       legend:  { display: false },
       tooltip: { callbacks: { label: ctx => ctx.parsed.x.toFixed(2) + '%' } },
     },
-    scales: { x: { ticks: { callback: v => v.toFixed(1) + '%' } } },
+    scales: {
+      x: {
+        grid: { color: '#DCE3EA' },
+        ticks: { color: '#344454', font: { size: 12, weight: '600' }, callback: v => v.toFixed(1) + '%' },
+      },
+      y: {
+        grid: { display: false },
+        ticks: { color: '#1F2D3A', font: { size: 12, weight: '600' } },
+      },
+    },
   }
 
   const scatterOpts = {
     responsive: true,
+    layout: { padding: { top: 14, right: 18, bottom: 4, left: 4 } },
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -353,8 +372,16 @@ export default function USEmploymentPage() {
       },
     },
     scales: {
-      x: { title: { display: true, text: 'Avg Hourly Earnings ($)', font: { size: 11 } }, ticks: { callback: v => '$' + v.toFixed(0) } },
-      y: { title: { display: true, text: 'AHE YoY (%)',            font: { size: 11 } }, ticks: { callback: v => v.toFixed(1) + '%' } },
+      x: {
+        grid: { color: '#DCE3EA' },
+        title: { display: true, text: 'Avg Hourly Earnings ($)', color: '#1F2D3A', font: { size: 12, weight: '600' } },
+        ticks: { color: '#344454', font: { size: 12, weight: '600' }, callback: v => '$' + v.toFixed(0) },
+      },
+      y: {
+        grid: { color: '#DCE3EA' },
+        title: { display: true, text: 'AHE YoY (%)', color: '#1F2D3A', font: { size: 12, weight: '600' } },
+        ticks: { color: '#344454', font: { size: 12, weight: '600' }, callback: v => v.toFixed(1) + '%' },
+      },
     },
   }
 
@@ -569,9 +596,11 @@ export default function USEmploymentPage() {
           <Scatter
             data={{
               datasets: [{
-                data: scatterPoints.map(p => ({ x: p.x, y: p.y })),
+                data: scatterPoints.map(p => ({ x: p.x, y: p.y, label: p.label })),
                 sectorLabels: scatterPoints.map(p => p.label),
                 pointBackgroundColor: scatterPoints.map(p => p.color),
+                pointBorderColor: '#FFFFFF',
+                pointBorderWidth: 2,
                 pointRadius: 7,
                 pointHoverRadius: 9,
               }],
