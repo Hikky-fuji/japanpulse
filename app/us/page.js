@@ -14,6 +14,13 @@ const indicators = [
         badge: 'Monthly',
         desc: 'Headline, core, supercore proxy, category momentum and inflation contributions. Source: BLS via FRED.',
       },
+      {
+        href: '/us/ppi',
+        title: 'PPI & Pipeline Inflation',
+        subtitle: 'Headline / Core / Core ex Trade',
+        badge: 'Monthly',
+        desc: 'Final-demand producer prices, underlying momentum, goods-services breadth and volatile energy and trade-service channels. Source: BLS via FRED.',
+      },
     ],
   },
   {
