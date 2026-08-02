@@ -211,6 +211,9 @@ function card({
   series,
   baseline,
   momentumKind,
+  loading = false,
+  unavailable = false,
+  mode = 'AUTO',
 }) {
   return {
     label,
@@ -224,10 +227,16 @@ function card({
     series,
     baseline,
     momentum: momentum(series, momentumKind),
+    loading,
+    unavailable,
+    mode,
   }
 }
 
 function japanCards(payload) {
+  const hasSource = key => Object.prototype.hasOwnProperty.call(payload, key)
+  const sourceLoading = key => !hasSource(key)
+  const sourceFailed = key => hasSource(key) && payload[key] === null
   const { cpi, gdp, iip, consumption, watcher, labour, jobRatio, wages, trade } = payload
   const headline = last(cpi?.headline)
   const core = last(cpi?.core)
@@ -266,6 +275,8 @@ function japanCards(payload) {
       series: seriesValues(cpi?.headline),
       baseline: 2,
       momentumKind: 'inflation',
+      loading: sourceLoading('cpi'),
+      unavailable: sourceFailed('cpi') || (hasSource('cpi') && !finite(headline?.value)),
     }),
     card({
       label: 'Growth & Production',
@@ -282,6 +293,8 @@ function japanCards(payload) {
       series: seriesValues(gdp?.gdp_qoq),
       baseline: 0,
       momentumKind: 'growth',
+      loading: sourceLoading('gdp'),
+      unavailable: sourceFailed('gdp') || (hasSource('gdp') && !finite(gdpLatest?.value)),
     }),
     card({
       label: 'Private Consumption',
@@ -298,6 +311,8 @@ function japanCards(payload) {
       series: seriesValues(consumption?.total),
       baseline: 0,
       momentumKind: 'growth',
+      loading: sourceLoading('consumption'),
+      unavailable: sourceFailed('consumption') || (hasSource('consumption') && !finite(consLatest?.value)),
     }),
     card({
       label: 'Surveys & Sentiment',
@@ -314,6 +329,8 @@ function japanCards(payload) {
       series: seriesValues(watcher?.current_all),
       baseline: 50,
       momentumKind: 'activity',
+      loading: sourceLoading('watcher'),
+      unavailable: sourceFailed('watcher') || (hasSource('watcher') && !finite(watcherCurrent?.value)),
     }),
     card({
       label: 'Employment',
@@ -330,6 +347,8 @@ function japanCards(payload) {
       series: seriesValues(labour?.data, item => item?.unemploymentRate),
       baseline: 3,
       momentumKind: 'unemployment',
+      loading: sourceLoading('labour'),
+      unavailable: sourceFailed('labour') || (hasSource('labour') && !finite(labourLatest?.unemploymentRate)),
     }),
     card({
       label: 'Wages',
@@ -346,6 +365,8 @@ function japanCards(payload) {
       series: seriesValues(wages?.real, item => item?.yoy),
       baseline: 0,
       momentumKind: 'growth',
+      loading: sourceLoading('wages'),
+      unavailable: sourceFailed('wages') || (hasSource('wages') && !finite(realWage?.yoy)),
     }),
     card({
       label: 'External Sector',
@@ -362,11 +383,16 @@ function japanCards(payload) {
       series: tradeBalanceSeries(trade?.export?.total, trade?.import?.total),
       baseline: 0,
       momentumKind: 'balance',
+      loading: sourceLoading('trade'),
+      unavailable: sourceFailed('trade') || (hasSource('trade') && !finite(balance)),
     }),
   ]
 }
 
 function usCards(payload) {
+  const hasSource = key => Object.prototype.hasOwnProperty.call(payload, key)
+  const sourceLoading = key => !hasSource(key)
+  const sourceFailed = key => hasSource(key) && payload[key] === null
   const { cpi, employment, consumption, jolts, manufacturing, macro } = payload
   const headlineCpi = yoyFromIndex(cpi?.series?.headline?.observations)
   const coreCpi = yoyFromIndex(cpi?.series?.core?.observations)
@@ -407,6 +433,8 @@ function usCards(payload) {
       series: yoySeries(cpi?.series?.headline?.observations),
       baseline: 2,
       momentumKind: 'inflation',
+      loading: sourceLoading('cpi'),
+      unavailable: sourceFailed('cpi') || (hasSource('cpi') && !finite(headlineCpi.value)),
     }),
     card({
       label: 'Economic Growth',
@@ -423,6 +451,8 @@ function usCards(payload) {
       series: seriesValues(macro?.growth?.realGdpGrowth),
       baseline: 0,
       momentumKind: 'growth',
+      loading: sourceLoading('macro'),
+      unavailable: sourceFailed('macro') || (hasSource('macro') && !finite(realGdp?.value)),
     }),
     card({
       label: 'Private Consumption',
@@ -439,6 +469,8 @@ function usCards(payload) {
       series: changeSeries(realPce),
       baseline: 0,
       momentumKind: 'growth',
+      loading: sourceLoading('consumption'),
+      unavailable: sourceFailed('consumption') || (hasSource('consumption') && !finite(realPceLatest?.value)),
     }),
     card({
       label: 'Surveys & Sentiment',
@@ -455,6 +487,9 @@ function usCards(payload) {
       series: seriesValues(manufacturing?.ism?.headline),
       baseline: 50,
       momentumKind: 'activity',
+      loading: sourceLoading('manufacturing'),
+      unavailable: sourceFailed('manufacturing') || (hasSource('manufacturing') && !finite(ism?.value)),
+      mode: 'MIXED · ISM MANUAL',
     }),
     card({
       label: 'Employment & Wages',
@@ -471,6 +506,8 @@ function usCards(payload) {
       series: changeSeries(payrolls, true),
       baseline: 0,
       momentumKind: 'employment',
+      loading: sourceLoading('employment'),
+      unavailable: sourceFailed('employment') || (hasSource('employment') && !finite(payrollLatest?.value)),
     }),
     card({
       label: 'Policy & Labor Flows',
@@ -486,6 +523,8 @@ function usCards(payload) {
       source: 'Federal Reserve · BLS',
       series: seriesValues(macro?.policy?.fedfunds),
       momentumKind: 'policy',
+      loading: sourceLoading('macro'),
+      unavailable: sourceFailed('macro') || (hasSource('macro') && !finite(fedFunds?.value)),
     }),
   ]
 }
@@ -503,10 +542,13 @@ async function fetchJson(path, signal) {
 }
 
 export default function WorkspacePulse({ countryCode }) {
-  const [cards, setCards] = useState(null)
+  const sourceTotal = countryCode === 'JP' ? 9 : 6
+  const [cards, setCards] = useState(() => countryCode === 'JP' ? japanCards({}) : usCards({}))
+  const [progress, setProgress] = useState({ completed: 0, total: sourceTotal })
 
   useEffect(() => {
     const controller = new AbortController()
+    let active = true
     const config = countryCode === 'JP'
       ? {
           paths: {
@@ -534,19 +576,41 @@ export default function WorkspacePulse({ countryCode }) {
           build: usCards,
         }
 
-    Promise.all(
-      Object.entries(config.paths).map(async ([key, path]) => [key, await fetchJson(path, controller.signal)]),
-    )
-      .then(entries => setCards(config.build(Object.fromEntries(entries))))
-      .catch(error => {
-        if (error.name !== 'AbortError') setCards([])
-      })
+    const sources = Object.entries(config.paths)
+    const collected = {}
+    let completed = 0
 
-    return () => controller.abort()
+    setCards(config.build(collected))
+    setProgress({ completed: 0, total: sources.length })
+
+    sources.forEach(([key, path]) => {
+      fetchJson(path, controller.signal)
+        .then(value => {
+          if (!active) return
+          collected[key] = value
+          completed += 1
+          setCards(config.build({ ...collected }))
+          setProgress({ completed, total: sources.length })
+        })
+        .catch(error => {
+          if (!active || error.name === 'AbortError') return
+          collected[key] = null
+          completed += 1
+          setCards(config.build({ ...collected }))
+          setProgress({ completed, total: sources.length })
+        })
+    })
+
+    return () => {
+      active = false
+      controller.abort()
+    }
   }, [countryCode])
 
   if (Array.isArray(cards) && cards.length === 0) return null
-  const placeholders = Array.from({ length: countryCode === 'JP' ? 7 : 6 })
+  const statusText = progress.total > 0 && progress.completed < progress.total
+    ? `Loading official sources · ${progress.completed}/${progress.total}`
+    : 'Official sources · card-level status'
 
   return (
     <section className="workspace-pulse" aria-label={`${countryCode} macro at a glance`}>
@@ -555,39 +619,64 @@ export default function WorkspacePulse({ countryCode }) {
           <span>Macro at a glance</span>
           <strong>Cross-indicator current pulse</strong>
         </div>
-        <small>{cards ? 'Official data · cached · auto-updated' : 'Connecting to official sources…'}</small>
+        <small>{statusText}</small>
       </header>
       <div className="workspace-pulse__grid">
-        {(cards || placeholders).map((item, index) => item ? (
-          <Link className={`workspace-pulse__item is-${item.tone}`} href={item.href} key={item.label}>
+        {(cards || []).map(item => item.loading ? (
+          <div className="workspace-pulse__item is-loading" key={item.label}>
+            <div className="workspace-pulse__topline">
+              <span>{item.label}</span>
+              <b>LOADING</b>
+            </div>
+            <div className="workspace-pulse__main-label">{item.mainLabel}</div>
+            <strong>—</strong>
+            <div className="workspace-pulse__loading-line" />
+            <div className="workspace-pulse__loading-line is-short" />
+            <footer>
+              <span>{item.source}</span>
+              <b>CONNECTING</b>
+            </footer>
+          </div>
+        ) : (
+          <Link
+            className={`workspace-pulse__item is-${item.tone}${item.unavailable ? ' is-unavailable' : ''}`}
+            href={item.href}
+            key={item.label}
+          >
             <div className="workspace-pulse__topline">
               <span>{item.label}</span>
               <b>Open →</b>
             </div>
             <div className="workspace-pulse__main-label">{item.mainLabel}</div>
-            <strong>{item.value}</strong>
-            <time>{item.period || 'Latest available'}</time>
-            <div className="workspace-pulse__trend">
-              <Sparkline values={item.series} baseline={item.baseline} label={`${item.mainLabel} trend`} />
-              <span className={`is-${item.momentum.direction}`}>
-                {item.momentum.arrow} {item.momentum.label}
-              </span>
-            </div>
+            <strong>{item.unavailable ? '—' : item.value}</strong>
+            <time>{item.unavailable ? 'Source unavailable' : item.period || 'Latest available'}</time>
+            {item.unavailable ? (
+              <div className="workspace-pulse__trend is-unavailable">
+                <span>Data could not be loaded</span>
+              </div>
+            ) : (
+              <div className="workspace-pulse__trend">
+                <Sparkline values={item.series} baseline={item.baseline} label={`${item.mainLabel} trend`} />
+                <span className={`is-${item.momentum.direction}`}>
+                  {item.momentum.arrow} {item.momentum.label}
+                </span>
+              </div>
+            )}
             <div className="workspace-pulse__details">
               {item.details.map(row => (
                 <div key={row.label}>
                   <span>{row.label}</span>
-                  <b className={`is-${row.tone}`}>{row.value}</b>
+                  <b className={`is-${row.tone}`}>{item.unavailable ? '—' : row.value}</b>
                 </div>
               ))}
             </div>
-            <footer>{item.source}</footer>
+            <footer>
+              <span>{item.source}</span>
+              <b className={item.unavailable ? 'is-failed' : item.mode.startsWith('MIXED') ? 'is-mixed' : ''}>
+                {item.unavailable ? 'FAILED' : item.mode}
+              </b>
+            </footer>
           </Link>
-        ) : (
-          <div className="workspace-pulse__item is-loading" key={index}>
-            <div className="workspace-pulse__topline"><span>Loading category</span></div>
-            <strong>—</strong>
-          </div>
         ))}
       </div>
     </section>
