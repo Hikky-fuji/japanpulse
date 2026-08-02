@@ -72,32 +72,28 @@ async function fetchWithTimeout(url, milliseconds = 30000) {
 
 async function inspectSource(origin, definition) {
   const checkedAt = new Date().toISOString()
-  let lastError = null
-  for (let attempt = 0; attempt < 2; attempt += 1) {
-    try {
-      const payload = await fetchWithTimeout(`${origin}${definition.path}`)
-      const latestPeriod = definition.extract(payload)
-      return {
-        ...definition,
-        extract: undefined,
-        mode: definition.mode || 'AUTO',
-        latestPeriod,
-        checkedAt,
-        ...freshness(latestPeriod, definition.maxAge),
-      }
-    } catch (error) {
-      lastError = error
+  try {
+    const payload = await fetchWithTimeout(`${origin}${definition.path}`)
+    const latestPeriod = definition.extract(payload)
+    return {
+      ...definition,
+      extract: undefined,
+      mode: definition.mode || 'AUTO',
+      latestPeriod,
+      checkedAt,
+      ...freshness(latestPeriod, definition.maxAge),
     }
-  }
-  return {
-    ...definition,
-    extract: undefined,
-    mode: definition.mode || 'AUTO',
-    latestPeriod: null,
-    checkedAt,
-    status: 'failed',
-    ageDays: null,
-    message: lastError?.name === 'AbortError' ? 'Health check timed out after retry' : lastError?.message,
+  } catch (error) {
+    return {
+      ...definition,
+      extract: undefined,
+      mode: definition.mode || 'AUTO',
+      latestPeriod: null,
+      checkedAt,
+      status: 'failed',
+      ageDays: null,
+      message: error.name === 'AbortError' ? 'Health check timed out' : error.message,
+    }
   }
 }
 
