@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import WorkspaceOperations from './WorkspaceOperations'
 import WorkspacePulse from './WorkspacePulse'
 
 const SOURCE_BY_PATH = {
@@ -114,6 +115,7 @@ export default function MacroWorkspace({
       </section>
 
       <WorkspacePulse countryCode={countryCode} />
+      <WorkspaceOperations countryCode={countryCode} />
 
       <div className="macro-workspace__body">
         <aside className="macro-workspace__rail" aria-label="Indicator categories">
