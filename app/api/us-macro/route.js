@@ -43,7 +43,7 @@ export async function GET() {
     payems, unrate, u6rate, civpart, prime_part, ahe,
     goods, construction, trade, info, fire, pbs, ehs, lah, govt,
     ahe_goods, ahe_privsvr, ahe_constr, ahe_retail, ahe_info, ahe_fin, ahe_pro, ahe_edh, ahe_lei,
-    cpi, coreCpi, gdp, retail, fedfunds,
+    cpi, coreCpi, gdp, realGdpGrowth, retail, fedfunds,
   ] = await Promise.all([
     fetchSeries('PAYEMS'),
     fetchSeries('UNRATE'),
@@ -72,6 +72,7 @@ export async function GET() {
     fetchSeries('CPIAUCSL'),
     fetchSeries('CPILFESL'),
     fetchSeries('GDP', 8),
+    fetchSeries('A191RL1Q225SBEA', 8),
     fetchSeries('RSAFS'),
     fetchSeries('FEDFUNDS'),
   ])
@@ -93,7 +94,7 @@ export async function GET() {
       },
     },
     inflation: { cpi, coreCpi },
-    growth:    { gdp, retail },
+    growth:    { gdp, realGdpGrowth, retail },
     policy:    { fedfunds },
   })
 }
