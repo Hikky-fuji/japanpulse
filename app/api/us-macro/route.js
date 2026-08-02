@@ -175,8 +175,8 @@ export async function GET() {
     fetchSeries('GDPPOT', 100),
     fetchSeries('NROU', 100),
     fetchSeries('T5YIE', 240, { frequency: 'm', aggregation: 'avg' }),
-    fetchSeries('GS1', 240),
-    fetchSeries('PCETRIM12M159SFRBDAL', 240),
+    fetchSeries('GS1', 600),
+    fetchSeries('PCETRIM12M159SFRBDAL', 600),
   ])
 
   const corePceInflation = fourQuarterInflation(corePce)
