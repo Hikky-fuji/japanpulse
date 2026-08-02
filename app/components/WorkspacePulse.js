@@ -542,10 +542,36 @@ async function fetchJson(path, signal) {
   }
 }
 
+const PULSE_CACHE_VERSION = 2
+
+function readPulseCache(countryCode, maxAge) {
+  try {
+    const raw = window.localStorage.getItem(`japanpulse:pulse:${countryCode}:v${PULSE_CACHE_VERSION}`)
+    if (!raw) return null
+    const cached = JSON.parse(raw)
+    if (!cached?.savedAt || !cached?.payload || Date.now() - cached.savedAt > maxAge) return null
+    return cached.payload
+  } catch {
+    return null
+  }
+}
+
+function writePulseCache(countryCode, payload) {
+  try {
+    window.localStorage.setItem(
+      `japanpulse:pulse:${countryCode}:v${PULSE_CACHE_VERSION}`,
+      JSON.stringify({ savedAt: Date.now(), payload }),
+    )
+  } catch {
+    // Storage can be unavailable in private browsing; live fetching still works.
+  }
+}
+
 export default function WorkspacePulse({ countryCode }) {
   const sourceTotal = countryCode === 'JP' ? 9 : 7
   const [cards, setCards] = useState(() => countryCode === 'JP' ? japanCards({}) : usCards({}))
   const [progress, setProgress] = useState({ completed: 0, total: sourceTotal })
+  const [cacheMode, setCacheMode] = useState('none')
 
   useEffect(() => {
     const controller = new AbortController()
@@ -579,27 +605,50 @@ export default function WorkspacePulse({ countryCode }) {
         }
 
     const sources = Object.entries(config.paths)
-    const collected = {}
+    const cacheMaxAge = countryCode === 'JP' ? 6 * 60 * 60 * 1000 : 60 * 60 * 1000
+    const cachedPayload = readPulseCache(countryCode, cacheMaxAge)
+    const collected = cachedPayload ? { ...cachedPayload } : {}
+    const freshResults = {}
     let completed = 0
 
-    setCards(config.build(collected))
+    setCards(config.build({ ...collected }))
     setProgress({ completed: 0, total: sources.length })
+    setCacheMode(cachedPayload ? 'refreshing' : 'none')
 
     sources.forEach(([key, path]) => {
       fetchJson(path, controller.signal)
         .then(value => {
           if (!active) return
-          collected[key] = value
+          freshResults[key] = value
+          if (value !== null || !Object.prototype.hasOwnProperty.call(collected, key)) {
+            collected[key] = value
+          }
           completed += 1
           setCards(config.build({ ...collected }))
           setProgress({ completed, total: sources.length })
+          if (completed === sources.length) {
+            const allFresh = sources.every(([sourceKey]) => freshResults[sourceKey] !== null)
+            if (allFresh) {
+              writePulseCache(countryCode, freshResults)
+              setCards(config.build({ ...freshResults }))
+              setCacheMode('none')
+            } else {
+              setCacheMode(cachedPayload ? 'fallback' : 'none')
+            }
+          }
         })
         .catch(error => {
           if (!active || error.name === 'AbortError') return
-          collected[key] = null
+          freshResults[key] = null
+          if (!Object.prototype.hasOwnProperty.call(collected, key)) {
+            collected[key] = null
+          }
           completed += 1
           setCards(config.build({ ...collected }))
           setProgress({ completed, total: sources.length })
+          if (completed === sources.length) {
+            setCacheMode(cachedPayload ? 'fallback' : 'none')
+          }
         })
     })
 
@@ -610,9 +659,13 @@ export default function WorkspacePulse({ countryCode }) {
   }, [countryCode])
 
   if (Array.isArray(cards) && cards.length === 0) return null
-  const statusText = progress.total > 0 && progress.completed < progress.total
-    ? `Loading official sources · ${progress.completed}/${progress.total}`
-    : 'Official sources · card-level status'
+  const statusText = cacheMode === 'refreshing'
+    ? `Cached snapshot · refreshing ${progress.completed}/${progress.total}`
+    : cacheMode === 'fallback'
+      ? 'Cached snapshot · refresh incomplete'
+      : progress.total > 0 && progress.completed < progress.total
+        ? `Loading official sources · ${progress.completed}/${progress.total}`
+        : 'Official sources · card-level status'
 
   return (
     <section className="workspace-pulse" aria-label={`${countryCode} macro at a glance`}>

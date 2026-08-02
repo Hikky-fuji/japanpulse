@@ -8,7 +8,36 @@ import {
   LineElement, Title, Tooltip, Legend, Filler,
 } from 'chart.js'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
+const latestPhillipsLabel = {
+  id: 'latestPhillipsLabel',
+  afterDatasetsDraw(chart, _args, options) {
+    if (!options?.enabled) return
+    const datasetIndex = options.datasetIndex ?? 1
+    const point = chart.getDatasetMeta(datasetIndex)?.data?.[0]
+    const label = chart.data.datasets?.[datasetIndex]?.label
+    if (!point || !label) return
+
+    const { ctx, chartArea } = chart
+    ctx.save()
+    ctx.font = '700 10px ui-monospace, SFMono-Regular, Menlo, monospace'
+    const textWidth = ctx.measureText(label).width
+    const boxWidth = textWidth + 12
+    const boxHeight = 20
+    const x = Math.min(Math.max(point.x + 10, chartArea.left + 4), chartArea.right - boxWidth - 4)
+    const y = Math.max(point.y - 27, chartArea.top + 4)
+    ctx.fillStyle = 'rgba(31, 36, 39, .94)'
+    ctx.strokeStyle = '#f08a24'
+    ctx.lineWidth = 1
+    ctx.fillRect(x, y, boxWidth, boxHeight)
+    ctx.strokeRect(x, y, boxWidth, boxHeight)
+    ctx.fillStyle = '#ffffff'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(label, x + 6, y + boxHeight / 2)
+    ctx.restore()
+  },
+}
+
+ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler, latestPhillipsLabel)
 
 export default function Labour() {
   const [labour, setLabour] = useState(null)
@@ -174,21 +203,41 @@ export default function Labour() {
     },
   }
 
-  // Chart 4: Scatter — Unemployment Rate vs Core CPI (Phillips curve, full history)
+  // Chart 4: Scatter — Unemployment Rate vs Core CPI (Phillips curve, chronological path)
   const scatterPoints = (scatterRaw ?? []).map((d, i, arr) => ({
     x: d.unemploymentRate,
     y: d.cpiCore,
     date: d.date,
-    alpha: 0.2 + 0.8 * i / arr.length,
+    alpha: 0.16 + 0.68 * i / Math.max(arr.length - 1, 1),
   }))
+  const latestScatter = scatterPoints.at(-1)
+  const previousScatter = scatterPoints.at(-2)
 
   const chart4 = {
     datasets: [
       {
-        label: 'Unemployment Rate vs Core CPI Y/Y',
-        data: scatterPoints.map(d => ({ x: d.x, y: d.y })),
+        label: 'Chronological path',
+        data: scatterPoints.map(d => ({ x: d.x, y: d.y, date: d.date })),
+        borderColor: 'rgba(132, 157, 176, .58)',
+        borderWidth: 1.5,
         backgroundColor: scatterPoints.map(d => `rgba(26,86,219,${d.alpha.toFixed(2)})`),
-        pointRadius: 5,
+        pointBorderColor: 'rgba(214, 225, 232, .55)',
+        pointBorderWidth: 0.7,
+        pointRadius: 3.5,
+        pointHoverRadius: 6,
+        showLine: true,
+        tension: 0.12,
+        order: 2,
+      },
+      {
+        label: latestScatter ? `Latest · ${latestScatter.date}` : 'Latest',
+        data: latestScatter ? [{ x: latestScatter.x, y: latestScatter.y, date: latestScatter.date }] : [],
+        backgroundColor: '#f08a24',
+        borderColor: '#ffffff',
+        borderWidth: 2,
+        pointRadius: 8,
+        pointHoverRadius: 10,
+        order: 1,
       },
     ],
   }
@@ -197,11 +246,15 @@ export default function Labour() {
     responsive: true,
     plugins: {
       legend: { position: 'top' },
+      latestPhillipsLabel: {
+        enabled: Boolean(latestScatter),
+        datasetIndex: 1,
+      },
       tooltip: {
         callbacks: {
           label: (ctx) => {
-            const p = scatterPoints[ctx.dataIndex]
-            return p ? `${p.date}  Unemp. ${p.x}%  / Core CPI ${p.y.toFixed(1)}%` : ''
+            const p = ctx.raw
+            return p?.date ? `${p.date}  Unemp. ${p.x}%  / Core CPI ${p.y.toFixed(1)}%` : ''
           },
         },
       },
@@ -292,8 +345,15 @@ export default function Labour() {
       {scatterPoints.length > 0 && (
         <div style={s.box}>
           <div style={s.boxTitle}>Phillips Curve (Unemployment Rate vs Core CPI YoY, {scatterPoints[0]?.date}–{scatterPoints.at(-1)?.date})</div>
+          <div className="phillips-latest">
+            <strong>
+              Latest {latestScatter?.date}: unemployment {latestScatter?.x.toFixed(1)}% · core CPI {latestScatter?.y.toFixed(1)}%
+              {previousScatter ? ` (prior ${previousScatter.date}: ${previousScatter.x.toFixed(1)}% / ${previousScatter.y.toFixed(1)}%)` : ''}
+            </strong>
+            <span>ORANGE = LATEST</span>
+          </div>
           <Scatter data={chart4} options={chart4Opts} />
-          <div style={s.note}>X-axis: unemployment rate (SA). Y-axis: core CPI YoY. Point opacity shows time (faded = older, dark = recent). Source: MIC Labour Force Survey / MIC CPI</div>
+          <div style={s.note}>The line connects observations in chronological order. X-axis: unemployment rate (SA). Y-axis: core CPI YoY. Older points are faded; the orange marker and label identify the latest reading. Source: MIC Labour Force Survey / MIC CPI</div>
         </div>
       )}
     </main>

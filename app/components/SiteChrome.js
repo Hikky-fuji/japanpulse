@@ -135,17 +135,74 @@ function IndicatorSearch() {
   )
 }
 
+function ShareControl({ onComplete }) {
+  const [copied, setCopied] = useState(false)
+
+  const sharePage = async () => {
+    const shareData = {
+      title: document.title,
+      text: 'JapanPulse macro dashboard',
+      url: window.location.href,
+    }
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData)
+      } else {
+        await navigator.clipboard.writeText(shareData.url)
+        setCopied(true)
+        window.setTimeout(() => setCopied(false), 1800)
+      }
+      onComplete?.()
+    } catch (error) {
+      if (error?.name !== 'AbortError') {
+        setCopied(false)
+      }
+    }
+  }
+
+  return (
+    <button className="terminal-share-button" type="button" onClick={sharePage}>
+      <span>{copied ? 'Copied' : 'Share'}</span>
+      <b aria-hidden="true">{copied ? '✓' : '↗'}</b>
+    </button>
+  )
+}
+
 export function SiteHeader() {
   const pathname = usePathname() || '/'
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [pathname])
 
   return (
     <header className="terminal-header">
       <div className="terminal-header__main">
         <Link className="terminal-brand" href="/">
           <span className="terminal-brand__mark">JP</span>
-          <span className="terminal-brand__name">JapanPulse Workspace</span>
+          <span className="terminal-brand__name">
+            JapanPulse <span className="terminal-brand__suffix">Workspace</span>
+          </span>
         </Link>
-        <nav className="terminal-nav" aria-label="Primary navigation">
+        <button
+          aria-controls="primary-navigation"
+          aria-expanded={menuOpen}
+          aria-label={menuOpen ? 'Close navigation' : 'Open navigation'}
+          className="terminal-menu-button"
+          type="button"
+          onClick={() => setMenuOpen(current => !current)}
+        >
+          <span />
+          <span />
+          <span />
+        </button>
+        <nav
+          className={`terminal-nav${menuOpen ? ' is-open' : ''}`}
+          id="primary-navigation"
+          aria-label="Primary navigation"
+        >
           {NAV_ITEMS.map(item => {
             const isActive = item.match(pathname)
             return (
@@ -160,6 +217,7 @@ export function SiteHeader() {
             )
           })}
           <IndicatorSearch />
+          <ShareControl onComplete={() => setMenuOpen(false)} />
         </nav>
       </div>
       <div className="terminal-statusbar">
@@ -177,8 +235,18 @@ export function SiteHeader() {
 export function SiteFooter() {
   return (
     <footer className="terminal-footer">
-      <span>JapanPulse · Macro Data Workspace</span>
-      <span>Official-source economic data</span>
+      <div className="terminal-footer__topline">
+        <span>JapanPulse · Macro Data Workspace</span>
+        <nav aria-label="Site information">
+          <Link href="/about">About & Methodology</Link>
+          <Link href="/status">Data Status</Link>
+          <a href="https://github.com/Hikky-fuji/japanpulse" rel="noreferrer" target="_blank">GitHub ↗</a>
+        </nav>
+      </div>
+      <p>
+        This product uses the FRED® API but is not endorsed or certified by the Federal Reserve Bank of St. Louis.
+        JapanPulse is an independent research tool and does not provide investment advice.
+      </p>
     </footer>
   )
 }

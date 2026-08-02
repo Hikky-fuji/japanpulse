@@ -1,5 +1,29 @@
 import MacroWorkspace from '../components/MacroWorkspace'
 
+export const metadata = {
+  title: {
+    absolute: 'US Macro Dashboard | JapanPulse',
+  },
+  description:
+    'US macro dashboard covering CPI, PPI, GDP, consumption, manufacturing surveys, employment, JOLTS and Fed policy.',
+  alternates: {
+    canonical: '/us',
+  },
+  openGraph: {
+    title: 'US Macro Dashboard | JapanPulse',
+    description: 'Track US inflation, growth, consumption, surveys, labor and monetary policy from official sources.',
+    url: '/us',
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'JapanPulse Macro Workspace',
+      },
+    ],
+  },
+}
+
 const indicators = [
   {
     group: 'Prices',
