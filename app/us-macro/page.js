@@ -65,6 +65,53 @@ export default function USMacroDashboard() {
   const ff    = lat(policy.fedfunds)
   const ffPrv = prv(policy.fedfunds)
   const ffChg = ff && ffPrv ? ff.value - ffPrv.value : null
+  const ruleHistory = policy.rules?.history || []
+  const ruleLatest = policy.rules?.latest || null
+  const ruleLabels = ruleHistory.map(point => point.date)
+  const nextFomc = policy.nextFomc
+
+  const ruleDefinitions = [
+    {
+      key: 'taylor93',
+      short: 'Taylor 1993',
+      label: 'Taylor (1993)',
+      color: '#378ADD',
+      formula: '2 + π + 0.5(π − 2) + 0.5 × output gap',
+      detail: 'Classic level rule · core PCE inflation · fixed 2% real neutral rate.',
+    },
+    {
+      key: 'balanced',
+      short: 'Balanced',
+      label: 'Balanced Approach',
+      color: '#1D9E75',
+      formula: '2 + π + 0.5(π − 2) + 1.0 × output gap',
+      detail: 'Taylor (1999) / Fed balanced approach · twice the Taylor (1993) slack response.',
+    },
+    {
+      key: 'clarida',
+      short: 'Clarida-CGG',
+      label: 'Clarida–CGG Proxy',
+      color: '#A78BFA',
+      formula: '0.79 × prior FFR + 0.21 × forward-looking target',
+      detail: 'Expected-inflation reaction β=2.15 and output-gap reaction γ=0.93; adjusted 5Y BEI is the expectation proxy.',
+    },
+    {
+      key: 'bullard',
+      short: 'Bullard',
+      label: 'Bullard Modernized',
+      color: '#E24B4A',
+      formula: '0.85 × prior FFR + 0.15 × modernized target',
+      detail: 'HP-trend safe real rate, adjusted 5Y BEI and a 0.1 output-gap coefficient.',
+    },
+  ]
+
+  const formatMeeting = meeting => {
+    if (!meeting) return '--'
+    const start = new Date(`${meeting.start}T12:00:00Z`)
+    const end = new Date(`${meeting.end}T12:00:00Z`)
+    const month = start.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })
+    return `${month} ${start.getUTCDate()}–${end.getUTCDate()}, ${end.getUTCFullYear()}`
+  }
 
   // ── Inflation ────────────────────────────────────────────────────────
   const cpiYoY     = yoyVal(inflation.cpi)
@@ -167,6 +214,9 @@ export default function USMacroDashboard() {
     box:       { background: '#fff', border: '1px solid #eee', borderRadius: '12px', padding: '16px', marginBottom: '16px' },
     boxTitle:  { fontSize: '13px', fontWeight: '500', marginBottom: '4px', color: '#333' },
     boxSub:    { fontSize: '10px', color: '#aaa', marginBottom: '10px' },
+    ruleGrid:  { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: '10px', marginBottom: '16px' },
+    ruleCard:  { background: '#f8f8f6', border: '1px solid #e7e7e2', borderRadius: '10px', padding: '12px 14px' },
+    inputGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(130px,1fr))', gap: '1px', background: '#e8e8e3', border: '1px solid #e8e8e3', borderRadius: '8px', overflow: 'hidden', marginTop: '12px' },
   }
 
   const lineOpts = {
@@ -176,6 +226,30 @@ export default function USMacroDashboard() {
       tooltip: { mode: 'index', intersect: false },
     },
     scales: { y: { ticks: { callback: v => v.toFixed(1) + '%' } } },
+  }
+
+  const policyRuleOpts = {
+    responsive: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: { usePointStyle: true, boxWidth: 8 },
+      },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        callbacks: {
+          label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`,
+        },
+      },
+    },
+    scales: {
+      y: {
+        ticks: { callback: value => `${Number(value).toFixed(1)}%` },
+        title: { display: true, text: 'Policy rate / rule prescription' },
+      },
+    },
   }
 
   const nfpBarOpts = {
@@ -240,9 +314,171 @@ export default function USMacroDashboard() {
         <div style={s.card}>
           <div style={s.cardLabel}>Next FOMC (Scheduled)</div>
           <div style={{ fontSize: '20px', fontWeight: '600', color: '#378ADD', marginTop: '4px' }}>
-            2026-06-18
+            {formatMeeting(nextFomc)}
           </div>
-          <div style={{ ...s.cardSub, color: '#888' }}>Hardcoded · Check Fed calendar for updates</div>
+          <div style={{ ...s.cardSub, color: '#888' }}>
+            {nextFomc?.sep ? 'SEP meeting · ' : ''}
+            <a
+              href="https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm"
+              target="_blank"
+              rel="noreferrer"
+              style={{ color: '#378ADD' }}
+            >
+              Official calendar ↗
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div style={s.box}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: '16px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div>
+            <div style={s.boxTitle}>Policy-Rule Monitor — Effective Fed Funds vs Rule Prescriptions</div>
+            <div style={s.boxSub}>
+              Quarterly · Core PCE / CBO potential GDP / market inflation expectations · diagnostic benchmarks, not FOMC forecasts
+            </div>
+          </div>
+          {ruleLatest && (
+            <div style={{ fontSize: '10px', color: '#888', textAlign: 'right' }}>
+              Latest common quarter<br />
+              <strong style={{ color: '#333', fontSize: '12px' }}>{ruleLatest.date}</strong>
+            </div>
+          )}
+        </div>
+
+        {ruleLatest ? (
+          <>
+            <div style={s.ruleGrid}>
+              <div style={{ ...s.ruleCard, borderTop: '3px solid #F59E0B' }}>
+                <div style={s.cardLabel}>Effective Fed Funds</div>
+                <div style={s.cardVal}>{fmtPct(ruleLatest.actual)}</div>
+                <div style={{ ...s.cardSub, color: '#888' }}>Quarterly average</div>
+              </div>
+              {ruleDefinitions.map(rule => {
+                const value = ruleLatest[rule.key]
+                const gap = value != null ? ruleLatest.actual - value : null
+                return (
+                  <div key={rule.key} style={{ ...s.ruleCard, borderTop: `3px solid ${rule.color}` }}>
+                    <div style={s.cardLabel}>{rule.short}</div>
+                    <div style={s.cardVal}>{fmtPct(value)}</div>
+                    <div style={{ ...s.cardSub, color: gap == null ? '#888' : gap >= 0 ? '#E24B4A' : '#1D9E75' }}>
+                      {gap == null
+                        ? 'Not available'
+                        : `${gap >= 0 ? '+' : ''}${gap.toFixed(2)}pp actual − rule`}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            <Line
+              data={{
+                labels: ruleLabels,
+                datasets: [
+                  {
+                    label: 'Effective Fed Funds',
+                    data: ruleHistory.map(point => point.actual),
+                    borderColor: '#F59E0B',
+                    backgroundColor: '#F59E0B',
+                    borderWidth: 3,
+                    pointRadius: 1,
+                    tension: 0.25,
+                  },
+                  ...ruleDefinitions.map(rule => ({
+                    label: rule.label,
+                    data: ruleHistory.map(point => point[rule.key]),
+                    borderColor: rule.color,
+                    backgroundColor: rule.color,
+                    borderWidth: 1.8,
+                    pointRadius: 0,
+                    borderDash: rule.key === 'clarida' || rule.key === 'bullard' ? [6, 4] : [],
+                    spanGaps: true,
+                    tension: 0.25,
+                  })),
+                ],
+              }}
+              options={policyRuleOpts}
+            />
+
+            <div style={s.inputGrid}>
+              {[
+                ['Core PCE inflation', fmtPct(ruleLatest.inputs?.corePceInflation)],
+                ['Output gap', fmtPct(ruleLatest.inputs?.outputGap)],
+                ['Unemployment', fmtPct(ruleLatest.inputs?.unemployment)],
+                ['CBO noncyclical rate', fmtPct(ruleLatest.inputs?.naturalUnemployment)],
+                ['5Y breakeven', fmtPct(ruleLatest.inputs?.fiveYearBreakeven)],
+                ['Bullard r-star proxy', fmtPct(ruleLatest.inputs?.bullardRStar)],
+              ].map(([label, value]) => (
+                <div key={label} style={{ background: '#fff', padding: '9px 11px' }}>
+                  <div style={s.cardLabel}>{label}</div>
+                  <strong style={{ fontSize: '13px', color: '#333' }}>{value}</strong>
+                </div>
+              ))}
+            </div>
+          </>
+        ) : (
+          <div style={{ padding: '28px 0', color: '#888', fontSize: '12px', textAlign: 'center' }}>
+            Waiting for a common observation across the policy-rule inputs.
+          </div>
+        )}
+      </div>
+
+      <div style={s.box}>
+        <div style={s.boxTitle}>Rule Definitions &amp; Interpretation</div>
+        <div style={s.boxSub}>
+          A positive “actual − rule” gap means the effective rate is above that rule’s prescription; it does not by itself prove policy is restrictive.
+        </div>
+        <div style={{ display: 'grid', gap: '10px' }}>
+          {ruleDefinitions.map(rule => (
+            <div
+              key={rule.key}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))',
+                gap: '12px',
+                alignItems: 'start',
+                padding: '10px 0',
+                borderBottom: '1px solid #eee',
+              }}
+            >
+              <strong style={{ color: rule.color, fontSize: '12px' }}>{rule.label}</strong>
+              <code style={{ fontSize: '10px', color: '#555', whiteSpace: 'normal' }}>{rule.formula}</code>
+              <span style={{ fontSize: '10px', color: '#888', lineHeight: 1.5 }}>{rule.detail}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: '10px', lineHeight: 1.6, color: '#888', marginTop: '12px' }}>
+          Clarida–CGG is an implementable proxy rather than a claim that former Vice Chair Clarida published this exact real-time series.
+          Bullard r-star is the HP trend (λ=1,600) of the one-year Treasury yield less Dallas Fed trimmed-mean PCE inflation.
+          The 5Y breakeven is reduced by 0.30pp to approximate PCE inflation expectations, following Bullard’s 2018 presentation.
+          Rules are sensitive to revisions, gap estimates and the chosen neutral rate.
+          {' '}
+          <a
+            href="https://www.federalreserve.gov/monetarypolicy/policy-rules-and-how-policymakers-use-them.htm"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: '#378ADD' }}
+          >
+            Fed rule definitions ↗
+          </a>
+          {' · '}
+          <a
+            href="https://www.federalreserve.gov/newsevents/speech/clarida20190503a.htm"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: '#378ADD' }}
+          >
+            Clarida on policy rules ↗
+          </a>
+          {' · '}
+          <a
+            href="https://www.stlouisfed.org/-/media/project/frbstl/stlouisfed/files/pdfs/bullard/remarks/2018/bullard_indiana_bankers_association_7_december_2018.pdf"
+            target="_blank"
+            rel="noreferrer"
+            style={{ color: '#378ADD' }}
+          >
+            Bullard 2018 ↗
+          </a>
         </div>
       </div>
 
