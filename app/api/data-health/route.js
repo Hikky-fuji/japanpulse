@@ -9,7 +9,19 @@ const DEFINITIONS = {
     { key: 'jp-cpi', label: 'National CPI', href: '/cpi', path: '/api/cpi', cadence: 'Monthly', maxAge: 100, source: 'MIC · e-Stat', extract: data => observationDate(data?.headline) },
     { key: 'jp-ppi', label: 'CGPI / SPPI', href: '/ppi', path: '/api/ppi', cadence: 'Monthly', maxAge: 100, source: 'BOJ', extract: data => observationDate(data?.cgpi) },
     { key: 'jp-gdp', label: 'GDP', href: '/gdp', path: '/api/gdp', cadence: 'Quarterly', maxAge: 240, source: 'Cabinet Office', extract: data => observationDate(data?.gdp_qoq) },
-    { key: 'jp-iip', label: 'Industrial Production', href: '/iip', path: '/api/iip', cadence: 'Monthly', maxAge: 110, source: 'METI · e-Stat', extract: data => observationDate(data?.['鉱工業']) },
+    {
+      key: 'jp-iip',
+      label: 'Industrial Production',
+      href: '/iip',
+      path: '/api/iip',
+      cadence: 'Reference snapshot',
+      maxAge: 110,
+      source: 'METI · e-Stat',
+      mode: 'SNAPSHOT',
+      reference: true,
+      referenceMessage: 'February reference snapshot is intentionally preserved because the source file identifier cannot be advanced reliably by API.',
+      extract: data => observationDate(data?.['鉱工業']),
+    },
     { key: 'jp-tsip', label: 'Tertiary Activity', href: '/tsip', path: '/api/tsip', cadence: 'Monthly', maxAge: 110, source: 'METI · e-Stat', extract: data => data?.latest?.date ?? null },
     { key: 'jp-machinery', label: 'Machine Orders', href: '/machine-orders', path: '/api/machine-orders', cadence: 'Monthly', maxAge: 110, source: 'Cabinet Office', extract: data => data?.latest?.date ?? null },
     { key: 'jp-consumption', label: 'Household Consumption', href: '/consumption', path: '/api/consumption', cadence: 'Monthly', maxAge: 110, source: 'MIC · e-Stat', extract: data => observationDate(data?.total) },
@@ -18,10 +30,24 @@ const DEFINITIONS = {
     { key: 'jp-wages', label: 'Wages', href: '/wages', path: '/api/wages', cadence: 'Monthly', maxAge: 110, source: 'MHLW', extract: data => data?.latest_date ?? observationDate(data?.nominal) },
     { key: 'jp-labour', label: 'Labor Force', href: '/labour', path: '/api/labour', cadence: 'Monthly', maxAge: 100, source: 'MIC · e-Stat', extract: data => observationDate(data?.data) },
     { key: 'jp-job-ratio', label: 'Job-to-Applicant Ratio', href: '/job-ratio', path: '/api/job-ratio', cadence: 'Monthly', maxAge: 100, source: 'MHLW · e-Stat', extract: data => data?.latest?.date ?? null },
-    { key: 'jp-trade', label: 'Trade Statistics', href: '/trade', path: '/api/trade', cadence: 'Monthly', maxAge: 110, source: 'MOF · e-Stat', extract: data => observationDate(data?.export?.total) },
+    {
+      key: 'jp-trade',
+      label: 'Trade Statistics',
+      href: '/trade',
+      path: '/api/trade',
+      cadence: 'Monthly',
+      maxAge: 110,
+      source: 'MOF · Customs / e-Stat',
+      mode: 'HYBRID',
+      extract: data => observationDate(data?.export?.total),
+      describe: data => data?._meta?.detailLatest
+        ? `Headline totals auto-update from Japan Customs; country and product detail is a ${data._meta.detailLatest} reference snapshot.`
+        : null,
+    },
   ],
   US: [
     { key: 'us-cpi', label: 'Consumer Price Index', href: '/us/cpi', path: '/api/us-cpi', cadence: 'Monthly', maxAge: 100, source: 'BLS · FRED', extract: data => fredDate(data?.series?.headline) },
+    { key: 'us-ppi', label: 'Producer Price Index', href: '/us/ppi', path: '/api/us-ppi', cadence: 'Monthly', maxAge: 100, source: 'BLS · FRED', extract: data => fredDate(data?.series?.headline) },
     { key: 'us-pce', label: 'PCE & Personal Income', href: '/us/consumption', path: '/api/us-consumption', cadence: 'Monthly', maxAge: 100, source: 'BEA · FRED', extract: data => fredDate(data?.series?.headlinePce) },
     { key: 'us-growth', label: 'GDP & Retail Sales', href: '/us-macro#growth', path: '/api/us-macro', cadence: 'Quarterly / Monthly', maxAge: 240, source: 'BEA · Census · FRED', extract: data => observationDate(data?.growth?.realGdpGrowth) },
     { key: 'us-manufacturing', label: 'Manufacturing Surveys', href: '/us/manufacturing', path: '/api/us-manufacturing', cadence: 'Monthly', maxAge: 100, source: 'NY Fed · Philly Fed · ISM', mode: 'MIXED', extract: data => observationDate(data?.ism?.headline) },
@@ -75,18 +101,33 @@ async function inspectSource(origin, definition) {
   try {
     const payload = await fetchWithTimeout(`${origin}${definition.path}`)
     const latestPeriod = definition.extract(payload)
+    const detailMessage = definition.describe?.(payload) || null
+    const fresh = definition.reference
+      ? {
+          status: 'reference',
+          ageDays: null,
+          message: definition.referenceMessage,
+        }
+      : freshness(latestPeriod, definition.maxAge)
     return {
       ...definition,
       extract: undefined,
+      describe: undefined,
+      reference: undefined,
+      referenceMessage: undefined,
       mode: definition.mode || 'AUTO',
       latestPeriod,
       checkedAt,
-      ...freshness(latestPeriod, definition.maxAge),
+      ...fresh,
+      message: detailMessage || fresh.message,
     }
   } catch (error) {
     return {
       ...definition,
       extract: undefined,
+      describe: undefined,
+      reference: undefined,
+      referenceMessage: undefined,
       mode: definition.mode || 'AUTO',
       latestPeriod: null,
       checkedAt,
@@ -114,7 +155,7 @@ export async function GET(request) {
   const summary = items.reduce((counts, item) => {
     counts[item.status] += 1
     return counts
-  }, { current: 0, stale: 0, failed: 0 })
+  }, { current: 0, reference: 0, stale: 0, failed: 0 })
 
   return Response.json({
     country,

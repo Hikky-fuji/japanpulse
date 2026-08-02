@@ -1174,7 +1174,7 @@ button:focus-visible {
 
 .operations-health__counts {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 1px;
   margin-top: 10px;
   background: #41494e;
@@ -1204,6 +1204,7 @@ button:focus-visible {
 }
 
 .operations-health__counts .is-current strong { color: var(--jp-green); }
+.operations-health__counts .is-reference strong { color: var(--jp-blue); }
 .operations-health__counts .is-stale strong { color: #f4b66d; }
 .operations-health__counts .is-failed strong { color: var(--jp-red); }
 
@@ -1426,6 +1427,13 @@ button:focus-visible {
   font-size: 8px;
 }
 
+.operations-health__table small.operations-health__reason {
+  margin-top: 4px;
+  color: #c4cacf;
+  line-height: 1.35;
+  white-space: normal;
+}
+
 .operations-health__table > a > span,
 .operations-health__table > a > b {
   color: #c7cdd1;
@@ -1456,6 +1464,11 @@ button:focus-visible {
 .operations-status.is-current {
   border-color: #46745c;
   color: var(--jp-green);
+}
+
+.operations-status.is-reference {
+  border-color: #426b78;
+  color: var(--jp-blue);
 }
 
 .operations-status.is-stale {
@@ -1490,6 +1503,78 @@ button:focus-visible {
 .operations-dashboard__calendar .operations-release {
   grid-template-columns: 130px minmax(0, 1fr) 145px;
   min-height: 51px;
+}
+
+.operations-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 9px 16px;
+  margin-top: 15px;
+  padding: 10px;
+  border: 1px solid #454e54;
+  background: #202529;
+}
+
+.operations-filters > div,
+.operations-filters > label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.operations-filters span {
+  margin-right: 3px;
+  color: #9fa8ad;
+  font: 750 8px/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.operations-filters button,
+.operations-filters select,
+.operations-filter-summary button {
+  min-height: 27px;
+  border: 1px solid #566168;
+  border-radius: 0;
+  background: #2a3034;
+  color: #cdd3d6;
+  font: 700 9px/1 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.operations-filters button {
+  padding: 0 9px;
+  cursor: pointer;
+}
+
+.operations-filters button[aria-pressed="true"] {
+  border-color: var(--jp-orange);
+  background: rgba(240, 138, 36, .11);
+  color: #fff;
+}
+
+.operations-filters select {
+  min-width: 150px;
+  padding: 0 25px 0 8px;
+}
+
+.operations-filter-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  color: #aeb6bb;
+  font: 700 9px/1.2 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.operations-filter-summary button {
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--jp-blue);
+  cursor: pointer;
 }
 
 .macro-workspace__body {

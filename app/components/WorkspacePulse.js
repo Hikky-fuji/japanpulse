@@ -393,9 +393,10 @@ function usCards(payload) {
   const hasSource = key => Object.prototype.hasOwnProperty.call(payload, key)
   const sourceLoading = key => !hasSource(key)
   const sourceFailed = key => hasSource(key) && payload[key] === null
-  const { cpi, employment, consumption, jolts, manufacturing, macro } = payload
+  const { cpi, ppi, employment, consumption, jolts, manufacturing, macro } = payload
   const headlineCpi = yoyFromIndex(cpi?.series?.headline?.observations)
   const coreCpi = yoyFromIndex(cpi?.series?.core?.observations)
+  const headlinePpi = yoyFromIndex(ppi?.series?.headline?.observations)
   const corePce = yoyFromIndex(consumption?.series?.corePce?.observations)
   const realPce = consumption?.series?.realPce?.observations?.filter(item => finite(item.value)) || []
   const realDpi = consumption?.series?.realDisposableIncome?.observations?.filter(item => finite(item.value)) || []
@@ -427,9 +428,9 @@ function usCards(payload) {
       toneName: tone(headlineCpi.value - 2, true),
       details: [
         detail('Core CPI', fixed(coreCpi.value, 1, '%')),
-        detail('Core PCE', fixed(corePce.value, 1, '%')),
+        detail('Headline PPI', fixed(headlinePpi.value, 1, '%')),
       ],
-      source: 'BLS · BEA · FRED',
+      source: 'BLS · FRED',
       series: yoySeries(cpi?.series?.headline?.observations),
       baseline: 2,
       momentumKind: 'inflation',
@@ -542,7 +543,7 @@ async function fetchJson(path, signal) {
 }
 
 export default function WorkspacePulse({ countryCode }) {
-  const sourceTotal = countryCode === 'JP' ? 9 : 6
+  const sourceTotal = countryCode === 'JP' ? 9 : 7
   const [cards, setCards] = useState(() => countryCode === 'JP' ? japanCards({}) : usCards({}))
   const [progress, setProgress] = useState({ completed: 0, total: sourceTotal })
 
@@ -567,6 +568,7 @@ export default function WorkspacePulse({ countryCode }) {
       : {
           paths: {
             cpi: '/api/us-cpi',
+            ppi: '/api/us-ppi',
             employment: '/api/us-employment',
             consumption: '/api/us-consumption',
             jolts: '/api/us-jolts',

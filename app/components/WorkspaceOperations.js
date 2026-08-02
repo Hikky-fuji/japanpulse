@@ -34,18 +34,19 @@ function HealthSummary({ health }) {
     <>
       <div className="operations-health__counts">
         <div className="is-current"><strong>{health.summary.current}</strong><span>Current</span></div>
+        <div className="is-reference"><strong>{health.summary.reference || 0}</strong><span>Reference</span></div>
         <div className="is-stale"><strong>{health.summary.stale}</strong><span>Stale</span></div>
         <div className="is-failed"><strong>{health.summary.failed}</strong><span>Failed</span></div>
       </div>
-      <p>{total} official feeds checked automatically every 15 minutes.</p>
+      <p>{total} official feeds rechecked on access, with a daily scheduled backstop.</p>
     </>
   )
 }
 
-function ReleaseRows({ events, limit }) {
+function ReleaseRows({ events, limit, emptyMessage = 'Loading official release schedules…' }) {
   const visible = typeof limit === 'number' ? events.slice(0, limit) : events
   if (!visible.length) {
-    return <div className="operations-loading">Loading official release schedules…</div>
+    return <div className="operations-loading">{emptyMessage}</div>
   }
   return (
     <div className="operations-releases">
@@ -76,6 +77,9 @@ export default function WorkspaceOperations({ countryCode, expanded = false }) {
   const countries = countryCode === 'ALL' ? ['JP', 'US'] : [countryCode]
   const [healthByCountry, setHealthByCountry] = useState({})
   const [calendar, setCalendar] = useState(null)
+  const [calendarCountry, setCalendarCountry] = useState(countryCode === 'ALL' ? 'ALL' : countryCode)
+  const [calendarWindow, setCalendarWindow] = useState('30')
+  const [calendarCategory, setCalendarCategory] = useState('ALL')
 
   useEffect(() => {
     const controller = new AbortController()
@@ -113,6 +117,21 @@ export default function WorkspaceOperations({ countryCode, expanded = false }) {
     const all = calendar?.events || []
     return countryCode === 'ALL' ? all : all.filter(item => item.country === countryCode)
   }, [calendar, countryCode])
+  const categories = useMemo(
+    () => [...new Set(events.map(item => item.category).filter(Boolean))].sort(),
+    [events],
+  )
+  const filteredEvents = useMemo(() => {
+    const horizon = Number(calendarWindow)
+    return events.filter(item => {
+      const remaining = daysUntil(item.date)
+      return (calendarCountry === 'ALL' || item.country === calendarCountry)
+        && (calendarCategory === 'ALL' || item.category === calendarCategory)
+        && remaining !== null
+        && remaining >= 0
+        && remaining <= horizon
+    })
+  }, [calendarCategory, calendarCountry, calendarWindow, events])
 
   if (expanded) {
     return (
@@ -142,6 +161,7 @@ export default function WorkspaceOperations({ countryCode, expanded = false }) {
                         <div>
                           <strong>{item.label}</strong>
                           <small>{item.source} · {item.cadence}</small>
+                          {item.message ? <small className="operations-health__reason">{item.message}</small> : null}
                         </div>
                         <span>{item.latestPeriod || 'No observation date'}</span>
                         <b className={item.mode === 'MIXED' ? 'is-mixed' : ''}>{item.mode}</b>
@@ -163,7 +183,59 @@ export default function WorkspaceOperations({ countryCode, expanded = false }) {
             </div>
             <small>{calendar?.methodology || 'Connecting to official schedules…'}</small>
           </header>
-          <ReleaseRows events={events} />
+          <div className="operations-filters" aria-label="Release calendar filters">
+            <div>
+              <span>Window</span>
+              {[
+                ['7', 'This week'],
+                ['30', '30 days'],
+                ['180', '6 months'],
+              ].map(([value, label]) => (
+                <button
+                  aria-pressed={calendarWindow === value}
+                  key={value}
+                  onClick={() => setCalendarWindow(value)}
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+            <div>
+              <span>Country</span>
+              {['ALL', 'JP', 'US'].map(value => (
+                <button
+                  aria-pressed={calendarCountry === value}
+                  key={value}
+                  onClick={() => setCalendarCountry(value)}
+                  type="button"
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+            <label>
+              <span>Category</span>
+              <select value={calendarCategory} onChange={event => setCalendarCategory(event.target.value)}>
+                <option value="ALL">All categories</option>
+                {categories.map(category => <option key={category} value={category}>{category}</option>)}
+              </select>
+            </label>
+          </div>
+          <div className="operations-filter-summary">
+            <span>{filteredEvents.length} scheduled releases</span>
+            <button
+              onClick={() => {
+                setCalendarWindow('30')
+                setCalendarCountry(countryCode === 'ALL' ? 'ALL' : countryCode)
+                setCalendarCategory('ALL')
+              }}
+              type="button"
+            >
+              Reset filters
+            </button>
+          </div>
+          <ReleaseRows events={filteredEvents} emptyMessage="No scheduled releases match these filters." />
         </section>
       </div>
     )
