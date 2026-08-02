@@ -118,6 +118,8 @@ async function fredEvents(from, to) {
   const apiKey = process.env.FRED_API_KEY
   if (!apiKey) throw new Error('FRED_API_KEY is not configured')
 
+  // Query each tracked release directly so near-term dates cannot be displaced
+  // by the global calendar's much larger history.
   const schedules = await Promise.all(FRED_RELEASES.map(async definition => {
     const params = new URLSearchParams({
       release_id: String(definition.releaseId),
