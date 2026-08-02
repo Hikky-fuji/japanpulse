@@ -76,7 +76,7 @@ export function DashboardFreshness({ data, source = 'Official source' }) {
     <div className="dashboard-freshness" aria-label="Data status">
       <span className="dashboard-freshness__source">{source}</span>
       {latestPeriod ? <span>Latest observation · {latestPeriod}</span> : null}
-      <span>Refreshed on page load</span>
+      <span>Updated automatically</span>
     </div>
   )
 }

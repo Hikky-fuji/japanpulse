@@ -1,3 +1,4 @@
+export const revalidate = 21600
 export const dynamic = 'force-dynamic'
 
 const BOJ_BASE = 'https://www.stat-search.boj.or.jp/api/v1/getDataCode'
@@ -40,7 +41,7 @@ export async function GET() {
   try {
     const allCodes = Object.values(CODES).join(',')
     const url = `${BOJ_BASE}?format=json&lang=en&db=CO&code=${allCodes}&startDate=200001`
-    const res = await fetch(url, { cache: 'no-store' })
+    const res = await fetch(url, { next: { revalidate } })
 
     if (!res.ok) {
       const text = await res.text()

@@ -1,3 +1,4 @@
+export const revalidate = 3600
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
@@ -9,7 +10,7 @@ export async function GET() {
       const url =
         `https://api.stlouisfed.org/fred/series/observations` +
         `?series_id=${id}&api_key=${apiKey}&file_type=json&sort_order=desc&limit=${limit}`
-      const res = await fetch(url, { cache: 'no-store' })
+      const res = await fetch(url, { next: { revalidate } })
       if (!res.ok) { console.warn(`[US-Emp] HTTP ${res.status} for ${id}`); return [] }
       const json = await res.json()
       if (json.error_message) { console.warn(`[US-Emp] ${id}:`, json.error_message); return [] }

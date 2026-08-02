@@ -1,3 +1,4 @@
+export const revalidate = 21600
 export const dynamic = 'force-dynamic'
 
 const BASE = 'https://api.e-stat.go.jp/rest/3.0/app/json'
@@ -12,7 +13,7 @@ export async function GET() {
   const fetchByCat02 = async (cat02) => {
     const url = `${BASE}/getStatsData?appId=${APP_ID}&statsDataId=${STATS_ID}`
       + `&metaGetFlg=N&limit=9999&cdTab=140&cdCat02=${cat02}`
-    const res = await fetch(url, { cache: 'no-store' })
+    const res = await fetch(url, { next: { revalidate } })
     const json = await res.json()
     return json?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE ?? []
   }

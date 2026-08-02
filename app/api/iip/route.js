@@ -1,3 +1,4 @@
+export const revalidate = 21600
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
@@ -7,7 +8,7 @@ export async function GET() {
 
   const fetchAndParse = async (statInfId) => {
     const url = `https://www.e-stat.go.jp/stat-search/file-download?statInfId=${statInfId}&fileKind=0`
-    const res = await fetch(url, { cache: 'no-store' })
+    const res = await fetch(url, { next: { revalidate } })
     const buf = await res.arrayBuffer()
     const XLSX = await import('xlsx')
     return XLSX.read(buf, { type: 'array' })

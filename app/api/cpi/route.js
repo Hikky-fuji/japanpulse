@@ -1,3 +1,4 @@
+export const revalidate = 21600
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
@@ -12,7 +13,7 @@ export async function GET() {
       + `&cdCat01=${cat}`
       + `&cdTab=${tab}`
 
-    const res = await fetch(url, { cache: 'no-store' })
+    const res = await fetch(url, { next: { revalidate } })
     const json = await res.json()
     const values = json?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE ?? []
 

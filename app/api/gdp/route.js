@@ -1,3 +1,4 @@
+export const revalidate = 21600
 export const dynamic = 'force-dynamic'
 
 const APP_ID = process.env.ESTAT_APP_ID
@@ -30,7 +31,7 @@ async function fetchSeries(statsId, cat, tab) {
   let url = `${BASE}/getStatsData?appId=${APP_ID}&statsDataId=${statsId}`
     + `&metaGetFlg=N&cdCat01=${cat}`
   if (tab) url += `&cdTab=${tab}`
-  const res = await fetch(url, { cache: 'no-store' })
+  const res = await fetch(url, { next: { revalidate } })
   const json = await res.json()
   const values = json?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE ?? []
   return (Array.isArray(values) ? values : [values])

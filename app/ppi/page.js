@@ -12,10 +12,29 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 export default function PPI() {
   const [data, setData] = useState(null)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    fetch('/api/ppi').then(r => r.json()).then(setData)
+    const controller = new AbortController()
+
+    fetch('/api/ppi', { signal: controller.signal })
+      .then(async response => {
+        const payload = await response.json()
+        if (!response.ok || payload.error) {
+          throw new Error(payload.error || `PPI request failed (${response.status})`)
+        }
+        setData(payload)
+      })
+      .catch(fetchError => {
+        if (fetchError.name !== 'AbortError') setError(fetchError.message)
+      })
+
+    return () => controller.abort()
   }, [])
+
+  if (error) return (
+    <DashboardState type="error" message={`BOJ producer-price data could not be loaded. ${error}`} />
+  )
 
   if (!data?.cgpi?.length) return (
     <DashboardState />

@@ -26,15 +26,19 @@ export function SiteHeader() {
           <span className="terminal-brand__name">JapanPulse Workspace</span>
         </Link>
         <nav className="terminal-nav" aria-label="Primary navigation">
-          {NAV_ITEMS.map(item => (
-            <Link
-              className={`terminal-nav__link${item.match(pathname) ? ' is-active' : ''}`}
-              href={item.href}
-              key={item.href}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {NAV_ITEMS.map(item => {
+            const isActive = item.match(pathname)
+            return (
+              <Link
+                aria-current={isActive ? 'page' : undefined}
+                className={`terminal-nav__link${isActive ? ' is-active' : ''}`}
+                href={item.href}
+                key={item.href}
+              >
+                {item.label}
+              </Link>
+            )
+          })}
         </nav>
       </div>
       <div className="terminal-statusbar">

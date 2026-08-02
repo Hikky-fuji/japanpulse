@@ -1,10 +1,11 @@
+export const revalidate = 21600
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const url = 'https://www.e-stat.go.jp/stat-search/file-download?statInfId=000040270648&fileKind=1'
 
   try {
-    const res = await fetch(url, { cache: 'no-store' })
+    const res = await fetch(url, { next: { revalidate } })
     const buffer = await res.arrayBuffer()
     const text = new TextDecoder('shift-jis').decode(buffer)
     const lines = text.trim().split('\r\n')

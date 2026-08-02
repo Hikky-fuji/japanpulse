@@ -1,3 +1,4 @@
+export const revalidate = 21600
 export const dynamic = 'force-dynamic'
 
 const B = 'https://api.e-stat.go.jp/rest/3.0/app/json'
@@ -59,7 +60,7 @@ export async function GET() {
 
   // ── Find world area code from metadata ───────────────────────────────────
   const getWorldArea = async () => {
-    const r = await fetch(`${B}/getMetaInfo?appId=${APP_ID}&statsDataId=${EXP_ID}`, { cache: 'no-store' })
+    const r = await fetch(`${B}/getMetaInfo?appId=${APP_ID}&statsDataId=${EXP_ID}`, { next: { revalidate } })
     const j = await r.json()
     const objs = j?.GET_META_INFO?.METADATA_INF?.CLASS_INF?.CLASS_OBJ ?? []
     const arr = Array.isArray(objs) ? objs : [objs]
@@ -83,7 +84,7 @@ export async function GET() {
     if (area)      p.set('cdArea', area)
     if (cat02From) p.set('cdCat02From', cat02From)
     if (cat02To)   p.set('cdCat02To', cat02To)
-    const res = await fetch(`${B}/getStatsData?${p}`, { cache: 'no-store' })
+    const res = await fetch(`${B}/getStatsData?${p}`, { next: { revalidate } })
     const json = await res.json()
     const vals = json?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE ?? []
     if (!vals.length) console.warn(`[Trade] no data: ${statsDataId} cat01=${cat01||'—'} area=${area||'—'}`)

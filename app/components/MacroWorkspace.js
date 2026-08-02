@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
+import WorkspacePulse from './WorkspacePulse'
 
 const SOURCE_BY_PATH = {
   '/cpi': 'MIC · e-Stat',
@@ -102,9 +103,13 @@ export default function MacroWorkspace({
         </div>
         <div>
           <span>Refresh</span>
-          <strong className="macro-workspace__refresh">On page load</strong>
+          <strong className="macro-workspace__refresh">
+            {countryCode === 'JP' ? 'Auto · 6-hour cache' : 'Auto · hourly cache'}
+          </strong>
         </div>
       </section>
+
+      <WorkspacePulse countryCode={countryCode} />
 
       <div className="macro-workspace__body">
         <aside className="macro-workspace__rail" aria-label="Indicator categories">
