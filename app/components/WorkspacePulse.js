@@ -42,6 +42,12 @@ function pctChange(current, prior) {
   return finite(current) && finite(prior) && prior !== 0 ? (current / prior - 1) * 100 : null
 }
 
+function quarterLabel(date) {
+  if (!date) return null
+  const month = Number(date.slice(5, 7))
+  return `${date.slice(0, 4)}-Q${Math.ceil(month / 3)}`
+}
+
 function detail(label, value, toneName = 'neutral') {
   return { label, value, tone: toneName }
 }
@@ -212,7 +218,7 @@ function usCards(payload) {
       href: '/us-macro#growth',
       mainLabel: 'Real GDP QoQ SAAR',
       value: signed(realGdp?.value, 1, '%'),
-      period: realGdp?.date,
+      period: quarterLabel(realGdp?.date),
       toneName: tone(realGdp?.value),
       details: [
         detail('Retail sales YoY', signed(pctChange(retailLatest?.value, retailYearAgo), 1, '%'), tone(pctChange(retailLatest?.value, retailYearAgo))),
