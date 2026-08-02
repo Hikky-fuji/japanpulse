@@ -58,6 +58,16 @@ function latestByMonth(observations) {
   )
 }
 
+function observationsThroughMonth(observations, month) {
+  if (!month) return observations || []
+  return (observations || []).filter(point => point.date.slice(0, 7) <= month)
+}
+
+function pointForMonth(observations, month) {
+  if (!month) return null
+  return last((observations || []).filter(point => point.date.slice(0, 7) === month))
+}
+
 function thirdThursday(year, monthIndex) {
   const date = new Date(Date.UTC(year, monthIndex, 1))
   const offset = (4 - date.getUTCDay() + 7) % 7
@@ -100,7 +110,7 @@ function signalFor(value, neutral = 0) {
   return { label: 'Neutral', tone: 'neutral' }
 }
 
-function SurveyCard({ label, role, importance, value, neutral, date, change, color, description }) {
+function SurveyCard({ label, role, importance, value, neutral, date, change, color, description, comparisonMonth }) {
   const signal = signalFor(value, neutral)
   return (
     <article className={styles.surveyCard} style={{ '--accent': color }}>
@@ -118,7 +128,7 @@ function SurveyCard({ label, role, importance, value, neutral, date, change, col
         </div>
       </div>
       <div className={styles.cardFooter}>
-        <span>1M momentum</span>
+        <span>1M change through {monthLabel(`${comparisonMonth}-01`)}</span>
         <b className={change >= 0 ? styles.positive : styles.negative}>{signed(change)} pt</b>
       </div>
     </article>
@@ -213,6 +223,19 @@ export default function ManufacturingMomentumPage() {
     const empireMap = latestByMonth(empireHeadline)
     const phillyMap = latestByMonth(phillyHeadline)
     const ismMap = latestByMonth(ismHeadline)
+    const comparisonMonth = months
+      .filter(month => empireMap.has(month) && phillyMap.has(month) && ismMap.has(month))
+      .at(-1) || [empireLatest, phillyLatest, ismLatest]
+        .filter(Boolean)
+        .map(point => point.date.slice(0, 7))
+        .sort()
+        .at(0)
+    const empireComparison = pointForMonth(empireHeadline, comparisonMonth)
+    const phillyComparison = pointForMonth(phillyHeadline, comparisonMonth)
+    const ismComparison = pointForMonth(ismHeadline, comparisonMonth)
+    const empireAligned = observationsThroughMonth(empireHeadline, comparisonMonth)
+    const phillyAligned = observationsThroughMonth(phillyHeadline, comparisonMonth)
+    const ismAligned = observationsThroughMonth(ismHeadline, comparisonMonth)
 
     const subindices = [
       { key: 'headline', label: 'Headline / Activity', ismKey: 'headline' },
@@ -222,24 +245,36 @@ export default function ManufacturingMomentumPage() {
     ].map(row => {
       const empireObs = empire[row.key].observations.filter(point => valid(point.value))
       const phillyObs = philly[row.key].observations.filter(point => valid(point.value))
+      const empireObsAligned = observationsThroughMonth(empireObs, comparisonMonth)
+      const phillyObsAligned = observationsThroughMonth(phillyObs, comparisonMonth)
       return {
         ...row,
-        empire: last(empireObs)?.value,
-        empireChange: pointChange(empireObs),
-        philly: last(phillyObs)?.value,
-        phillyChange: pointChange(phillyObs),
-        ism: payload.ism.latest[row.ismKey],
+        empire: pointForMonth(empireObs, comparisonMonth)?.value,
+        empireChange: pointChange(empireObsAligned),
+        philly: pointForMonth(phillyObs, comparisonMonth)?.value,
+        phillyChange: pointChange(phillyObsAligned),
+        ism: ismLatest?.date.slice(0, 7) === comparisonMonth
+          ? payload.ism.latest[row.ismKey]
+          : null,
       }
     })
 
-    const regionalDirection = [empireLatest?.value, phillyLatest?.value].filter(valid)
+    const regionalDirection = [empireComparison?.value, phillyComparison?.value].filter(valid)
     const positiveRegional = regionalDirection.filter(value => value > 0).length
     const leadLabel = positiveRegional === 2
       ? 'Regional signals agree on expansion'
       : positiveRegional === 0
         ? 'Regional signals agree on contraction'
         : 'Regional signals are mixed'
-    const ismSignal = signalFor(ismLatest?.value, 50)
+    const ismSignal = signalFor(ismComparison?.value, 50)
+    const latestReleases = [
+      { key: 'empire', label: 'New York', point: empireLatest, neutral: 0 },
+      { key: 'philly', label: 'Philadelphia', point: phillyLatest, neutral: 0 },
+      { key: 'ism', label: 'ISM', point: ismLatest, neutral: 50 },
+    ]
+    const hasNewerRelease = latestReleases.some(
+      release => release.point?.date.slice(0, 7) !== comparisonMonth,
+    )
 
     return {
       empire,
@@ -250,6 +285,12 @@ export default function ManufacturingMomentumPage() {
       empireLatest,
       phillyLatest,
       ismLatest,
+      empireComparison,
+      phillyComparison,
+      ismComparison,
+      comparisonMonth,
+      latestReleases,
+      hasNewerRelease,
       releases,
       subindices,
       leadLabel,
@@ -293,9 +334,9 @@ export default function ManufacturingMomentumPage() {
           {
             label: '1M change (points)',
             data: [
-              pointChange(empireHeadline),
-              pointChange(phillyHeadline),
-              pointChange(ismHeadline),
+              pointChange(empireAligned),
+              pointChange(phillyAligned),
+              pointChange(ismAligned),
             ],
             backgroundColor: [COLORS.empire, COLORS.philly, COLORS.ism],
             borderRadius: 3,
@@ -303,9 +344,9 @@ export default function ManufacturingMomentumPage() {
           {
             label: '3M change (points)',
             data: [
-              pointChange(empireHeadline, 3),
-              pointChange(phillyHeadline, 3),
-              pointChange(ismHeadline, 3),
+              pointChange(empireAligned, 3),
+              pointChange(phillyAligned, 3),
+              pointChange(ismAligned, 3),
             ],
             backgroundColor: [`${COLORS.empire}66`, `${COLORS.philly}66`, `${COLORS.ism}66`],
             borderRadius: 3,
@@ -393,10 +434,33 @@ export default function ManufacturingMomentumPage() {
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
             <div>
-              <span>02 / SIGNAL HIERARCHY</span>
-              <h2>Lead, confirm, anchor</h2>
+              <span>02 / COMPARABLE SNAPSHOT</span>
+              <h2>Lead, confirm, anchor — same survey month</h2>
             </div>
-            <p>Card size and labels communicate national importance; values retain each survey’s own methodology.</p>
+            <p>All three cards and momentum calculations are aligned to {monthLabel(`${model.comparisonMonth}-01`)}.</p>
+          </div>
+
+          <div className={styles.latestStrip}>
+            <div className={styles.latestStripIntro}>
+              <span>LATEST RELEASE SEQUENCE</span>
+              <strong>Comparison month: {monthLabel(`${model.comparisonMonth}-01`)}</strong>
+              <small>
+                {model.hasNewerRelease
+                  ? 'Newer releases stay visible here, but do not enter the cross-survey verdict until all three surveys catch up.'
+                  : 'All three surveys currently refer to the same month.'}
+              </small>
+            </div>
+            {model.latestReleases.map(release => {
+              const releaseMonth = release.point?.date.slice(0, 7)
+              const isAhead = releaseMonth !== model.comparisonMonth
+              return (
+                <div className={styles.latestRelease} key={release.key} style={{ '--release': COLORS[release.key] }}>
+                  <span>{release.label}</span>
+                  <strong>{valid(release.point?.value) ? release.point.value.toFixed(1) : '—'}</strong>
+                  <small>{monthLabel(release.point?.date)} · {isAhead ? 'New lead' : 'Aligned'}</small>
+                </div>
+              )
+            })}
           </div>
 
           <div className={styles.surveyGrid}>
@@ -404,33 +468,36 @@ export default function ManufacturingMomentumPage() {
               label="New York Empire"
               role="First read"
               importance="Regional lead"
-              value={model.empireLatest?.value}
+              value={model.empireComparison?.value}
               neutral={0}
-              date={model.empireLatest?.date}
-              change={pointChange(model.empireHeadline)}
+              date={model.empireComparison?.date}
+              change={pointChange(observationsThroughMonth(model.empireHeadline, model.comparisonMonth))}
               color={COLORS.empire}
+              comparisonMonth={model.comparisonMonth}
               description="Fast but geographically narrow. Useful for direction, not a national conclusion."
             />
             <SurveyCard
               label="Philadelphia Fed"
               role="Second read"
               importance="Regional confirm"
-              value={model.phillyLatest?.value}
+              value={model.phillyComparison?.value}
               neutral={0}
-              date={model.phillyLatest?.date}
-              change={pointChange(model.phillyHeadline)}
+              date={model.phillyComparison?.date}
+              change={pointChange(observationsThroughMonth(model.phillyHeadline, model.comparisonMonth))}
               color={COLORS.philly}
+              comparisonMonth={model.comparisonMonth}
               description="Long-running regional survey that confirms—or challenges—the first New York signal."
             />
             <SurveyCard
               label="ISM Manufacturing"
               role="Final anchor"
               importance="National"
-              value={model.ismLatest?.value}
+              value={model.ismComparison?.value}
               neutral={50}
-              date={model.ismLatest?.date}
-              change={pointChange(model.ismHeadline)}
+              date={model.ismComparison?.date}
+              change={pointChange(observationsThroughMonth(model.ismHeadline, model.comparisonMonth))}
               color={COLORS.ism}
+              comparisonMonth={model.comparisonMonth}
               description="The national benchmark. It carries the greatest decision weight in the sequence."
             />
           </div>
@@ -442,7 +509,7 @@ export default function ManufacturingMomentumPage() {
               <span>03 / MOMENTUM</span>
               <h2>Directional momentum across surveys</h2>
             </div>
-            <p>Regional values use zero as neutral. ISM is shown as distance from its 50 expansion threshold.</p>
+            <p>Changes end in {monthLabel(`${model.comparisonMonth}-01`)}. Newer partial releases remain in the line chart only.</p>
           </div>
 
           <div className={styles.mainGrid}>
@@ -488,11 +555,11 @@ export default function ManufacturingMomentumPage() {
                 <thead>
                   <tr>
                     <th>Component</th>
-                    <th>NY latest</th>
+                    <th>NY · {monthLabel(`${model.comparisonMonth}-01`)}</th>
                     <th>NY 1M</th>
-                    <th>Philly latest</th>
+                    <th>Philly · {monthLabel(`${model.comparisonMonth}-01`)}</th>
                     <th>Philly 1M</th>
-                    <th>ISM latest</th>
+                    <th>ISM · {monthLabel(`${model.comparisonMonth}-01`)}</th>
                     <th>Interpretation</th>
                   </tr>
                 </thead>
@@ -522,11 +589,11 @@ export default function ManufacturingMomentumPage() {
 
         <section className={styles.readout}>
           <div>
-            <span>Current sequence readout</span>
+            <span>Aligned readout · {monthLabel(`${model.comparisonMonth}-01`)}</span>
             <h2>{model.leadLabel}</h2>
             <p>
-              The latest national anchor is <strong className={styles[model.ismSignal.tone]}>{model.ismSignal.label.toLowerCase()}</strong>.
-              Regional surveys should be treated as an early update to that anchor, not as replacements for ISM.
+              The same-month national anchor is <strong className={styles[model.ismSignal.tone]}>{model.ismSignal.label.toLowerCase()}</strong>.
+              Newer regional releases update the live sequence above without contaminating this horizontal comparison.
             </p>
           </div>
           <div className={styles.readoutRules}>
