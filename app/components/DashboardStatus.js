@@ -69,14 +69,14 @@ function findLatestPeriod(data) {
   return latest?.label ?? null
 }
 
-export function DashboardFreshness({ data, source = 'Official source' }) {
+export function DashboardFreshness({ data, source = 'Official source', mode = 'auto' }) {
   const latestPeriod = useMemo(() => findLatestPeriod(data), [data])
 
   return (
     <div className="dashboard-freshness" aria-label="Data status">
       <span className="dashboard-freshness__source">{source}</span>
       {latestPeriod ? <span>Latest observation · {latestPeriod}</span> : null}
-      <span>Updated automatically</span>
+      <span>{mode === 'reference' ? 'Preserved reference snapshot' : 'Updated automatically'}</span>
     </div>
   )
 }
