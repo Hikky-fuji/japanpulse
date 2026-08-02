@@ -807,16 +807,6 @@ button:focus-visible {
   white-space: nowrap;
 }
 
-.workspace-pulse__trend > span.is-up {
-  border-color: rgba(106, 191, 145, .45);
-  color: var(--jp-green);
-}
-
-.workspace-pulse__trend > span.is-down {
-  border-color: rgba(255, 107, 107, .42);
-  color: var(--jp-red);
-}
-
 .workspace-pulse__details {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
