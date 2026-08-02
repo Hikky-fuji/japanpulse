@@ -2,7 +2,52 @@ import MacroWorkspace from '../components/MacroWorkspace'
 
 const indicators = [
   {
-    group: 'Employment & Labor',
+    group: 'Prices',
+    color: '#E67E22',
+    bg: '#FFF8F0',
+    border: '#F0A050',
+    items: [
+      {
+        href: '/us/cpi',
+        title: 'CPI & Inflation',
+        subtitle: 'Headline / Core / Services ex Shelter',
+        badge: 'Monthly',
+        desc: 'Headline, core, supercore proxy, category momentum and inflation contributions. Source: BLS via FRED.',
+      },
+    ],
+  },
+  {
+    group: 'Economic Growth',
+    color: '#27AE60',
+    bg: '#F0FAF4',
+    border: '#5DBF80',
+    items: [
+      {
+        href: '/us-macro#growth',
+        title: 'GDP & Retail Sales',
+        subtitle: 'GDP QoQ SAAR / Retail YoY',
+        badge: 'Quarterly / Monthly',
+        desc: 'Nominal GDP growth (Q/Q SAAR) and advance retail sales year-over-year. Source: BEA / Census via FRED.',
+      },
+    ],
+  },
+  {
+    group: 'Surveys & Sentiment',
+    color: '#16A085',
+    bg: '#F0FAF8',
+    border: '#50C4A8',
+    items: [
+      {
+        href: '/us/manufacturing',
+        title: 'Manufacturing Momentum',
+        subtitle: 'NY Empire → Philly Fed → ISM',
+        badge: 'Monthly Sequence',
+        desc: 'Regional lead signals, national ISM anchor, release clock, component breadth and directional momentum. Sources: NY Fed / Philadelphia Fed / ISM.',
+      },
+    ],
+  },
+  {
+    group: 'Employment & Wages',
     color: '#1A56DB',
     bg: '#F0F4FF',
     border: '#6B8FE8',
@@ -24,33 +69,11 @@ const indicators = [
     ],
   },
   {
-    group: 'Prices',
-    color: '#E67E22',
-    bg: '#FFF8F0',
-    border: '#F0A050',
+    group: 'Monetary Policy',
+    color: '#7C3AED',
+    bg: '#F5F3FF',
+    border: '#A78BFA',
     items: [
-      {
-        href: '/us/cpi',
-        title: 'CPI & Inflation',
-        subtitle: 'Headline / Core / Services ex Shelter',
-        badge: 'Monthly',
-        desc: 'Headline, core, supercore proxy, category momentum and inflation contributions. Source: BLS via FRED.',
-      },
-    ],
-  },
-  {
-    group: 'Growth & Policy',
-    color: '#27AE60',
-    bg: '#F0FAF4',
-    border: '#5DBF80',
-    items: [
-      {
-        href: '/us-macro#growth',
-        title: 'GDP & Retail Sales',
-        subtitle: 'GDP QoQ SAAR / Retail YoY',
-        badge: 'Quarterly / Monthly',
-        desc: 'Nominal GDP growth (Q/Q SAAR) and advance retail sales year-over-year. Source: BEA / Census via FRED.',
-      },
       {
         href: '/us-macro#fed-policy',
         title: 'Fed Policy',
@@ -68,7 +91,7 @@ export default function USHomePage() {
       country="United States"
       countryCode="US"
       title="US Macro Dashboard"
-      description="A focused view of US inflation, labor, growth and monetary policy from official sources."
+      description="A focused view of US inflation, growth, surveys, labor and monetary policy from official sources."
       indicators={indicators}
       sourceNetwork="FRED · BLS · BEA"
     />

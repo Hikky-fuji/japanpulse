@@ -67,7 +67,7 @@ const indicators = [
     ],
   },
   {
-    group: { en: 'Corporate Activity', ja: '企業行動' },
+    group: { en: 'Corporate & Business Activity', ja: '企業・事業活動' },
     color: '#7C3AED',
     bg: '#F5F3FF',
     border: '#A78BFA',
@@ -99,7 +99,7 @@ const indicators = [
     ],
   },
   {
-    group: { en: 'Sentiment', ja: '景況感' },
+    group: { en: 'Surveys & Sentiment', ja: '景況調査・センチメント' },
     color: '#16A085',
     bg: '#F0FAF8',
     border: '#50C4A8',
