@@ -20,6 +20,7 @@ const SOURCE_BY_PATH = {
   '/job-ratio': 'MHLW · e-Stat',
   '/trade': 'MOF',
   '/us/employment': 'BLS · FRED',
+  '/us/initial-claims': 'ETA · FRED',
   '/us/cpi': 'BLS · FRED',
   '/us-macro': 'FRED · BEA · Census',
 }

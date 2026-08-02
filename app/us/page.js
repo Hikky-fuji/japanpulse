@@ -14,6 +14,13 @@ const indicators = [
         badge: 'Monthly',
         desc: 'Nonfarm payrolls, sector breakdown, U-3/U-6 unemployment, average hourly earnings by sector, and labor force participation. Source: BLS via FRED.',
       },
+      {
+        href: '/us/initial-claims',
+        title: 'Initial Jobless Claims',
+        subtitle: 'Claims / 4W Avg / Continued Claims',
+        badge: 'Weekly',
+        desc: 'High-frequency layoff signal, four-week trend, continued claims, insured unemployment and labor-stress regime. Source: ETA via FRED.',
+      },
     ],
   },
   {
