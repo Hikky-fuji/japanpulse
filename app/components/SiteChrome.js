@@ -13,7 +13,7 @@ const NAV_ITEMS = [
   },
   { href: '/us', label: 'United States', match: path => path === '/us' || path === '/us-macro' },
   { href: '/cpi', label: 'Japan CPI', match: path => path === '/cpi' || path === '/tokyo-cpi' || path === '/ppi' },
-  { href: '/us/cpi', label: 'US CPI', match: path => path === '/us/cpi' },
+  { href: '/us/cpi', label: 'US Prices', match: path => path === '/us/cpi' || path === '/us/ppi' },
   { href: '/us/employment', label: 'US Employment', match: path => path === '/us/employment' },
   { href: '/status', label: 'Data Status', match: path => path === '/status' },
 ]
@@ -37,6 +37,7 @@ const SEARCH_ITEMS = [
   { href: '/trade', country: 'JP', label: 'Trade', description: 'Exports, imports and trade balance', keywords: 'external sector flow map' },
   { href: '/us', country: 'US', label: 'US Macro Workspace', description: 'All US indicators and current pulse', keywords: 'overview home united states' },
   { href: '/us/cpi', country: 'US', label: 'US CPI', description: 'Headline, core and supercore inflation', keywords: 'prices inflation bls' },
+  { href: '/us/ppi', country: 'US', label: 'US PPI', description: 'Producer prices and pipeline inflation', keywords: 'prices inflation producer core final demand bls' },
   { href: '/us/employment', country: 'US', label: 'US Employment', description: 'Payrolls, unemployment and wages', keywords: 'nfp jobs earnings' },
   { href: '/us/initial-claims', country: 'US', label: 'Initial Claims', description: 'Weekly unemployment insurance claims', keywords: 'continuing labor weekly' },
   { href: '/us/consumption', country: 'US', label: 'PCE & Personal Income', description: 'PCE inflation, spending, income and saving', keywords: 'core pce deflator consumption bea' },
