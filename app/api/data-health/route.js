@@ -56,7 +56,7 @@ function freshness(latestPeriod, maxAge) {
   return { status: 'current', ageDays, message: 'Within the expected publication window' }
 }
 
-async function fetchWithTimeout(url, milliseconds = 20000) {
+async function fetchWithTimeout(url, milliseconds = 30000) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), milliseconds)
   try {
@@ -72,28 +72,32 @@ async function fetchWithTimeout(url, milliseconds = 20000) {
 
 async function inspectSource(origin, definition) {
   const checkedAt = new Date().toISOString()
-  try {
-    const payload = await fetchWithTimeout(`${origin}${definition.path}`)
-    const latestPeriod = definition.extract(payload)
-    return {
-      ...definition,
-      extract: undefined,
-      mode: definition.mode || 'AUTO',
-      latestPeriod,
-      checkedAt,
-      ...freshness(latestPeriod, definition.maxAge),
+  let lastError = null
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    try {
+      const payload = await fetchWithTimeout(`${origin}${definition.path}`)
+      const latestPeriod = definition.extract(payload)
+      return {
+        ...definition,
+        extract: undefined,
+        mode: definition.mode || 'AUTO',
+        latestPeriod,
+        checkedAt,
+        ...freshness(latestPeriod, definition.maxAge),
+      }
+    } catch (error) {
+      lastError = error
     }
-  } catch (error) {
-    return {
-      ...definition,
-      extract: undefined,
-      mode: definition.mode || 'AUTO',
-      latestPeriod: null,
-      checkedAt,
-      status: 'failed',
-      ageDays: null,
-      message: error.name === 'AbortError' ? 'Health check timed out' : error.message,
-    }
+  }
+  return {
+    ...definition,
+    extract: undefined,
+    mode: definition.mode || 'AUTO',
+    latestPeriod: null,
+    checkedAt,
+    status: 'failed',
+    ageDays: null,
+    message: lastError?.name === 'AbortError' ? 'Health check timed out after retry' : lastError?.message,
   }
 }
 
