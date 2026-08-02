@@ -250,6 +250,10 @@ export default function Trade() {
   )
 
   const { months, export: exp, import: imp, byDest } = data
+  const detailLatest = data._meta?.detailLatest || byDest?.USA?.net?.at(-1)?.date || months.at(-1)
+  const detailMonths = byDest?.USA?.net?.map(item => item.date)
+    || exp.auto?.map(item => item.date)
+    || months
 
   // Unit conversion: e-Stat values are in 千円 → convert to 兆円 for display
   const toT = v => v / 1e9
@@ -280,7 +284,7 @@ export default function Trade() {
 
   // Net trade balance by country: positive = surplus (stacked above 0), negative = deficit (below 0)
   // Plus dashed total net line
-  const totalNetData = months.map(d => {
+  const totalNetData = detailMonths.map(d => {
     let sum = 0
     for (const c of COUNTRIES_ORDERED) {
       if (!byDest[c]) continue
@@ -291,12 +295,12 @@ export default function Trade() {
   })
 
   const countryChart = {
-    labels: months,
+    labels: detailMonths,
     datasets: [
       ...COUNTRIES_ORDERED.filter(c => byDest[c]).map(c => ({
         label: c,
         type: 'bar',
-        data: months.map(d => {
+        data: detailMonths.map(d => {
           const v = byDest[c].net?.find(x => x.date === d)
           return v ? toT(v.value) : 0
         }),
@@ -324,15 +328,15 @@ export default function Trade() {
     crude_oil: '#E24B4A', lng: '#F5A623', food: '#95A5A6',
   }
   const productChart = {
-    labels: months,
+    labels: detailMonths,
     datasets: [
-      { label: 'Auto (exp)', data: months.map(d => { const v = exp.auto?.find(x => x.date === d); return v ? toT(v.value) : 0 }), backgroundColor: prodColors.auto, stack: 'exp' },
-      { label: 'Electrical/Semicon (exp)', data: months.map(d => { const v = exp.semicon?.find(x => x.date === d); return v ? toT(v.value) : 0 }), backgroundColor: prodColors.semicon, stack: 'exp' },
-      { label: 'Machinery (exp)', data: months.map(d => { const v = exp.machinery?.find(x => x.date === d); return v ? toT(v.value) : 0 }), backgroundColor: prodColors.machinery, stack: 'exp' },
-      { label: 'Chemicals (exp)', data: months.map(d => { const v = exp.chemicals?.find(x => x.date === d); return v ? toT(v.value) : 0 }), backgroundColor: prodColors.chemicals, stack: 'exp' },
-      { label: 'Crude Oil (imp)', data: months.map(d => { const v = imp.crude_oil?.find(x => x.date === d); return v ? -toT(v.value) : 0 }), backgroundColor: '#E24B4A88', stack: 'imp' },
-      { label: 'LNG (imp)', data: months.map(d => { const v = imp.lng?.find(x => x.date === d); return v ? -toT(v.value) : 0 }), backgroundColor: '#F5A62388', stack: 'imp' },
-      { label: 'Food (imp)', data: months.map(d => { const v = imp.food?.find(x => x.date === d); return v ? -toT(v.value) : 0 }), backgroundColor: '#95A5A688', stack: 'imp' },
+      { label: 'Auto (exp)', data: detailMonths.map(d => { const v = exp.auto?.find(x => x.date === d); return v ? toT(v.value) : 0 }), backgroundColor: prodColors.auto, stack: 'exp' },
+      { label: 'Electrical/Semicon (exp)', data: detailMonths.map(d => { const v = exp.semicon?.find(x => x.date === d); return v ? toT(v.value) : 0 }), backgroundColor: prodColors.semicon, stack: 'exp' },
+      { label: 'Machinery (exp)', data: detailMonths.map(d => { const v = exp.machinery?.find(x => x.date === d); return v ? toT(v.value) : 0 }), backgroundColor: prodColors.machinery, stack: 'exp' },
+      { label: 'Chemicals (exp)', data: detailMonths.map(d => { const v = exp.chemicals?.find(x => x.date === d); return v ? toT(v.value) : 0 }), backgroundColor: prodColors.chemicals, stack: 'exp' },
+      { label: 'Crude Oil (imp)', data: detailMonths.map(d => { const v = imp.crude_oil?.find(x => x.date === d); return v ? -toT(v.value) : 0 }), backgroundColor: '#E24B4A88', stack: 'imp' },
+      { label: 'LNG (imp)', data: detailMonths.map(d => { const v = imp.lng?.find(x => x.date === d); return v ? -toT(v.value) : 0 }), backgroundColor: '#F5A62388', stack: 'imp' },
+      { label: 'Food (imp)', data: detailMonths.map(d => { const v = imp.food?.find(x => x.date === d); return v ? -toT(v.value) : 0 }), backgroundColor: '#95A5A688', stack: 'imp' },
     ]
   }
 
@@ -345,7 +349,7 @@ export default function Trade() {
     }
   }
   // Heatmap data
-  const heatMonths = months.slice(-12)
+  const heatMonths = detailMonths.slice(-12)
   const heatRows = [
     { label: 'Auto (exp)',          series: exp.auto },
     { label: 'Electrical (exp)',    series: exp.semicon },
@@ -382,7 +386,7 @@ export default function Trade() {
 
   return (
     <main className="dashboard-page" style={s.wrap}>
-      <DashboardFreshness data={data} source="MOF · e-Stat" />
+      <DashboardFreshness data={data} source="MOF · Japan Customs / e-Stat" />
       <div style={s.header}>
         <div>
           <a href="/" style={s.nav}>← Home</a>
@@ -390,7 +394,7 @@ export default function Trade() {
           <a href="/consumption" style={s.nav}>Consumption</a>
           <span style={{fontSize:'20px', fontWeight:'600', color:'#111'}}>Japan Trade Statistics</span>
         </div>
-        <span style={{fontSize:'12px', color:'#888'}}>Source: MOF / e-Stat · Latest: {latestMonth}</span>
+        <span style={{fontSize:'12px', color:'#888'}}>Source: MOF / Japan Customs · Headline: {latestMonth}</span>
       </div>
 
       {/* ① KPI Cards */}
@@ -428,7 +432,7 @@ export default function Trade() {
       {/* ② Stacked Chart */}
       <div style={s.box}>
         <div style={{display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'12px'}}>
-          <span style={s.boxTitle}>Trade by {chartMode === 'country' ? 'Destination/Origin' : 'Commodity'} — Export (+) / Import (−) ¥T</span>
+          <span style={s.boxTitle}>Trade by {chartMode === 'country' ? 'Destination/Origin' : 'Commodity'} — Export (+) / Import (−) ¥T · Snapshot {detailLatest}</span>
           <div style={{display:'flex', gap:'6px'}}>
             <button style={s.toggleBtn(chartMode === 'country')} onClick={() => setChartMode('country')}>Country</button>
             <button style={s.toggleBtn(chartMode === 'product')} onClick={() => setChartMode('product')}>Product</button>
@@ -444,9 +448,9 @@ export default function Trade() {
 
       {/* ③ World Map */}
       <div style={s.box}>
-        <div style={s.boxTitle}>Trade Flow Map — Net Balance Direction (Latest Month)</div>
+        <div style={s.boxTitle}>Trade Flow Map — Net Balance Direction (Reference Snapshot {detailLatest})</div>
         <div style={{background:'#f5f8fb', borderRadius:'8px', overflow:'hidden'}}>
-          <WorldMap byDest={byDest} year={latestMonth} />
+          <WorldMap byDest={byDest} year={detailLatest} />
         </div>
         <div style={{display:'flex', gap:'16px', marginTop:'8px', fontSize:'11px', color:'#888'}}>
           <span style={{color:'#1D9E75'}}>● Surplus (→ Japan)</span>
