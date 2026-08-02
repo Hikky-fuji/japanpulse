@@ -9,25 +9,17 @@ const SERIES = {
     db: 'PR01',
     code: 'PRCG20_2200000000',
   },
-  cgpi_oil: {
-    db: 'PR01',
-    code: 'PRCG20_2200310001',
-  },
-  cgpi_energy: {
-    db: 'PR01',
-    code: 'PRCG20_2200510001',
-  },
   import_ppi: {
     db: 'PR01',
-    code: 'PRIF20_2600000000',
+    code: 'PRCG20_2600000000',
   },
   export_ppi: {
     db: 'PR01',
-    code: 'PREF20_2700000000',
+    code: 'PRCG20_2400000000',
   },
   sppi: {
     db: 'PR02',
-    code: 'PRCS20_2000000000',
+    code: 'PRCS20_5200000000',
   },
 }
 
@@ -64,14 +56,10 @@ async function fetchDatabase(db, codes) {
     startDate: START_DATE,
   })
   const response = await fetch(`${BOJ_BASE}?${params}`, { next: { revalidate } })
-
-  if (!response.ok) {
-    throw new Error(`BOJ API returned HTTP ${response.status}`)
-  }
-
   const payload = await response.json()
-  if (payload.STATUS && payload.STATUS !== 200) {
-    throw new Error(payload.MESSAGE || 'BOJ API returned an error')
+
+  if (!response.ok || Number(payload.STATUS) !== 200) {
+    throw new Error(payload.MESSAGE || `BOJ API returned HTTP ${response.status}`)
   }
 
   return payload.RESULTSET ?? payload?.DATA?.SERIES ?? []
