@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Line } from 'react-chartjs-2'
+import { DashboardFreshness, DashboardState } from '../components/DashboardStatus'
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, PointElement,
@@ -11,16 +12,35 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 export default function PPI() {
   const [data, setData] = useState(null)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
-    fetch('/api/ppi').then(r => r.json()).then(setData)
+    const controller = new AbortController()
+
+    fetch('/api/ppi', { signal: controller.signal })
+      .then(async response => {
+        const payload = await response.json()
+        if (!response.ok || payload.error) {
+          throw new Error(payload.error || `PPI request failed (${response.status})`)
+        }
+        setData(payload)
+      })
+      .catch(fetchError => {
+        if (fetchError.name !== 'AbortError') setError(fetchError.message)
+      })
+
+    return () => controller.abort()
   }, [])
 
-  if (!data?.cgpi?.length) return (
-    <div style={{padding:'40px', fontFamily:'sans-serif', color:'#666'}}>Loading...</div>
+  if (error) return (
+    <DashboardState type="error" message={`BOJ producer-price data could not be loaded. ${error}`} />
   )
 
-  const { cgpi, import_ppi, export_ppi, cgpi_oil, cgpi_energy, sppi } = data
+  if (!data?.cgpi?.length) return (
+    <DashboardState />
+  )
+
+  const { cgpi, import_ppi, export_ppi, sppi } = data
 
   const latest = cgpi.at(-1)
   const prev   = cgpi.at(-2)
@@ -62,17 +82,18 @@ export default function PPI() {
     return (cur && p12) ? parseFloat(((cur - p12) / p12 * 100).toFixed(2)) : null
   })
 
-  // チャート①：輸入→CGPI→CPI 価格波及チャート（Y/Y）
+  // Four-series inflation momentum comparison (Y/Y)
   const chart1 = {
     labels,
     datasets: [
-      { label: 'Import PPI (Y/Y %)', data: importYoY, borderColor: '#E24B4A', borderWidth: 2, pointRadius: 0, tension: 0.3, spanGaps: true },
       { label: 'Domestic CGPI (Y/Y %)', data: cgpiYoY, borderColor: '#378ADD', borderWidth: 2, pointRadius: 0, tension: 0.3, spanGaps: true },
+      { label: 'Export PPI (Y/Y %)', data: exportYoY, borderColor: '#9B8AFB', borderWidth: 2, pointRadius: 0, tension: 0.3, spanGaps: true },
+      { label: 'Import PPI (Y/Y %)', data: importYoY, borderColor: '#E24B4A', borderWidth: 2, pointRadius: 0, tension: 0.3, spanGaps: true },
       { label: 'Services PPI / SPPI (Y/Y %)', data: sppiYoY, borderColor: '#1D9E75', borderWidth: 2, pointRadius: 0, tension: 0.3, spanGaps: true },
     ]
   }
 
-  // チャート②：輸入vs輸出（指数水準）
+  // Goods producer-price indexes
   const chart2 = {
     labels,
     datasets: [
@@ -82,18 +103,8 @@ export default function PPI() {
     ]
   }
 
-  // チャート③：CGPI内訳（石油・エネルギー）指数水準
+  // Services producer-price index
   const chart3 = {
-    labels,
-    datasets: [
-      { label: 'Domestic CGPI Total', data: cgpi.map(v => v.value), borderColor: '#378ADD', borderWidth: 2, pointRadius: 0, tension: 0.3 },
-      { label: 'Oil & Coal', data: labels.map(d => cgpi_oil.find(v => v.date === d)?.value ?? null), borderColor: '#D85A30', borderWidth: 1.5, pointRadius: 0, tension: 0.3, spanGaps: true },
-      { label: 'Energy (Electricity & Gas)', data: labels.map(d => cgpi_energy.find(v => v.date === d)?.value ?? null), borderColor: '#F5A623', borderWidth: 1.5, pointRadius: 0, tension: 0.3, spanGaps: true },
-    ]
-  }
-
-  // チャート④：SPPI（サービス物価）水準
-  const chart4 = {
     labels,
     datasets: [
       { label: 'SPPI (Services PPI)', data: labels.map(d => sppi.find(v => v.date === d)?.value ?? null), borderColor: '#1D9E75', borderWidth: 2, pointRadius: 3, tension: 0.3, spanGaps: true },
@@ -126,7 +137,8 @@ export default function PPI() {
   const fmt = (v, s='') => v != null ? `${v > 0 ? '+' : ''}${v.toFixed(1)}${s}` : '--'
 
   return (
-    <main style={s.wrap}>
+    <main className="dashboard-page" style={s.wrap}>
+      <DashboardFreshness data={data} source="BOJ" />
       <div style={s.header}>
         <div>
           <a href="/" style={s.nav}>← Home</a>
@@ -163,9 +175,9 @@ export default function PPI() {
       </div>
 
       <div style={s.box}>
-        <div style={s.boxTitle}>Price Transmission — Import PPI → Domestic CGPI → Services SPPI (Y/Y %)</div>
+        <div style={s.boxTitle}>Producer Price Momentum — Domestic / Export / Import / Services (Y/Y %)</div>
         <Line data={chart1} options={lineOpts('%')} />
-        <div style={s.note}>※ Import price pressures typically transmit to domestic CGPI with 3–6 month lag, then to CPI</div>
+        <div style={s.note}>Four official BOJ series. Import-price pressure can lead domestic producer and consumer prices.</div>
       </div>
 
       <div style={s.grid2}>
@@ -175,16 +187,10 @@ export default function PPI() {
           <div style={s.note}>※ Import-export spread reflects terms of trade / JPY pass-through</div>
         </div>
         <div style={s.box}>
-          <div style={s.boxTitle}>Domestic CGPI — Oil & Energy Components (Index)</div>
+          <div style={s.boxTitle}>Services Producer Price Index (SPPI, 2020=100)</div>
           <Line data={chart3} options={lineOpts()} />
-          <div style={s.note}>※ Energy subsidy effects visible in electricity & gas series</div>
+          <div style={s.note}>Business-to-business services including transport, ICT, finance, and real estate.</div>
         </div>
-      </div>
-
-      <div style={s.box}>
-        <div style={s.boxTitle}>Services Producer Prices — SPPI (Index, 2020=100)</div>
-        <Line data={chart4} options={lineOpts()} />
-        <div style={s.note}>※ SPPI measures price changes in B2B services: transport, ICT, finance, real estate etc. Key for BOJ wage-price cycle assessment</div>
       </div>
     </main>
   )

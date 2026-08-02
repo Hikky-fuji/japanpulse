@@ -1,3 +1,4 @@
+export const revalidate = 21600
 export const dynamic = 'force-dynamic'
 
 const APP_ID = process.env.ESTAT_APP_ID
@@ -16,7 +17,7 @@ const SECTORS = [
 async function findStatInfIds(year) {
   const url = `https://api.e-stat.go.jp/rest/3.0/app/json/getDataCatalog`
     + `?appId=${APP_ID}&searchWord=第3次産業活動指数&surveyYears=${year}&dataType=XLS&limit=5`
-  const res = await fetch(url, { cache: 'no-store' })
+  const res = await fetch(url, { next: { revalidate } })
   const json = await res.json()
   const items = json?.GET_DATA_CATALOG?.DATA_CATALOG_LIST_INF?.DATA_CATALOG_INF ?? []
   const arr = Array.isArray(items) ? items : [items]
@@ -42,7 +43,7 @@ async function findStatInfIds(year) {
 
 async function downloadAndParse(statInfId) {
   const url = `https://www.e-stat.go.jp/stat-search/file-download?statInfId=${statInfId}&fileKind=0`
-  const res = await fetch(url, { cache: 'no-store' })
+  const res = await fetch(url, { next: { revalidate } })
   const buf = await res.arrayBuffer()
   const XLSX = await import('xlsx')
   const wb = XLSX.read(buf, { type: 'array' })

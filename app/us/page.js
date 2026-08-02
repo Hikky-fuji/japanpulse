@@ -1,5 +1,4 @@
-'use client'
-import React from 'react'
+import MacroWorkspace from '../components/MacroWorkspace'
 
 const indicators = [
   {
@@ -39,14 +38,14 @@ const indicators = [
     border: '#5DBF80',
     items: [
       {
-        href: '/us-macro',
+        href: '/us-macro#growth',
         title: 'GDP & Retail Sales',
         subtitle: 'GDP QoQ SAAR / Retail YoY',
         badge: 'Quarterly / Monthly',
         desc: 'Nominal GDP growth (Q/Q SAAR) and advance retail sales year-over-year. Source: BEA / Census via FRED.',
       },
       {
-        href: '/us-macro',
+        href: '/us-macro#fed-policy',
         title: 'Fed Policy',
         subtitle: 'Fed Funds Rate / FOMC',
         badge: 'Monthly',
@@ -58,73 +57,13 @@ const indicators = [
 
 export default function USHomePage() {
   return (
-    <main style={{ maxWidth: 860, margin: '0 auto', padding: '40px 16px', fontFamily: 'system-ui, sans-serif' }}>
-
-      <div style={{ marginBottom: 40 }}>
-        <div style={{ fontSize: 12, color: '#aaa', marginBottom: 8 }}>
-          <a href="/" style={{ color: '#aaa', textDecoration: 'none' }}>🇯🇵 Japan Macro Dashboard</a>
-          {' → '}
-          <span style={{ color: '#333' }}>🇺🇸 US Macro Dashboard</span>
-        </div>
-        <h1 style={{ fontSize: 26, fontWeight: 700, color: '#111', margin: '0 0 8px' }}>
-          🇺🇸 US Macro Dashboard
-        </h1>
-        <p style={{ fontSize: 14, color: '#666', margin: 0 }}>
-          US macroeconomic indicators. Data from FRED (Federal Reserve Bank of St. Louis). Personal use.
-        </p>
-      </div>
-
-      {indicators.map(group => (
-        <div key={group.group} style={{ marginBottom: 36 }}>
-          <div style={{
-            display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14,
-            paddingBottom: 8, borderBottom: `2px solid ${group.border}`,
-          }}>
-            <span style={{ width: 10, height: 10, borderRadius: '50%', background: group.color, display: 'inline-block' }} />
-            <h2 style={{ fontSize: 15, fontWeight: 700, color: group.color, margin: 0 }}>
-              {group.group}
-            </h2>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 14 }}>
-            {group.items.map(item => (
-              <a
-                key={item.href + item.title}
-                href={item.href}
-                style={{
-                  display: 'block', textDecoration: 'none',
-                  background: '#fff', border: `1px solid ${group.border}`,
-                  borderRadius: 10, padding: '16px 18px',
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.06)',
-                  transition: 'box-shadow 0.15s',
-                }}
-                onMouseEnter={e => e.currentTarget.style.boxShadow = `0 4px 12px ${group.color}30`}
-                onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'}
-              >
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#111' }}>{item.title}</div>
-                  <span style={{
-                    fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 10,
-                    background: group.color, color: '#fff', whiteSpace: 'nowrap', marginLeft: 8, marginTop: 2,
-                  }}>
-                    {item.badge}
-                  </span>
-                </div>
-                <div style={{ fontSize: 12, color: group.color, fontWeight: 600, marginBottom: 6 }}>
-                  {item.subtitle}
-                </div>
-                <div style={{ fontSize: 12, color: '#555', lineHeight: 1.6 }}>
-                  {item.desc}
-                </div>
-              </a>
-            ))}
-          </div>
-        </div>
-      ))}
-
-      <div style={{ marginTop: 40, paddingTop: 20, borderTop: '1px solid #eee', fontSize: 11, color: '#aaa', textAlign: 'center' }}>
-        Data: FRED (Federal Reserve Bank of St. Louis) · Personal use only
-      </div>
-    </main>
+    <MacroWorkspace
+      country="United States"
+      countryCode="US"
+      title="US Macro Dashboard"
+      description="A focused view of US inflation, labor, growth and monetary policy from official sources."
+      indicators={indicators}
+      sourceNetwork="FRED · BLS · BEA"
+    />
   )
 }

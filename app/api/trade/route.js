@@ -1,3 +1,4 @@
+export const revalidate = 21600
 export const dynamic = 'force-dynamic'
 
 const B = 'https://api.e-stat.go.jp/rest/3.0/app/json'
@@ -26,7 +27,27 @@ const IMP_CAT = {
   food:      sitc8('0'),
 }
 
-const COUNTRY_AREA = { USA: '50304', China: '50105', Korea: '50103' }
+// Major trade partners shown on the world map. These are official customs
+// area codes from the e-Stat trade table metadata.
+const COUNTRY_AREA = {
+  USA: '50304',
+  China: '50105',
+  Korea: '50103',
+  Taiwan: '50106',
+  HongKong: '50108',
+  Thailand: '50111',
+  Singapore: '50112',
+  Malaysia: '50113',
+  Philippines: '50117',
+  Indonesia: '50118',
+  India: '50123',
+  Vietnam: '50124',
+  UK: '50205',
+  Germany: '50213',
+  Canada: '50302',
+  Mexico: '50305',
+  Australia: '50601',
+}
 
 // reverse map: cat02 code → month (only 金額 codes 140,160,...,360)
 const MONTH_REV = {}
@@ -39,7 +60,7 @@ export async function GET() {
 
   // ── Find world area code from metadata ───────────────────────────────────
   const getWorldArea = async () => {
-    const r = await fetch(`${B}/getMetaInfo?appId=${APP_ID}&statsDataId=${EXP_ID}`, { cache: 'no-store' })
+    const r = await fetch(`${B}/getMetaInfo?appId=${APP_ID}&statsDataId=${EXP_ID}`, { next: { revalidate } })
     const j = await r.json()
     const objs = j?.GET_META_INFO?.METADATA_INF?.CLASS_INF?.CLASS_OBJ ?? []
     const arr = Array.isArray(objs) ? objs : [objs]
@@ -63,7 +84,7 @@ export async function GET() {
     if (area)      p.set('cdArea', area)
     if (cat02From) p.set('cdCat02From', cat02From)
     if (cat02To)   p.set('cdCat02To', cat02To)
-    const res = await fetch(`${B}/getStatsData?${p}`, { cache: 'no-store' })
+    const res = await fetch(`${B}/getStatsData?${p}`, { next: { revalidate } })
     const json = await res.json()
     const vals = json?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE ?? []
     if (!vals.length) console.warn(`[Trade] no data: ${statsDataId} cat01=${cat01||'—'} area=${area||'—'}`)
@@ -71,9 +92,10 @@ export async function GET() {
   }
 
   // Parse raw rows → date→value map (filters to 金額 months only via MONTH_REV)
-  const parseMonthly = (rows) => {
+  const parseMonthly = (rows, areaCode = null) => {
     const map = {}
     for (const v of rows) {
+      if (areaCode && v['@area'] !== areaCode) continue
       const month = MONTH_REV[v['@cat02']]
       if (!month) continue
       const year = (v['@time'] ?? '').slice(0, 4)
@@ -119,34 +141,27 @@ export async function GET() {
     fetchRaw(IMP_ID, { cat01: IMP_CAT.food,      ...RANGE }),
   ])
 
-  // ── Phase 3: country breakdowns (sum all TOP_CATS per country) ───────────
-  const fetchCountry = async (statsDataId, areaCode) => {
-    const rows = await Promise.all(TOP_CATS.map(c => fetchRaw(statsDataId, { cat01: c, area: areaCode, ...RANGE })))
-    return rows.flat()
-  }
-
-  const [eUSARows, iUSARows, eChinaRows, iChinaRows, eKoreaRows, iKoreaRows] = await Promise.all([
-    fetchCountry(EXP_ID, COUNTRY_AREA.USA),
-    fetchCountry(IMP_ID, COUNTRY_AREA.USA),
-    fetchCountry(EXP_ID, COUNTRY_AREA.China),
-    fetchCountry(IMP_ID, COUNTRY_AREA.China),
-    fetchCountry(EXP_ID, COUNTRY_AREA.Korea),
-    fetchCountry(IMP_ID, COUNTRY_AREA.Korea),
-  ])
-
   const expTotal = toSeries(expTotalMap)
   const impTotal = toSeries(impTotalMap)
   const months   = expTotal.map(v => v.date)
 
-  const eUSA   = toSeries(addMaps(parseMonthly(eUSARows)))
-  const iUSA   = toSeries(addMaps(parseMonthly(iUSARows)))
-  const eChina = toSeries(addMaps(parseMonthly(eChinaRows)))
-  const iChina = toSeries(addMaps(parseMonthly(iChinaRows)))
-  const eKorea = toSeries(addMaps(parseMonthly(eKoreaRows)))
-  const iKorea = toSeries(addMaps(parseMonthly(iKoreaRows)))
+  // Phase 1 already contains every area for each top-level SITC category.
+  // Reuse those rows for country totals instead of making 20 extra requests
+  // per country. This keeps the expanded map within the existing API load.
+  const byDest = Object.fromEntries(
+    Object.entries(COUNTRY_AREA).map(([country, areaCode]) => {
+      const countryExp = toSeries(addMaps(...expTopRows.map(rows => parseMonthly(rows, areaCode))))
+      const countryImp = toSeries(addMaps(...impTopRows.map(rows => parseMonthly(rows, areaCode))))
+      return [country, {
+        export: countryExp,
+        import: countryImp,
+        net: computeNet(countryExp, countryImp),
+      }]
+    })
+  )
 
   console.log('[Trade] result: months=', months.length, 'expTotal rows=', expTotal.length,
-    'impTotal rows=', impTotal.length, 'eUSA rows=', eUSA.length)
+    'impTotal rows=', impTotal.length, 'map partners=', Object.keys(byDest).length)
 
   return Response.json({
     months,
@@ -163,10 +178,6 @@ export async function GET() {
       lng:       toSeries(parseMonthly(impLngR)),
       food:      toSeries(parseMonthly(impFoodR)),
     },
-    byDest: {
-      USA:   { export: eUSA,   import: iUSA,   net: computeNet(eUSA,   iUSA)   },
-      China: { export: eChina, import: iChina, net: computeNet(eChina, iChina) },
-      Korea: { export: eKorea, import: iKorea, net: computeNet(eKorea, iKorea) },
-    },
+    byDest,
   })
 }

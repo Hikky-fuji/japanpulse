@@ -1,6 +1,7 @@
 'use client'
 import React, { useEffect, useState } from 'react'
 import { Line, Bar } from 'react-chartjs-2'
+import { DashboardFreshness, DashboardState } from '../components/DashboardStatus'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -26,8 +27,8 @@ export default function USMacroDashboard() {
       .catch(e => setError(String(e)))
   }, [])
 
-  if (error) return <div style={{ padding: '40px', fontFamily: 'sans-serif', color: '#E24B4A' }}>Error: {error}</div>
-  if (!data)  return <div style={{ padding: '40px', fontFamily: 'sans-serif', color: '#666' }}>Loading US Macro data…</div>
+  if (error) return <DashboardState type="error" message={error} />
+  if (!data) return <DashboardState message="Connecting to FRED, BLS, BEA and Census data…" />
 
   const { employment, sectors, wages, inflation, growth, policy } = data
 
@@ -210,7 +211,8 @@ export default function USMacroDashboard() {
   }
 
   return (
-    <main style={s.wrap}>
+    <main className="dashboard-page" style={s.wrap}>
+      <DashboardFreshness data={data} source="FRED · BLS · BEA · Census" />
 
       {/* ── Header ── */}
       <div style={s.header}>
@@ -226,7 +228,7 @@ export default function USMacroDashboard() {
       </div>
 
       {/* ── Section 1: Fed Watch ── */}
-      <div style={s.sec}>Fed Watch</div>
+      <div id="fed-policy" className="dashboard-anchor" style={s.sec}>Fed Watch</div>
       <div style={s.grid2sm}>
         <div style={s.card}>
           <div style={s.cardLabel}>Fed Funds Rate — Effective (FEDFUNDS)</div>
@@ -404,7 +406,7 @@ export default function USMacroDashboard() {
       </div>
 
       {/* ── Section 5: Growth & Consumption ── */}
-      <div style={s.sec}>Growth &amp; Consumption</div>
+      <div id="growth" className="dashboard-anchor" style={s.sec}>Growth &amp; Consumption</div>
       <div style={s.grid2sm}>
         <div style={s.card}>
           <div style={s.cardLabel}>GDP Q/Q SAAR — Nominal (GDP)</div>

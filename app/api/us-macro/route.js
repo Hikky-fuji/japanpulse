@@ -1,3 +1,4 @@
+export const revalidate = 3600
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
@@ -17,7 +18,7 @@ export async function GET() {
         `&file_type=json` +
         `&sort_order=desc` +
         `&limit=${limit}`
-      const res = await fetch(url, { cache: 'no-store' })
+      const res = await fetch(url, { next: { revalidate } })
       if (!res.ok) {
         console.warn(`[US Macro] HTTP ${res.status} for ${seriesId}`)
         return []

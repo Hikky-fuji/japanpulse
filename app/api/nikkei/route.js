@@ -1,3 +1,4 @@
+export const revalidate = 900
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
@@ -6,7 +7,7 @@ export async function GET() {
       'https://query1.finance.yahoo.com/v8/finance/chart/%5EN225?interval=1mo&range=5y',
       {
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; JapanPulseDashboard/1.0)' },
-        cache: 'no-store',
+        next: { revalidate },
       }
     )
     if (!res.ok) throw new Error(`Yahoo Finance responded with ${res.status}`)

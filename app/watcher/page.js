@@ -1,6 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { Line, Bar } from 'react-chartjs-2'
+import { DashboardFreshness } from '../components/DashboardStatus'
 import {
   Chart as ChartJS,
   CategoryScale, LinearScale, PointElement,
@@ -240,7 +241,8 @@ export default function Watcher() {
   const fmtSpread = (v) => v == null ? '--' : v > 0 ? `+${v.toFixed(1)}` : v.toFixed(1)
 
   return (
-    <main style={s.wrap}>
+    <main className="dashboard-page" style={s.wrap}>
+      {watcher ? <DashboardFreshness data={{ watcher, nikkei }} source="Cabinet Office · e-Stat / Nikkei" /> : null}
       {/* Header */}
       <div style={s.header}>
         <div>

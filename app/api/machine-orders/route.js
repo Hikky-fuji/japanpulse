@@ -1,3 +1,4 @@
+export const revalidate = 21600
 export const dynamic = 'force-dynamic'
 
 const APP_ID = process.env.ESTAT_APP_ID
@@ -39,7 +40,7 @@ function parseQuarterly(t) {
 async function fetchMonthly(cat01, cat02, limit = 40) {
   const url = `${BASE}/getStatsData?appId=${APP_ID}&statsDataId=${STATS_ID}`
     + `&metaGetFlg=N&cdCat01=${cat01}&cdCat02=${cat02}&limit=${limit}`
-  const res = await fetch(url, { cache: 'no-store' })
+  const res = await fetch(url, { next: { revalidate } })
   const json = await res.json()
   const values = json?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE ?? []
   return (Array.isArray(values) ? values : [values])
@@ -57,7 +58,7 @@ async function fetchGDPCapex() {
   // No limit — fetch all quarters and slice at the end
   const url = `${BASE}/getStatsData?appId=${APP_ID}&statsDataId=${GDP_STATS_ID}`
     + `&metaGetFlg=N&cdCat01=${CAT_GDP_CAP}`
-  const res = await fetch(url, { cache: 'no-store' })
+  const res = await fetch(url, { next: { revalidate } })
   const json = await res.json()
   const values = json?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE ?? []
   return (Array.isArray(values) ? values : [values])

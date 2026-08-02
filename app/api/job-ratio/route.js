@@ -1,3 +1,4 @@
+export const revalidate = 21600
 export const dynamic = 'force-dynamic'
 
 const BASE = 'https://api.e-stat.go.jp/rest/3.0/app/json'
@@ -23,7 +24,7 @@ async function fetchCI(cat01, limit = 9999) {
   const APP_ID = process.env.ESTAT_APP_ID
   const url = `${BASE}/getStatsData?appId=${APP_ID}&statsDataId=${CI_STATS_ID}`
     + `&metaGetFlg=N&cdCat01=${cat01}&limit=${limit}`
-  const res = await fetch(url, { cache: 'no-store' })
+  const res = await fetch(url, { next: { revalidate } })
   const json = await res.json()
   return toArr(json?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE)
     .filter(isMonthly)
@@ -37,7 +38,7 @@ async function fetchUnemploymentRate() {
   const url = `https://api.e-stat.go.jp/rest/3.0/app/json/getStatsData`
     + `?appId=${APP_ID}&statsDataId=${LF_STATS_ID}`
     + `&metaGetFlg=N&limit=400&cdArea=00000&cdCat01=000&cdCat02=${LF_UR_CAT02}&cdCat03=0&cdTab=${LF_UR_TAB}`
-  const res = await fetch(url, { cache: 'no-store' })
+  const res = await fetch(url, { next: { revalidate } })
   const json = await res.json()
   return toArr(json?.GET_STATS_DATA?.STATISTICAL_DATA?.DATA_INF?.VALUE)
     .filter(isMonthly)
