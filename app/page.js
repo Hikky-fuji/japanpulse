@@ -1,5 +1,21 @@
 import MacroWorkspace from './components/MacroWorkspace'
 
+export const metadata = {
+  title: {
+    absolute: 'Japan Macro Dashboard | JapanPulse',
+  },
+  description:
+    'Japan macro dashboard covering inflation, GDP, production, consumption, surveys, employment, wages and trade from official sources.',
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: 'Japan Macro Dashboard | JapanPulse',
+    description: 'A high-density view of Japan macro conditions from e-Stat, BOJ, MOF and other official sources.',
+    url: '/',
+  },
+}
+
 const indicators = [
   {
     group: { en: 'Prices', ja: '物価' },
