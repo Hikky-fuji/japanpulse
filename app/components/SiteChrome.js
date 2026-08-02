@@ -43,7 +43,7 @@ const SEARCH_ITEMS = [
   { href: '/us/consumption', country: 'US', label: 'PCE & Personal Income', description: 'PCE inflation, spending, income and saving', keywords: 'core pce deflator consumption bea' },
   { href: '/us/jolts', country: 'US', label: 'JOLTS', description: 'Openings, hires, quits and separations', keywords: 'labor flows vacancies bls' },
   { href: '/us/manufacturing', country: 'US', label: 'Manufacturing Surveys', description: 'Empire, Philly Fed and ISM sequence', keywords: 'ny new york sentiment soft data' },
-  { href: '/us-macro', country: 'US', label: 'US Growth & Fed Policy', description: 'GDP, retail sales, fed funds and SEP', keywords: 'fomc rates monetary policy' },
+  { href: '/us-macro', country: 'US', label: 'US Growth & Fed Policy', description: 'GDP, fed funds, FOMC and policy rules', keywords: 'fomc rates monetary policy taylor clarida bullard' },
 ]
 
 function IndicatorSearch() {
