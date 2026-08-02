@@ -32,6 +32,21 @@ const indicators = [
     ],
   },
   {
+    group: 'Private Consumption',
+    color: '#16A085',
+    bg: '#F0FAF8',
+    border: '#50C4A8',
+    items: [
+      {
+        href: '/us/consumption',
+        title: 'PCE & Consumer Pulse',
+        subtitle: 'PCE Inflation / Real Spending / Income / Saving',
+        badge: 'Monthly',
+        desc: 'Headline and core PCE, real consumption, disposable income, goods-services demand and the household saving buffer. Source: BEA via FRED.',
+      },
+    ],
+  },
+  {
     group: 'Surveys & Sentiment',
     color: '#16A085',
     bg: '#F0FAF8',
@@ -66,6 +81,13 @@ const indicators = [
         badge: 'Weekly',
         desc: 'High-frequency layoff signal, four-week trend, continued claims, insured unemployment and labor-stress regime. Source: ETA via FRED.',
       },
+      {
+        href: '/us/jolts',
+        title: 'JOLTS Labor Market Pulse',
+        subtitle: 'Openings / Hires / Quits / Layoffs',
+        badge: 'Monthly',
+        desc: 'Labor demand, turnover flows, worker confidence, employer stress and job openings relative to unemployment. Source: BLS via FRED.',
+      },
     ],
   },
   {
@@ -91,7 +113,7 @@ export default function USHomePage() {
       country="United States"
       countryCode="US"
       title="US Macro Dashboard"
-      description="A focused view of US inflation, growth, surveys, labor and monetary policy from official sources."
+      description="A focused view of US inflation, growth, consumption, surveys, labor and monetary policy from official sources."
       indicators={indicators}
       sourceNetwork="FRED · BLS · BEA"
     />
