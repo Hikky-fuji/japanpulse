@@ -542,8 +542,9 @@ async function fetchJson(path, signal) {
 }
 
 export default function WorkspacePulse({ countryCode }) {
-  const [cards, setCards] = useState(null)
-  const [progress, setProgress] = useState({ completed: 0, total: 0 })
+  const sourceTotal = countryCode === 'JP' ? 9 : 6
+  const [cards, setCards] = useState(() => countryCode === 'JP' ? japanCards({}) : usCards({}))
+  const [progress, setProgress] = useState({ completed: 0, total: sourceTotal })
 
   useEffect(() => {
     const controller = new AbortController()
