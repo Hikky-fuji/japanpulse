@@ -1,12 +1,12 @@
 export const revalidate = 21600
 
 const FRED_RELEASES = [
-  { match: /^Consumer Price Index$/i, label: 'Consumer Price Index', href: '/us/cpi', category: 'Prices' },
-  { match: /Employment Situation/i, label: 'Employment Situation', href: '/us/employment', category: 'Labor' },
-  { match: /Job Openings and Labor Turnover Survey/i, label: 'JOLTS', href: '/us/jolts', category: 'Labor' },
-  { match: /Personal Income and Outlays/i, label: 'PCE & Personal Income', href: '/us/consumption', category: 'Consumption' },
-  { match: /^Gross Domestic Product$/i, label: 'Gross Domestic Product', href: '/us-macro#growth', category: 'Growth' },
-  { match: /Advance Monthly Sales for Retail and Food Services/i, label: 'Retail Sales', href: '/us-macro#growth', category: 'Consumption' },
+  { releaseId: 10, label: 'Consumer Price Index', href: '/us/cpi', category: 'Prices' },
+  { releaseId: 50, label: 'Employment Situation', href: '/us/employment', category: 'Labor' },
+  { releaseId: 192, label: 'JOLTS', href: '/us/jolts', category: 'Labor' },
+  { releaseId: 54, label: 'PCE & Personal Income', href: '/us/consumption', category: 'Consumption' },
+  { releaseId: 53, label: 'Gross Domestic Product', href: '/us-macro#growth', category: 'Growth' },
+  { releaseId: 9, label: 'Retail Sales', href: '/us-macro#growth', category: 'Consumption' },
 ]
 
 const JAPAN_SOURCES = {
@@ -118,41 +118,41 @@ async function fredEvents(from, to) {
   const apiKey = process.env.FRED_API_KEY
   if (!apiKey) throw new Error('FRED_API_KEY is not configured')
 
-  const params = new URLSearchParams({
-    api_key: apiKey,
-    file_type: 'json',
-    realtime_start: from,
-    realtime_end: to,
-    include_release_dates_with_no_data: 'true',
-    order_by: 'release_date',
-    // FRED has a long release history. Fetch newest dates first so the
-    // limited response always includes the upcoming official schedule.
-    sort_order: 'desc',
-    limit: '1000',
-  })
-  const response = await fetch(
-    `https://api.stlouisfed.org/fred/releases/dates?${params}`,
-    { next: { revalidate } },
-  )
-  if (!response.ok) throw new Error(`FRED release calendar returned HTTP ${response.status}`)
-  const payload = await response.json()
-  if (payload.error_message) throw new Error(payload.error_message)
+  const schedules = await Promise.all(FRED_RELEASES.map(async definition => {
+    const params = new URLSearchParams({
+      release_id: String(definition.releaseId),
+      api_key: apiKey,
+      file_type: 'json',
+      include_release_dates_with_no_data: 'true',
+      sort_order: 'desc',
+      limit: '1000',
+    })
+    const response = await fetch(
+      `https://api.stlouisfed.org/fred/release/dates?${params}`,
+      { next: { revalidate } },
+    )
+    if (!response.ok) {
+      throw new Error(`FRED release ${definition.releaseId} returned HTTP ${response.status}`)
+    }
+    const payload = await response.json()
+    if (payload.error_message) throw new Error(payload.error_message)
+    return (payload.release_dates || []).flatMap(row => {
+      if (row.date < from || row.date > to) return []
+      return [event({
+        country: 'US',
+        date: row.date,
+        label: definition.label,
+        period: 'Official release date',
+        href: definition.href,
+        category: definition.category,
+        source: 'FRED release calendar',
+        sourceUrl: `https://fred.stlouisfed.org/release?rid=${definition.releaseId}`,
+        scheduleType: 'official-api',
+      })]
+    })
+  }))
 
-  return (payload.release_dates || []).flatMap(row => {
-    const definition = FRED_RELEASES.find(item => item.match.test(row.release_name || ''))
-    if (!definition || row.date < from || row.date > to) return []
-    return [event({
-      country: 'US',
-      date: row.date,
-      label: definition.label,
-      period: 'Official release date',
-      href: definition.href,
-      category: definition.category,
-      source: 'FRED release calendar',
-      sourceUrl: `https://fred.stlouisfed.org/release?rid=${row.release_id}`,
-      scheduleType: 'official-api',
-    })]
-  })
+  return schedules.flat()
 }
 
 async function statisticsBureauEvents(from, to) {
