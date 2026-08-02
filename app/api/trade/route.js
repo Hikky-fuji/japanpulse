@@ -11,6 +11,68 @@ const B = 'https://api.e-stat.go.jp/rest/3.0/app/json'
 
 const EXP_ID = '0003425295'
 const IMP_ID = '0003425296'
+const CUSTOMS_WORLD_URL = 'https://www.customs.go.jp/toukei/suii/html/data/d41ma.csv'
+
+function parseCsvRow(row) {
+  const cells = []
+  let value = ''
+  let quoted = false
+  for (let index = 0; index < row.length; index += 1) {
+    const character = row[index]
+    if (character === '"') {
+      if (quoted && row[index + 1] === '"') {
+        value += '"'
+        index += 1
+      } else {
+        quoted = !quoted
+      }
+    } else if (character === ',' && !quoted) {
+      cells.push(value.trim())
+      value = ''
+    } else {
+      value += character
+    }
+  }
+  cells.push(value.trim())
+  return cells
+}
+
+function numericCell(value) {
+  const normalized = String(value ?? '')
+    .replace(/[,\s]/g, '')
+    .replace(/^△/, '-')
+    .replace(/^\((.+)\)$/, '-$1')
+  const parsed = Number(normalized)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function parseCustomsWorldCsv(buffer) {
+  const text = new TextDecoder('shift_jis').decode(buffer).replace(/^\uFEFF/, '')
+  const observations = text.split(/\r?\n/).flatMap(row => {
+    const cells = parseCsvRow(row)
+    const dateIndex = cells.findIndex(cell => /^\d{4}(?:[./-]\d{1,2}|年\d{1,2}月)/.test(cell))
+    if (dateIndex < 0) return []
+    const dateMatch = cells[dateIndex].match(/^(\d{4})(?:[./-]|年)(\d{1,2})/)
+    if (!dateMatch) return []
+    const values = cells.slice(dateIndex + 1).map(numericCell).filter(value => value !== null)
+    if (values.length < 2 || values[0] <= 0 || values[1] <= 0) return []
+    return [{
+      date: `${dateMatch[1]}/${String(Number(dateMatch[2])).padStart(2, '0')}`,
+      export: values[0],
+      import: values[1],
+    }]
+  })
+  const unique = [...new Map(observations.map(item => [item.date, item])).values()]
+    .sort((left, right) => left.date.localeCompare(right.date))
+  if (unique.length < 12) throw new Error('Japan Customs CSV did not contain usable monthly totals')
+  return unique.slice(-24)
+}
+
+async function fetchCustomsWorld() {
+  const response = await fetch(CUSTOMS_WORLD_URL, { next: { revalidate } })
+  if (!response.ok) throw new Error(`Japan Customs returned HTTP ${response.status}`)
+  return parseCustomsWorldCsv(await response.arrayBuffer())
+}
 
 const sitc8 = (s) => String(s).padEnd(8, '0')
 const TOP_CATS = ['0','1','2','3','4','5','6','7','8','9'].map(sitc8)
@@ -57,6 +119,10 @@ const RANGE = { cat02From: '130', cat02To: '360' }
 
 export async function GET() {
   const APP_ID = process.env.ESTAT_APP_ID
+  const customsHeadlinePromise = fetchCustomsWorld().catch(error => {
+    console.warn('[Trade] current Customs headline unavailable:', error.message)
+    return null
+  })
 
   // ── Find world area code from metadata ───────────────────────────────────
   const getWorldArea = async () => {
@@ -141,9 +207,14 @@ export async function GET() {
     fetchRaw(IMP_ID, { cat01: IMP_CAT.food,      ...RANGE }),
   ])
 
-  const expTotal = toSeries(expTotalMap)
-  const impTotal = toSeries(impTotalMap)
-  const months   = expTotal.map(v => v.date)
+  const detailExpTotal = toSeries(expTotalMap)
+  const detailImpTotal = toSeries(impTotalMap)
+  const customsHeadline = await customsHeadlinePromise
+  const expTotal = customsHeadline?.map(item => ({ date: item.date, value: item.export })) || detailExpTotal
+  const impTotal = customsHeadline?.map(item => ({ date: item.date, value: item.import })) || detailImpTotal
+  const months = expTotal.map(v => v.date)
+  const detailLatest = detailExpTotal.at(-1)?.date ?? null
+  const headlineLatest = expTotal.at(-1)?.date ?? null
 
   // Phase 1 already contains every area for each top-level SITC category.
   // Reuse those rows for country totals instead of making 20 extra requests
@@ -165,6 +236,13 @@ export async function GET() {
 
   return Response.json({
     months,
+    _meta: {
+      headlineMode: customsHeadline ? 'AUTO' : 'E-STAT FALLBACK',
+      headlineLatest,
+      detailMode: 'REFERENCE SNAPSHOT',
+      detailLatest,
+      sourceUrl: CUSTOMS_WORLD_URL,
+    },
     export: {
       total:     expTotal,
       auto:      toSeries(parseMonthly(expAutoR)),
