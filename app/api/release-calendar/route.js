@@ -125,7 +125,9 @@ async function fredEvents(from, to) {
     realtime_end: to,
     include_release_dates_with_no_data: 'true',
     order_by: 'release_date',
-    sort_order: 'asc',
+    // FRED has a long release history. Fetch newest dates first so the
+    // limited response always includes the upcoming official schedule.
+    sort_order: 'desc',
     limit: '1000',
   })
   const response = await fetch(
