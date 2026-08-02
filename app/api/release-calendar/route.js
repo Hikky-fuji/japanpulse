@@ -2,6 +2,7 @@ export const revalidate = 21600
 
 const FRED_RELEASES = [
   { releaseId: 10, label: 'Consumer Price Index', href: '/us/cpi', category: 'Prices' },
+  { releaseId: 46, label: 'Producer Price Index', href: '/us/ppi', category: 'Prices' },
   { releaseId: 50, label: 'Employment Situation', href: '/us/employment', category: 'Labor' },
   { releaseId: 192, label: 'JOLTS', href: '/us/jolts', category: 'Labor' },
   { releaseId: 54, label: 'PCE & Personal Income', href: '/us/consumption', category: 'Consumption' },
