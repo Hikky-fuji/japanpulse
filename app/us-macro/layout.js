@@ -1,6 +1,6 @@
 export const metadata = {
   title: { absolute: 'US Growth & Fed Policy | JapanPulse' },
-  description: 'US GDP, retail sales, effective federal funds rate, FOMC calendar and SEP policy-path dashboard.',
+  description: 'US GDP, retail sales, effective fed funds, FOMC calendar and Taylor, Clarida-CGG and Bullard policy-rule dashboard.',
   alternates: { canonical: '/us-macro' },
 }
 

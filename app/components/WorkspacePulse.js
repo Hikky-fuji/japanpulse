@@ -415,8 +415,14 @@ function usCards(payload) {
   const payrollPrior = payrolls.at(-2)
   const unemployment = last(employment?.employment?.unrate)
   const openingsRate = last(jolts?.series?.openingsRate?.observations?.filter(item => finite(item.value)))
-  const quitsRate = last(jolts?.series?.quitsRate?.observations?.filter(item => finite(item.value)))
   const fedFunds = last(macro?.policy?.fedfunds)
+  const latestRules = macro?.policy?.rules?.latest
+  const currentRuleValues = ['taylor93', 'balanced', 'clarida', 'bullard']
+    .map(key => latestRules?.[key])
+    .filter(finite)
+  const ruleRange = currentRuleValues.length
+    ? `${Math.min(...currentRuleValues).toFixed(1)}–${Math.max(...currentRuleValues).toFixed(1)}%`
+    : '—'
 
   return [
     card({
@@ -519,7 +525,7 @@ function usCards(payload) {
       toneName: 'neutral',
       details: [
         detail('Core PCE vs 2%', signed(corePce.value - 2, 1, 'pp'), tone(corePce.value - 2, true)),
-        detail('Quits rate', fixed(quitsRate?.value, 1, '%')),
+        detail('Rule range', ruleRange),
       ],
       source: 'Federal Reserve · BLS',
       series: seriesValues(macro?.policy?.fedfunds),
