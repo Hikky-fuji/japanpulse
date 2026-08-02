@@ -130,9 +130,9 @@ const indicators = [
       {
         href: '/us-macro#fed-policy',
         title: 'Fed Policy',
-        subtitle: 'Fed Funds Rate / FOMC',
+        subtitle: 'Fed Funds / Taylor Rules / FOMC',
         badge: 'Monthly',
-        desc: 'Effective federal funds rate and next FOMC meeting schedule.',
+        desc: 'Effective fed funds, official meeting schedule, and Taylor 1993, balanced-approach, Clarida-CGG and Bullard policy-rule benchmarks.',
       },
     ],
   },
