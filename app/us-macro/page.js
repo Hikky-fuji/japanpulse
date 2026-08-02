@@ -92,7 +92,7 @@ export default function USMacroDashboard() {
       short: 'Clarida-CGG',
       label: 'Clarida–CGG Proxy',
       color: '#A78BFA',
-      formula: '0.79 × prior FFR + 0.21 × forward-looking target',
+      formula: '0.79iₜ₋₁ + 0.21[4.12 + 2.15(Eπ − 2) + 0.93y-gap]',
       detail: 'Expected-inflation reaction β=2.15 and output-gap reaction γ=0.93; adjusted 5Y BEI is the expectation proxy.',
     },
     {
@@ -100,7 +100,7 @@ export default function USMacroDashboard() {
       short: 'Bullard',
       label: 'Bullard Modernized',
       color: '#E24B4A',
-      formula: '0.85 × prior FFR + 0.15 × modernized target',
+      formula: '0.85iₜ₋₁ + 0.15[r* + 2 + 1.5(Eπ − 2) + 0.1y-gap]',
       detail: 'HP-trend safe real rate, adjusted 5Y BEI and a 0.1 output-gap coefficient.',
     },
   ]
