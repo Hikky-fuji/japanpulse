@@ -1,0 +1,124 @@
+export const dynamic = 'force-dynamic'
+
+const last = values => Array.isArray(values) && values.length ? values.at(-1) : null
+const observationDate = series => last(series?.filter(item => item?.date))?.date ?? null
+const fredDate = payload => observationDate(payload?.observations)
+
+const DEFINITIONS = {
+  JP: [
+    { key: 'jp-cpi', label: 'National CPI', href: '/cpi', path: '/api/cpi', cadence: 'Monthly', maxAge: 100, source: 'MIC · e-Stat', extract: data => observationDate(data?.headline) },
+    { key: 'jp-ppi', label: 'CGPI / SPPI', href: '/ppi', path: '/api/ppi', cadence: 'Monthly', maxAge: 100, source: 'BOJ', extract: data => observationDate(data?.cgpi) },
+    { key: 'jp-gdp', label: 'GDP', href: '/gdp', path: '/api/gdp', cadence: 'Quarterly', maxAge: 240, source: 'Cabinet Office', extract: data => observationDate(data?.gdp_qoq) },
+    { key: 'jp-iip', label: 'Industrial Production', href: '/iip', path: '/api/iip', cadence: 'Monthly', maxAge: 110, source: 'METI · e-Stat', extract: data => observationDate(data?.['鉱工業']) },
+    { key: 'jp-tsip', label: 'Tertiary Activity', href: '/tsip', path: '/api/tsip', cadence: 'Monthly', maxAge: 110, source: 'METI · e-Stat', extract: data => data?.latest?.date ?? null },
+    { key: 'jp-machinery', label: 'Machine Orders', href: '/machine-orders', path: '/api/machine-orders', cadence: 'Monthly', maxAge: 110, source: 'Cabinet Office', extract: data => data?.latest?.date ?? null },
+    { key: 'jp-consumption', label: 'Household Consumption', href: '/consumption', path: '/api/consumption', cadence: 'Monthly', maxAge: 110, source: 'MIC · e-Stat', extract: data => observationDate(data?.total) },
+    { key: 'jp-tankan', label: 'BOJ Tankan', href: '/tankan', path: '/api/tankan', cadence: 'Quarterly', maxAge: 240, source: 'BOJ', extract: data => observationDate(data?.large_mfg) },
+    { key: 'jp-watchers', label: 'Economy Watchers', href: '/watcher', path: '/api/watcher', cadence: 'Monthly', maxAge: 100, source: 'Cabinet Office', extract: data => observationDate(data?.current_all) },
+    { key: 'jp-wages', label: 'Wages', href: '/wages', path: '/api/wages', cadence: 'Monthly', maxAge: 110, source: 'MHLW', extract: data => data?.latest_date ?? observationDate(data?.nominal) },
+    { key: 'jp-labour', label: 'Labor Force', href: '/labour', path: '/api/labour', cadence: 'Monthly', maxAge: 100, source: 'MIC · e-Stat', extract: data => observationDate(data?.data) },
+    { key: 'jp-job-ratio', label: 'Job-to-Applicant Ratio', href: '/job-ratio', path: '/api/job-ratio', cadence: 'Monthly', maxAge: 100, source: 'MHLW · e-Stat', extract: data => data?.latest?.date ?? null },
+    { key: 'jp-trade', label: 'Trade Statistics', href: '/trade', path: '/api/trade', cadence: 'Monthly', maxAge: 110, source: 'MOF · e-Stat', extract: data => observationDate(data?.export?.total) },
+  ],
+  US: [
+    { key: 'us-cpi', label: 'Consumer Price Index', href: '/us/cpi', path: '/api/us-cpi', cadence: 'Monthly', maxAge: 100, source: 'BLS · FRED', extract: data => fredDate(data?.series?.headline) },
+    { key: 'us-pce', label: 'PCE & Personal Income', href: '/us/consumption', path: '/api/us-consumption', cadence: 'Monthly', maxAge: 100, source: 'BEA · FRED', extract: data => fredDate(data?.series?.headlinePce) },
+    { key: 'us-growth', label: 'GDP & Retail Sales', href: '/us-macro#growth', path: '/api/us-macro', cadence: 'Quarterly / Monthly', maxAge: 240, source: 'BEA · Census · FRED', extract: data => observationDate(data?.growth?.realGdpGrowth) },
+    { key: 'us-manufacturing', label: 'Manufacturing Surveys', href: '/us/manufacturing', path: '/api/us-manufacturing', cadence: 'Monthly', maxAge: 100, source: 'NY Fed · Philly Fed · ISM', mode: 'MIXED', extract: data => observationDate(data?.ism?.headline) },
+    { key: 'us-employment', label: 'Employment Situation', href: '/us/employment', path: '/api/us-employment', cadence: 'Monthly', maxAge: 100, source: 'BLS · FRED', extract: data => observationDate(data?.employment?.payems) },
+    { key: 'us-claims', label: 'Initial Claims', href: '/us/initial-claims', path: '/api/us-initial-claims', cadence: 'Weekly', maxAge: 21, source: 'ETA · FRED', extract: data => fredDate(data?.series?.initialClaims) },
+    { key: 'us-jolts', label: 'JOLTS', href: '/us/jolts', path: '/api/us-jolts', cadence: 'Monthly', maxAge: 110, source: 'BLS · FRED', extract: data => fredDate(data?.series?.openings) },
+  ],
+}
+
+function parsePeriod(value) {
+  if (!value) return null
+  const text = String(value).trim()
+  const quarter = text.match(/^(\d{4})[/-]Q([1-4])$/i)
+  if (quarter) {
+    const month = Number(quarter[2]) * 3
+    return new Date(Date.UTC(Number(quarter[1]), month, 0, 12))
+  }
+  const normalized = text.replace(/\//g, '-')
+  if (/^\d{4}-\d{2}$/.test(normalized)) return new Date(`${normalized}-01T12:00:00Z`)
+  if (/^\d{4}-\d{2}-\d{2}$/.test(normalized)) return new Date(`${normalized}T12:00:00Z`)
+  const parsed = new Date(text)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
+function freshness(latestPeriod, maxAge) {
+  const observed = parsePeriod(latestPeriod)
+  if (!observed) return { status: 'failed', ageDays: null, message: 'Latest observation date is unavailable' }
+  const ageDays = Math.max(0, Math.floor((Date.now() - observed.getTime()) / 86400000))
+  if (ageDays > maxAge) {
+    return { status: 'stale', ageDays, message: `Latest observation is ${ageDays} days old` }
+  }
+  return { status: 'current', ageDays, message: 'Within the expected publication window' }
+}
+
+async function fetchWithTimeout(url, milliseconds = 20000) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), milliseconds)
+  try {
+    const response = await fetch(url, { cache: 'no-store', signal: controller.signal })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    const payload = await response.json()
+    if (payload?.error) throw new Error(payload.error)
+    return payload
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
+async function inspectSource(origin, definition) {
+  const checkedAt = new Date().toISOString()
+  try {
+    const payload = await fetchWithTimeout(`${origin}${definition.path}`)
+    const latestPeriod = definition.extract(payload)
+    return {
+      ...definition,
+      extract: undefined,
+      mode: definition.mode || 'AUTO',
+      latestPeriod,
+      checkedAt,
+      ...freshness(latestPeriod, definition.maxAge),
+    }
+  } catch (error) {
+    return {
+      ...definition,
+      extract: undefined,
+      mode: definition.mode || 'AUTO',
+      latestPeriod: null,
+      checkedAt,
+      status: 'failed',
+      ageDays: null,
+      message: error.name === 'AbortError' ? 'Health check timed out' : error.message,
+    }
+  }
+}
+
+export async function GET(request) {
+  const country = new URL(request.url).searchParams.get('country')?.toUpperCase()
+  if (!DEFINITIONS[country]) {
+    return Response.json({ error: 'country must be JP or US' }, { status: 400 })
+  }
+
+  const origin = new URL(request.url).origin
+  const items = await Promise.all(DEFINITIONS[country].map(definition => inspectSource(origin, definition)))
+  const summary = items.reduce((counts, item) => {
+    counts[item.status] += 1
+    return counts
+  }, { current: 0, stale: 0, failed: 0 })
+
+  return Response.json({
+    country,
+    checkedAt: new Date().toISOString(),
+    automatic: true,
+    summary,
+    items,
+  }, {
+    headers: {
+      'Cache-Control': 'public, s-maxage=900, stale-while-revalidate=3600',
+    },
+  })
+}
