@@ -13,6 +13,14 @@ export const metadata = {
     title: 'US Macro Dashboard | JapanPulse',
     description: 'Track US inflation, growth, consumption, surveys, labor and monetary policy from official sources.',
     url: '/us',
+    images: [
+      {
+        url: '/opengraph-image',
+        width: 1200,
+        height: 630,
+        alt: 'JapanPulse Macro Workspace',
+      },
+    ],
   },
 }
 
