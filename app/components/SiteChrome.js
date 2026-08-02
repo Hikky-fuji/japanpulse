@@ -15,9 +15,11 @@ const NAV_ITEMS = [
   { href: '/cpi', label: 'Japan CPI', match: path => path === '/cpi' || path === '/tokyo-cpi' || path === '/ppi' },
   { href: '/us/cpi', label: 'US CPI', match: path => path === '/us/cpi' },
   { href: '/us/employment', label: 'US Employment', match: path => path === '/us/employment' },
+  { href: '/status', label: 'Data Status', match: path => path === '/status' },
 ]
 
 const SEARCH_ITEMS = [
+  { href: '/status', country: 'OPS', label: 'Data Status & Release Calendar', description: 'Feed freshness, failures and official release dates', keywords: 'health stale failed schedule operations' },
   { href: '/', country: 'JP', label: 'Japan Macro Workspace', description: 'All Japan indicators and current pulse', keywords: 'overview home' },
   { href: '/cpi', country: 'JP', label: 'CPI', description: 'National consumer prices', keywords: 'inflation core core-core' },
   { href: '/tokyo-cpi', country: 'JP', label: 'Tokyo CPI', description: 'Tokyo consumer prices', keywords: 'inflation leading' },
