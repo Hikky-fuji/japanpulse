@@ -42,6 +42,95 @@ function pctChange(current, prior) {
   return finite(current) && finite(prior) && prior !== 0 ? (current / prior - 1) * 100 : null
 }
 
+function seriesValues(series, accessor = item => item?.value) {
+  return (series || [])
+    .map(accessor)
+    .filter(finite)
+    .slice(-24)
+}
+
+function yoySeries(observations) {
+  const clean = (observations || []).filter(item => finite(item.value))
+  return clean
+    .map(item => {
+      const prior = yearAgoValue(clean, item)
+      return finite(prior) && prior !== 0 ? (item.value / prior - 1) * 100 : null
+    })
+    .filter(finite)
+    .slice(-24)
+}
+
+function changeSeries(observations, difference = false) {
+  const clean = (observations || []).filter(item => finite(item.value))
+  return clean
+    .map((item, index) => {
+      const prior = clean[index - 1]?.value
+      if (!finite(prior)) return null
+      return difference ? item.value - prior : pctChange(item.value, prior)
+    })
+    .filter(finite)
+    .slice(-24)
+}
+
+function tradeBalanceSeries(exports, imports) {
+  const importsByDate = new Map((imports || []).map(item => [item.date, item.value]))
+  return (exports || [])
+    .map(item => finite(item.value) && finite(importsByDate.get(item.date))
+      ? item.value - importsByDate.get(item.date)
+      : null)
+    .filter(finite)
+    .slice(-24)
+}
+
+function momentum(values) {
+  const clean = (values || []).filter(finite)
+  if (clean.length < 2) return { label: 'Awaiting history', direction: 'flat', arrow: '→' }
+  const latest = clean.at(-1)
+  const comparison = clean.slice(-4, -1)
+  const reference = comparison.reduce((sum, value) => sum + value, 0) / comparison.length
+  const range = Math.max(...clean) - Math.min(...clean)
+  const threshold = Math.max(range * 0.06, 0.05)
+  if (latest - reference > threshold) return { label: 'Rising', direction: 'up', arrow: '↑' }
+  if (reference - latest > threshold) return { label: 'Falling', direction: 'down', arrow: '↓' }
+  return { label: 'Stable', direction: 'flat', arrow: '→' }
+}
+
+function Sparkline({ values, baseline, label }) {
+  const clean = (values || []).filter(finite).slice(-24)
+  if (clean.length < 2) return <div className="workspace-pulse__sparkline is-empty" />
+
+  const width = 240
+  const height = 46
+  const padding = 3
+  const domain = finite(baseline) ? [...clean, baseline] : clean
+  let min = Math.min(...domain)
+  let max = Math.max(...domain)
+  if (min === max) {
+    min -= 1
+    max += 1
+  }
+  const x = index => padding + index * ((width - padding * 2) / (clean.length - 1))
+  const y = value => padding + (max - value) * ((height - padding * 2) / (max - min))
+  const points = clean.map((value, index) => `${x(index)},${y(value)}`).join(' ')
+  const baselineY = finite(baseline) ? y(baseline) : null
+
+  return (
+    <svg
+      className="workspace-pulse__sparkline"
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="none"
+      role="img"
+      aria-label={`${label}, latest ${clean.at(-1).toFixed(1)}`}
+    >
+      {finite(baselineY) && (
+        <line className="workspace-pulse__baseline" x1={padding} x2={width - padding} y1={baselineY} y2={baselineY} />
+      )}
+      <polyline points={points} />
+      <circle cx={x(clean.length - 1)} cy={y(clean.at(-1))} r="2.6" />
+    </svg>
+  )
+}
+
 function quarterLabel(date) {
   if (!date) return null
   const month = Number(date.slice(5, 7))
@@ -52,8 +141,20 @@ function detail(label, value, toneName = 'neutral') {
   return { label, value, tone: toneName }
 }
 
-function card({ label, href, mainLabel, value, period, toneName = 'neutral', details, source }) {
-  return { label, href, mainLabel, value, period, tone: toneName, details, source }
+function card({ label, href, mainLabel, value, period, toneName = 'neutral', details, source, series, baseline }) {
+  return {
+    label,
+    href,
+    mainLabel,
+    value,
+    period,
+    tone: toneName,
+    details,
+    source,
+    series,
+    baseline,
+    momentum: momentum(series),
+  }
 }
 
 function japanCards(payload) {
@@ -92,6 +193,8 @@ function japanCards(payload) {
         detail('Core-core', fixed(corecore?.value, 1, '%')),
       ],
       source: 'MIC · e-Stat',
+      series: seriesValues(cpi?.headline),
+      baseline: 2,
     }),
     card({
       label: 'Growth & Production',
@@ -105,6 +208,8 @@ function japanCards(payload) {
         detail('IIP YoY', signed(iipLatest?.prod_yoy, 1, '%'), tone(iipLatest?.prod_yoy)),
       ],
       source: 'Cabinet Office · METI',
+      series: seriesValues(gdp?.gdp_qoq),
+      baseline: 0,
     }),
     card({
       label: 'Private Consumption',
@@ -118,6 +223,8 @@ function japanCards(payload) {
         detail('Discretionary', signed(discLatest?.value, 1, '%'), tone(discLatest?.value)),
       ],
       source: 'MIC · Family Survey',
+      series: seriesValues(consumption?.total),
+      baseline: 0,
     }),
     card({
       label: 'Surveys & Sentiment',
@@ -131,6 +238,8 @@ function japanCards(payload) {
         detail('Neutral line', '50.0'),
       ],
       source: 'Cabinet Office',
+      series: seriesValues(watcher?.current_all),
+      baseline: 50,
     }),
     card({
       label: 'Employment',
@@ -144,6 +253,8 @@ function japanCards(payload) {
         detail('Employment YoY', signed(labourLatest?.employedYoY, 1, '%'), tone(labourLatest?.employedYoY)),
       ],
       source: 'MIC · MHLW',
+      series: seriesValues(labour?.data, item => item?.unemploymentRate),
+      baseline: 3,
     }),
     card({
       label: 'Wages',
@@ -157,6 +268,8 @@ function japanCards(payload) {
         detail('Scheduled pay', signed(scheduledWage?.yoy, 1, '%'), tone(scheduledWage?.yoy)),
       ],
       source: 'MHLW',
+      series: seriesValues(wages?.real, item => item?.yoy),
+      baseline: 0,
     }),
     card({
       label: 'External Sector',
@@ -170,6 +283,8 @@ function japanCards(payload) {
         detail('Imports', finite(imp?.value) ? `¥${(imp.value / 1e9).toFixed(1)}T` : '—'),
       ],
       source: 'MOF · e-Stat',
+      series: tradeBalanceSeries(trade?.export?.total, trade?.import?.total),
+      baseline: 0,
     }),
   ]
 }
@@ -212,6 +327,8 @@ function usCards(payload) {
         detail('Core PCE', fixed(corePce.value, 1, '%')),
       ],
       source: 'BLS · BEA · FRED',
+      series: yoySeries(cpi?.series?.headline?.observations),
+      baseline: 2,
     }),
     card({
       label: 'Economic Growth',
@@ -225,6 +342,8 @@ function usCards(payload) {
         detail('Real PCE YoY', signed(pctChange(realPceLatest?.value, realPce.at(-13)?.value), 1, '%'), tone(pctChange(realPceLatest?.value, realPce.at(-13)?.value))),
       ],
       source: 'BEA · Census · FRED',
+      series: seriesValues(macro?.growth?.realGdpGrowth),
+      baseline: 0,
     }),
     card({
       label: 'Private Consumption',
@@ -238,6 +357,8 @@ function usCards(payload) {
         detail('Saving rate', fixed(saving?.value, 1, '%')),
       ],
       source: 'BEA · FRED',
+      series: changeSeries(realPce),
+      baseline: 0,
     }),
     card({
       label: 'Surveys & Sentiment',
@@ -251,6 +372,8 @@ function usCards(payload) {
         detail('Philly Fed', signed(philly?.value, 1), tone(philly?.value)),
       ],
       source: 'NY Fed · Philly Fed · ISM',
+      series: seriesValues(manufacturing?.ism?.headline),
+      baseline: 50,
     }),
     card({
       label: 'Employment & Wages',
@@ -264,6 +387,8 @@ function usCards(payload) {
         detail('Openings rate', fixed(openingsRate?.value, 1, '%'), tone(openingsRate?.value - 4)),
       ],
       source: 'BLS · FRED',
+      series: changeSeries(payrolls, true),
+      baseline: 0,
     }),
     card({
       label: 'Policy & Labor Flows',
@@ -277,6 +402,7 @@ function usCards(payload) {
         detail('Quits rate', fixed(quitsRate?.value, 1, '%')),
       ],
       source: 'Federal Reserve · BLS',
+      series: seriesValues(macro?.policy?.fedfunds),
     }),
   ]
 }
@@ -358,6 +484,12 @@ export default function WorkspacePulse({ countryCode }) {
             <div className="workspace-pulse__main-label">{item.mainLabel}</div>
             <strong>{item.value}</strong>
             <time>{item.period || 'Latest available'}</time>
+            <div className="workspace-pulse__trend">
+              <Sparkline values={item.series} baseline={item.baseline} label={`${item.mainLabel} trend`} />
+              <span className={`is-${item.momentum.direction}`}>
+                {item.momentum.arrow} {item.momentum.label}
+              </span>
+            </div>
             <div className="workspace-pulse__details">
               {item.details.map(row => (
                 <div key={row.label}>
