@@ -103,7 +103,13 @@ export async function GET(request) {
     return Response.json({ error: 'country must be JP or US' }, { status: 400 })
   }
 
-  const origin = new URL(request.url).origin
+  // Preview deployments are protected by Vercel Authentication. A server-side
+  // request back to the preview host has no browser SSO cookie and receives a
+  // redirect instead of JSON, so use the project's public production host for
+  // preview health checks. Production and local development remain self-checks.
+  const origin = process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_PROJECT_PRODUCTION_URL
+    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+    : new URL(request.url).origin
   const items = await Promise.all(DEFINITIONS[country].map(definition => inspectSource(origin, definition)))
   const summary = items.reduce((counts, item) => {
     counts[item.status] += 1
