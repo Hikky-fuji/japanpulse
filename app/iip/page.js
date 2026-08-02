@@ -248,6 +248,7 @@ export default function IIP() {
     box:       { background: '#fff', border: '1px solid #eee', borderRadius: '12px', padding: '16px', marginBottom: '16px' },
     boxTitle:  { fontSize: '13px', fontWeight: '500', marginBottom: '12px', color: '#333' },
     badge:     { display: 'inline-block', fontSize: '10px', background: '#FEF3C7', color: '#92400E', borderRadius: '4px', padding: '2px 6px', marginLeft: '6px', fontWeight: '600' },
+    snapshot:  { margin: '-8px 0 16px', padding: '10px 12px', border: '1px solid #F1D38B', borderRadius: '8px', background: '#FFFBEB', color: '#7C5A12', fontSize: '11px', lineHeight: '1.5' },
     note:      { fontSize: '11px', color: '#aaa', marginTop: '8px' },
     table:     { width: '100%', borderCollapse: 'collapse', fontSize: '11px' },
     th:        { padding: '6px 8px', background: '#f8f8f6', fontWeight: '600', fontSize: '10px', color: '#888', textAlign: 'center', borderBottom: '1px solid #eee' },
@@ -262,7 +263,7 @@ export default function IIP() {
 
   return (
     <main className="dashboard-page" style={s.wrap}>
-      <DashboardFreshness data={data} source="METI · e-Stat" />
+      <DashboardFreshness data={data} source="METI · e-Stat" mode="reference" />
       <div style={s.header}>
         <div>
           <a href="/" style={s.nav}>← Home</a>
@@ -274,6 +275,10 @@ export default function IIP() {
           </span>
         </div>
         <span style={{fontSize:'12px', color:'#888'}}>Source: METI / e-Stat · Latest: {latestDate}</span>
+      </div>
+      <div style={s.snapshot}>
+        Reference snapshot · The February IIP workbook is intentionally preserved for historical chart analysis.
+        The official file identifier cannot be advanced reliably through the current API workflow, so this page is not labeled as a live monthly feed.
       </div>
 
       <div style={s.grid4}>
