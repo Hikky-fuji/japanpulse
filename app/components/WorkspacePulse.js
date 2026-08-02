@@ -82,7 +82,57 @@ function tradeBalanceSeries(exports, imports) {
     .slice(-24)
 }
 
-function momentum(values) {
+function momentumLabel(kind, direction, latest) {
+  const labels = {
+    inflation: {
+      up: 'Accelerating',
+      down: 'Disinflation',
+      flat: 'Stable',
+    },
+    growth: {
+      up: 'Accelerating',
+      down: 'Slowing',
+      flat: 'Stable',
+    },
+    activity: {
+      up: 'Improving',
+      down: 'Softening',
+      flat: 'Stable',
+    },
+    employment: {
+      up: 'Strengthening',
+      down: 'Cooling',
+      flat: 'Stable',
+    },
+    unemployment: {
+      up: 'Rising',
+      down: 'Falling',
+      flat: 'Stable',
+    },
+    policy: {
+      up: 'Tightening',
+      down: 'Easing',
+      flat: 'On hold',
+    },
+    balance: {
+      up: 'Improving',
+      down: 'Weakening',
+      flat: 'Stable',
+    },
+  }
+
+  if (kind === 'inflation' && latest < 0) return 'Deflation'
+  if ((kind === 'growth' || kind === 'employment') && latest < 0) {
+    return direction === 'up' ? 'Recovering' : 'Contracting'
+  }
+  return labels[kind]?.[direction] ?? {
+    up: 'Rising',
+    down: 'Falling',
+    flat: 'Stable',
+  }[direction]
+}
+
+function momentum(values, kind = 'direction') {
   const clean = (values || []).filter(finite)
   if (clean.length < 2) return { label: 'Awaiting history', direction: 'flat', arrow: '→' }
   const latest = clean.at(-1)
@@ -90,9 +140,17 @@ function momentum(values) {
   const reference = comparison.reduce((sum, value) => sum + value, 0) / comparison.length
   const range = Math.max(...clean) - Math.min(...clean)
   const threshold = Math.max(range * 0.06, 0.05)
-  if (latest - reference > threshold) return { label: 'Rising', direction: 'up', arrow: '↑' }
-  if (reference - latest > threshold) return { label: 'Falling', direction: 'down', arrow: '↓' }
-  return { label: 'Stable', direction: 'flat', arrow: '→' }
+  const direction = latest - reference > threshold
+    ? 'up'
+    : reference - latest > threshold
+      ? 'down'
+      : 'flat'
+  const arrows = { up: '↑', down: '↓', flat: '→' }
+  return {
+    label: momentumLabel(kind, direction, latest),
+    direction,
+    arrow: arrows[direction],
+  }
 }
 
 function Sparkline({ values, baseline, label }) {
@@ -141,7 +199,19 @@ function detail(label, value, toneName = 'neutral') {
   return { label, value, tone: toneName }
 }
 
-function card({ label, href, mainLabel, value, period, toneName = 'neutral', details, source, series, baseline }) {
+function card({
+  label,
+  href,
+  mainLabel,
+  value,
+  period,
+  toneName = 'neutral',
+  details,
+  source,
+  series,
+  baseline,
+  momentumKind,
+}) {
   return {
     label,
     href,
@@ -153,7 +223,7 @@ function card({ label, href, mainLabel, value, period, toneName = 'neutral', det
     source,
     series,
     baseline,
-    momentum: momentum(series),
+    momentum: momentum(series, momentumKind),
   }
 }
 
@@ -195,6 +265,7 @@ function japanCards(payload) {
       source: 'MIC · e-Stat',
       series: seriesValues(cpi?.headline),
       baseline: 2,
+      momentumKind: 'inflation',
     }),
     card({
       label: 'Growth & Production',
@@ -210,6 +281,7 @@ function japanCards(payload) {
       source: 'Cabinet Office · METI',
       series: seriesValues(gdp?.gdp_qoq),
       baseline: 0,
+      momentumKind: 'growth',
     }),
     card({
       label: 'Private Consumption',
@@ -225,6 +297,7 @@ function japanCards(payload) {
       source: 'MIC · Family Survey',
       series: seriesValues(consumption?.total),
       baseline: 0,
+      momentumKind: 'growth',
     }),
     card({
       label: 'Surveys & Sentiment',
@@ -240,6 +313,7 @@ function japanCards(payload) {
       source: 'Cabinet Office',
       series: seriesValues(watcher?.current_all),
       baseline: 50,
+      momentumKind: 'activity',
     }),
     card({
       label: 'Employment',
@@ -255,6 +329,7 @@ function japanCards(payload) {
       source: 'MIC · MHLW',
       series: seriesValues(labour?.data, item => item?.unemploymentRate),
       baseline: 3,
+      momentumKind: 'unemployment',
     }),
     card({
       label: 'Wages',
@@ -270,6 +345,7 @@ function japanCards(payload) {
       source: 'MHLW',
       series: seriesValues(wages?.real, item => item?.yoy),
       baseline: 0,
+      momentumKind: 'growth',
     }),
     card({
       label: 'External Sector',
@@ -285,6 +361,7 @@ function japanCards(payload) {
       source: 'MOF · e-Stat',
       series: tradeBalanceSeries(trade?.export?.total, trade?.import?.total),
       baseline: 0,
+      momentumKind: 'balance',
     }),
   ]
 }
@@ -329,6 +406,7 @@ function usCards(payload) {
       source: 'BLS · BEA · FRED',
       series: yoySeries(cpi?.series?.headline?.observations),
       baseline: 2,
+      momentumKind: 'inflation',
     }),
     card({
       label: 'Economic Growth',
@@ -344,6 +422,7 @@ function usCards(payload) {
       source: 'BEA · Census · FRED',
       series: seriesValues(macro?.growth?.realGdpGrowth),
       baseline: 0,
+      momentumKind: 'growth',
     }),
     card({
       label: 'Private Consumption',
@@ -359,6 +438,7 @@ function usCards(payload) {
       source: 'BEA · FRED',
       series: changeSeries(realPce),
       baseline: 0,
+      momentumKind: 'growth',
     }),
     card({
       label: 'Surveys & Sentiment',
@@ -374,6 +454,7 @@ function usCards(payload) {
       source: 'NY Fed · Philly Fed · ISM',
       series: seriesValues(manufacturing?.ism?.headline),
       baseline: 50,
+      momentumKind: 'activity',
     }),
     card({
       label: 'Employment & Wages',
@@ -389,6 +470,7 @@ function usCards(payload) {
       source: 'BLS · FRED',
       series: changeSeries(payrolls, true),
       baseline: 0,
+      momentumKind: 'employment',
     }),
     card({
       label: 'Policy & Labor Flows',
@@ -403,6 +485,7 @@ function usCards(payload) {
       ],
       source: 'Federal Reserve · BLS',
       series: seriesValues(macro?.policy?.fedfunds),
+      momentumKind: 'policy',
     }),
   ]
 }
