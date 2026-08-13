@@ -206,7 +206,8 @@ export default function MacroWorkspace({
                           <b aria-hidden="true">→</b>
                         </div>
                         <h3>{t(item.title)}</h3>
-                        <p>{t(item.subtitle)}</p>
+                        <p className="macro-tile__subtitle">{t(item.subtitle)}</p>
+                        <p className="macro-tile__description">{t(item.desc)}</p>
                         <div
                           className={`macro-significance macro-significance--${item.significance}`}
                           title={significance.description}
