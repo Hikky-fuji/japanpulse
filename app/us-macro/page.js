@@ -292,13 +292,13 @@ export default function USMacroDashboard() {
       <div style={s.header}>
         <div>
           <h1 style={{ fontSize: '18px', fontWeight: '600', color: '#111', margin: 0 }}>
-            🇺🇸 US Macro — Personal View
+            🇺🇸 US Growth &amp; Fed Policy
           </h1>
           <div style={{ fontSize: '11px', color: '#aaa', marginTop: '3px' }}>
-            JapanPulse sub-page · Source: FRED (St. Louis Fed)
+            Growth, labor and policy-rule diagnostics · Sources: BEA, BLS, CBO and Federal Reserve via FRED
           </div>
         </div>
-        <a href="/" style={{ fontSize: '12px', color: '#555', textDecoration: 'none' }}>← Home</a>
+        <a href="/us" style={{ fontSize: '12px', color: '#c7cdd1', textDecoration: 'none' }}>← US workspace</a>
       </div>
 
       {/* ── Section 1: Fed Watch ── */}
@@ -678,7 +678,7 @@ export default function USMacroDashboard() {
 
       {/* ── Footer ── */}
       <div style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid #eee', fontSize: '11px', color: '#aaa', textAlign: 'center' }}>
-        Data: FRED (Federal Reserve Bank of St. Louis) · Personal use only
+        Data: original publishers via FRED · Verify material decisions against the linked official releases
       </div>
     </main>
   )

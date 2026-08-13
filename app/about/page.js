@@ -28,7 +28,7 @@ export default function AboutPage() {
           <h2>Data sources</h2>
           <ul>
             <li>Japan: e-Stat, Bank of Japan, Cabinet Office, METI, MHLW and Japan Customs.</li>
-            <li>United States: BLS, BEA, Census, Federal Reserve and other agencies via FRED.</li>
+            <li>United States: BLS, BEA, Census, Federal Reserve, U.S. Treasury and Chicago Fed data via FRED.</li>
             <li>Every dashboard identifies its source and latest available observation.</li>
           </ul>
         </article>
@@ -53,6 +53,11 @@ export default function AboutPage() {
             index levels where noted. Seasonal-adjustment status and transformation definitions
             are shown on individual dashboards. Survey and hard-data indicators remain
             separated to avoid false comparability.
+          </p>
+          <p>
+            Market-implied measures such as Treasury breakevens are treated as pricing signals,
+            not pure forecasts. They can include risk, liquidity and term premia in addition to
+            expectations.
           </p>
         </article>
 

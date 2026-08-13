@@ -85,6 +85,7 @@ const DEFINITIONS = {
     { key: 'us-employment', label: 'Employment Situation', href: '/us/employment', path: '/api/us-employment', cadence: 'Monthly', maxAge: 100, source: 'BLS · FRED', extract: data => observationDate(data?.employment?.payems) },
     { key: 'us-claims', label: 'Initial Claims', href: '/us/initial-claims', path: '/api/us-initial-claims', cadence: 'Weekly', maxAge: 21, source: 'ETA · FRED', extract: data => fredDate(data?.series?.initialClaims) },
     { key: 'us-jolts', label: 'JOLTS', href: '/us/jolts', path: '/api/us-jolts', cadence: 'Monthly', maxAge: 110, source: 'BLS · FRED', extract: data => fredDate(data?.series?.openings) },
+    { key: 'us-rates', label: 'Rates & Financial Conditions', href: '/us/rates', path: '/api/us-rates', cadence: 'Daily / Weekly', maxAge: 14, source: 'Federal Reserve · Treasury · FRED', extract: data => data?.latest?.date ?? data?.latest?.nfci?.date ?? null },
   ],
 }
 
