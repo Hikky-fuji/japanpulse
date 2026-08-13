@@ -10,6 +10,7 @@ const SOURCE_BY_PATH = {
   '/cpi': 'MIC · e-Stat',
   '/tokyo-cpi': 'MIC · e-Stat',
   '/ppi': 'BOJ',
+  '/boj-policy': 'BOJ · MIC · MHLW',
   '/gdp': 'Cabinet Office · e-Stat',
   '/iip': 'METI · e-Stat',
   '/tsip': 'METI · e-Stat',

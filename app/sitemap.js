@@ -6,6 +6,7 @@ const routes = [
   { path: '/cpi', priority: 0.9, changeFrequency: 'monthly' },
   { path: '/tokyo-cpi', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/ppi', priority: 0.8, changeFrequency: 'monthly' },
+  { path: '/boj-policy', priority: 0.9, changeFrequency: 'monthly' },
   { path: '/gdp', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/iip', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/tsip', priority: 0.7, changeFrequency: 'monthly' },
