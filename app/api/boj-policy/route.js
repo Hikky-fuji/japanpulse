@@ -157,12 +157,16 @@ function parsePeriod(value) {
   const text = String(value ?? '').normalize('NFKC').trim()
   if (!text) return null
 
-  let match = text.match(/((?:19|20)\d{2})\s*(?:年|[-/.])\s*(\d{1,2})\s*月?/) 
+  let match = text.match(/((?:19|20)\d{2})\s*(?:[/.-]?\s*[Qq]|[.-]\s*([1-4])\s*[Qq]|年?\s*第?)\s*([1-4])?\s*(?:四半期)?/)
+  if (match) return `${match[1]}/Q${match[2] || match[3]}`
+
+  match = text.match(/^((?:19|20)\d{2})\.([12])\s*:/)
+  if (match) return `FY${match[1]}/H${match[2]}`
+
+  match = text.match(/((?:19|20)\d{2})\s*(?:年|[-/.])\s*(\d{1,2})\s*月?/) 
   if (match && Number(match[2]) >= 1 && Number(match[2]) <= 12) {
     return `${match[1]}/${String(match[2]).padStart(2, '0')}`
   }
-
-  match = text.match(/((?:19|20)\d{2})\s*(?:[/.-]?\s*[Qq]|年?\s*第?)\s*([1-4])\s*(?:四半期)?/)
   if (match) return `${match[1]}/Q${match[2]}`
 
   match = text.match(/(?:FY\s*)?((?:19|20)\d{2})\s*(?:年度|FY)?$/i)
@@ -176,6 +180,8 @@ function periodRank(period) {
   if (monthly) return Number(monthly[1]) * 12 + Number(monthly[2])
   const quarterly = period.match(/^(\d{4})\/Q([1-4])$/)
   if (quarterly) return Number(quarterly[1]) * 12 + Number(quarterly[2]) * 3
+  const half = period.match(/^FY(\d{4})\/H([12])$/)
+  if (half) return Number(half[1]) * 12 + Number(half[2]) * 6
   const annual = period.match(/^(?:FY)?(\d{4})$/)
   return annual ? Number(annual[1]) * 12 + 12 : 0
 }
@@ -219,7 +225,7 @@ function collectCandidates(rows, sheetName, orientation) {
           })
           .filter(Boolean)
 
-        if (series.length < Math.max(3, Math.floor(block.length * 0.35))) continue
+        if (series.length < 3) continue
 
         const labelParts = []
         for (let row = headerStart; row < firstRow; row += 1) {
@@ -268,6 +274,10 @@ function definitionScore(candidate, definition) {
   }
   if (definition.oneOf?.length && !definition.oneOf.map(normalize).some(term => combined.includes(term))) score -= 260
   if (definition.avoid?.some(term => combined.includes(normalize(term)))) score -= 520
+  if (combined.includes('2020base') || combined.includes('20年基準')) score += 180
+  else if (combined.includes('2015base') || combined.includes('15年基準')) score += 60
+  else if (combined.includes('2010base') || combined.includes('10年基準')) score -= 60
+  else if (combined.includes('2005base') || combined.includes('05年基準')) score -= 120
   return score
 }
 
