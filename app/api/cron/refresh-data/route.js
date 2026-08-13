@@ -6,6 +6,7 @@ const ENDPOINTS = [
   '/api/data-health?country=US',
   '/api/release-calendar',
   '/api/us-ppi',
+  '/api/us-sentiment',
 ]
 
 async function warm(origin, path) {

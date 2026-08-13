@@ -38,6 +38,7 @@ export const SIGNIFICANCE_BY_PATH = {
   '/us/ppi': 2,
   '/us/consumption': 3,
   '/us/manufacturing': 3,
+  '/us/sentiment': 3,
   '/us/employment': 3,
   '/us/initial-claims': 2,
   '/us/jolts': 2,

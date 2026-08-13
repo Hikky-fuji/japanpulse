@@ -31,6 +31,7 @@ const SOURCE_BY_PATH = {
   '/us/consumption': 'BEA · FRED',
   '/us/jolts': 'BLS · FRED',
   '/us/manufacturing': 'NY Fed · Philadelphia Fed · ISM',
+  '/us/sentiment': 'University of Michigan · FRED',
   '/us/rates': 'Federal Reserve · Treasury · FRED',
   '/us-macro': 'FRED · BEA · Census',
 }

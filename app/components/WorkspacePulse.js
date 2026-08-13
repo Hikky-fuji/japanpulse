@@ -412,7 +412,7 @@ function usCards(payload) {
   const hasSource = key => Object.prototype.hasOwnProperty.call(payload, key)
   const sourceLoading = key => !hasSource(key)
   const sourceFailed = key => hasSource(key) && payload[key] === null
-  const { cpi, ppi, employment, consumption, jolts, manufacturing, macro, rates } = payload
+  const { cpi, ppi, employment, consumption, jolts, manufacturing, sentiment, macro, rates } = payload
   const headlineCpi = yoyFromIndex(cpi?.series?.headline?.observations)
   const coreCpi = yoyFromIndex(cpi?.series?.core?.observations)
   const headlinePpi = yoyFromIndex(ppi?.series?.headline?.observations)
@@ -429,6 +429,9 @@ function usCards(payload) {
   const empire = last(manufacturing?.regional?.empire?.series?.headline?.observations?.filter(item => finite(item.value)))
   const philly = last(manufacturing?.regional?.philly?.series?.headline?.observations?.filter(item => finite(item.value)))
   const ism = last(manufacturing?.ism?.headline)
+  const michigan = last(sentiment?.series?.sentiment?.observations?.filter(item => finite(item.value)))
+  const michiganPrior = sentiment?.series?.sentiment?.observations?.filter(item => finite(item.value))?.at(-4)
+  const oneYearInflation = last(sentiment?.series?.oneYearInflation?.observations?.filter(item => finite(item.value)))
   const payrolls = employment?.employment?.payems || []
   const payrollLatest = last(payrolls)
   const payrollPrior = payrolls.at(-2)
@@ -518,6 +521,24 @@ function usCards(payload) {
       mode: 'MIXED · ISM MANUAL',
     }),
     card({
+      label: 'Consumer Sentiment',
+      href: '/us/sentiment',
+      mainLabel: 'Michigan sentiment',
+      value: fixed(michigan?.value, 1),
+      period: michigan?.date?.slice(0, 7),
+      toneName: tone(michigan?.value - 80),
+      details: [
+        detail('3-observation change', signed(michigan?.value - michiganPrior?.value, 1, 'pt'), tone(michigan?.value - michiganPrior?.value)),
+        detail('1Y inflation exp.', fixed(oneYearInflation?.value, 1, '%'), tone(oneYearInflation?.value - 3, true)),
+      ],
+      source: 'University of Michigan · FRED',
+      series: seriesValues(sentiment?.series?.sentiment?.observations),
+      momentumKind: 'activity',
+      loading: sourceLoading('sentiment'),
+      unavailable: sourceFailed('sentiment') || (hasSource('sentiment') && !finite(michigan?.value)),
+      mode: 'AUTO · 1M LAG',
+    }),
+    card({
       label: 'Employment & Wages',
       href: '/us/employment',
       mainLabel: 'Nonfarm payrolls',
@@ -584,7 +605,7 @@ async function fetchJson(path, signal) {
   }
 }
 
-const PULSE_CACHE_VERSION = 4
+const PULSE_CACHE_VERSION = 5
 
 function readPulseCache(countryCode, maxAge) {
   try {
@@ -610,7 +631,7 @@ function writePulseCache(countryCode, payload) {
 }
 
 export default function WorkspacePulse({ countryCode }) {
-  const sourceTotal = countryCode === 'JP' ? 10 : 8
+  const sourceTotal = countryCode === 'JP' ? 10 : 9
   const [cards, setCards] = useState(() => countryCode === 'JP' ? japanCards({}) : usCards({}))
   const [progress, setProgress] = useState({ completed: 0, total: sourceTotal })
   const [cacheMode, setCacheMode] = useState('none')
@@ -642,6 +663,7 @@ export default function WorkspacePulse({ countryCode }) {
             consumption: '/api/us-consumption',
             jolts: '/api/us-jolts',
             manufacturing: '/api/us-manufacturing',
+            sentiment: '/api/us-sentiment',
             macro: '/api/us-macro',
             rates: '/api/us-rates',
           },
