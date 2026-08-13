@@ -59,6 +59,11 @@ export default function AboutPage() {
             not pure forecasts. They can include risk, liquidity and term premia in addition to
             expectations.
           </p>
+          <p>
+            Yen pass-through views distinguish a higher USD/JPY rate (yen depreciation) from
+            higher BOJ effective exchange-rate indices (yen appreciation). Co-movement with
+            import or consumer prices is descriptive and is not presented as a causal estimate.
+          </p>
         </article>
 
         <article id="macro-significance">

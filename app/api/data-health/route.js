@@ -21,6 +21,16 @@ const DEFINITIONS = {
         ? `Partial official workbook refresh: ${(data.meta.warnings || []).join(' · ')}`
         : 'Underlying inflation, output gap and labor-market workbooks parsed automatically.',
     },
+    {
+      key: 'jp-yen-transmission',
+      label: 'Yen & External Costs',
+      href: '/yen-transmission',
+      path: '/api/yen-transmission',
+      cadence: 'Daily / Monthly',
+      maxAge: 45,
+      source: 'BOJ Time-Series API',
+      extract: data => data?.latest?.usdJpy?.date ?? data?.latest?.reer?.date ?? null,
+    },
     { key: 'jp-gdp', label: 'GDP', href: '/gdp', path: '/api/gdp', cadence: 'Quarterly', maxAge: 240, source: 'Cabinet Office', extract: data => observationDate(data?.gdp_qoq) },
     {
       key: 'jp-iip',

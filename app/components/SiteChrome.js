@@ -26,6 +26,7 @@ const SEARCH_ITEMS = [
   { href: '/tokyo-cpi', country: 'JP', label: 'Tokyo CPI', description: 'Tokyo consumer prices', keywords: 'inflation leading' },
   { href: '/ppi', country: 'JP', label: 'Corporate & Services Prices', description: 'CGPI and SPPI', keywords: 'ppi producer boj inflation' },
   { href: '/boj-policy', country: 'JP', label: 'BOJ Policy Monitor', description: 'Underlying inflation, output gap, labor and wages', keywords: 'monetary policy transmission trimmed mean weighted median demand gap' },
+  { href: '/yen-transmission', country: 'JP', label: 'Yen & External Cost Transmission', description: 'USD/JPY, effective yen and import-price pass-through', keywords: 'fx currency exchange rate neer reer imported inflation boj' },
   { href: '/gdp', country: 'JP', label: 'GDP', description: 'Real growth and demand contributions', keywords: 'economic growth' },
   { href: '/iip', country: 'JP', label: 'Industrial Production', description: 'Production, shipments and inventory', keywords: 'iip meti hard data' },
   { href: '/tsip', country: 'JP', label: 'Tertiary Industry Activity', description: 'Services activity', keywords: 'tsip services production' },

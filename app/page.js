@@ -68,6 +68,15 @@ const indicators = [
         desc:     { en: 'Connects external costs, corporate pricing, labor tightness, wages, the output gap and BOJ measures of underlying inflation.',
                     ja: '外部コスト、企業の価格設定、労働需給、賃金、需給ギャップ、日銀の基調的物価指標を一つの波及経路として分析。' },
       },
+      {
+        href: '/yen-transmission',
+        significance: 3,
+        title:    { en: 'Yen & External Cost Transmission', ja: '円相場・外部コスト波及' },
+        subtitle: { en: 'USD/JPY / Effective Yen / Import Prices', ja: 'ドル円 / 実効為替 / 輸入物価' },
+        badge:    { en: 'Daily / Monthly', ja: '日次 / 月次' },
+        desc:     { en: 'Connects bilateral and trade-weighted yen moves to import prices, domestic producer prices and core CPI.',
+                    ja: 'ドル円・実効為替レートから輸入物価、国内企業物価、コアCPIへの波及経路を一体で確認。' },
+      },
     ],
   },
   {
