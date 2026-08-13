@@ -40,6 +40,7 @@ export const SIGNIFICANCE_BY_PATH = {
   '/us/employment': 3,
   '/us/initial-claims': 2,
   '/us/jolts': 2,
+  '/us/rates': 3,
   '/us-macro': 3,
 }
 

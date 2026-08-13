@@ -26,6 +26,7 @@ const routes = [
   { path: '/us/initial-claims', priority: 0.8, changeFrequency: 'weekly' },
   { path: '/us/jolts', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/us/manufacturing', priority: 0.8, changeFrequency: 'monthly' },
+  { path: '/us/rates', priority: 0.9, changeFrequency: 'daily' },
   { path: '/us-macro', priority: 0.8, changeFrequency: 'weekly' },
 ]
 

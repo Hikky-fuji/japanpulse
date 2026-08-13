@@ -1,11 +1,11 @@
 {
-  "name": "Japan Macro Dashboard",
+  "name": "JapanPulse Macro Workspace",
   "short_name": "JapanPulse",
-  "description": "Japan macroeconomic indicators dashboard",
+  "description": "Official-source Japan and US macroeconomic dashboards for inflation, growth, labor, policy and markets.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0f2044",
-  "theme_color": "#0f2044",
+  "background_color": "#1c2023",
+  "theme_color": "#1c2023",
   "icons": [
     {
       "src": "/icon.svg",

@@ -5,13 +5,13 @@ export const metadata = {
     absolute: 'US Macro Dashboard | JapanPulse',
   },
   description:
-    'US macro dashboard covering CPI, PPI, GDP, consumption, manufacturing surveys, employment, JOLTS and Fed policy.',
+    'US macro dashboard covering CPI, PPI, GDP, consumption, surveys, employment, Fed policy, rates and financial conditions.',
   alternates: {
     canonical: '/us',
   },
   openGraph: {
     title: 'US Macro Dashboard | JapanPulse',
-    description: 'Track US inflation, growth, consumption, surveys, labor and monetary policy from official sources.',
+    description: 'Track US inflation, growth, consumption, surveys, labor, monetary policy and financial conditions from official sources.',
     url: '/us',
     images: [
       {
@@ -145,6 +145,22 @@ const indicators = [
       },
     ],
   },
+  {
+    group: 'Financial Conditions',
+    color: '#42A9BC',
+    bg: '#F0FAFC',
+    border: '#70C2D0',
+    items: [
+      {
+        href: '/us/rates',
+        significance: 3,
+        title: 'Rates & Financial Conditions',
+        subtitle: 'Yield Curve / Real Yields / Breakevens / NFCI',
+        badge: 'Daily / Weekly',
+        desc: 'Policy pricing, the full Treasury curve, real yields, market inflation compensation and the Chicago Fed financial-conditions index. Sources: Federal Reserve / Treasury via FRED.',
+      },
+    ],
+  },
 ]
 
 export default function USHomePage() {
@@ -153,7 +169,7 @@ export default function USHomePage() {
       country="United States"
       countryCode="US"
       title="US Macro Dashboard"
-      description="A focused view of US inflation, growth, consumption, surveys, labor and monetary policy from official sources."
+      description="A focused view of US inflation, growth, consumption, surveys, labor, monetary policy and financial conditions from official sources."
       indicators={indicators}
       sourceNetwork="FRED · BLS · BEA"
     />

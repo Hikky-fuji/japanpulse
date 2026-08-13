@@ -393,7 +393,7 @@ function usCards(payload) {
   const hasSource = key => Object.prototype.hasOwnProperty.call(payload, key)
   const sourceLoading = key => !hasSource(key)
   const sourceFailed = key => hasSource(key) && payload[key] === null
-  const { cpi, ppi, employment, consumption, jolts, manufacturing, macro } = payload
+  const { cpi, ppi, employment, consumption, jolts, manufacturing, macro, rates } = payload
   const headlineCpi = yoyFromIndex(cpi?.series?.headline?.observations)
   const coreCpi = yoyFromIndex(cpi?.series?.core?.observations)
   const headlinePpi = yoyFromIndex(ppi?.series?.headline?.observations)
@@ -517,7 +517,7 @@ function usCards(payload) {
       unavailable: sourceFailed('employment') || (hasSource('employment') && !finite(payrollLatest?.value)),
     }),
     card({
-      label: 'Policy & Labor Flows',
+      label: 'Monetary Policy',
       href: '/us-macro#fed-policy',
       mainLabel: 'Effective fed funds',
       value: fixed(fedFunds?.value, 2, '%'),
@@ -532,6 +532,23 @@ function usCards(payload) {
       momentumKind: 'policy',
       loading: sourceLoading('macro'),
       unavailable: sourceFailed('macro') || (hasSource('macro') && !finite(fedFunds?.value)),
+    }),
+    card({
+      label: 'Rates & Conditions',
+      href: '/us/rates',
+      mainLabel: '10Y Treasury',
+      value: fixed(rates?.latest?.tenYear?.value, 2, '%'),
+      period: rates?.latest?.tenYear?.date,
+      toneName: 'neutral',
+      details: [
+        detail('2s10s curve', signed(rates?.latest?.spread2s10s?.value * 100, 0, 'bp')),
+        detail('Chicago Fed NFCI', fixed(rates?.latest?.nfci?.value, 2), tone(rates?.latest?.nfci?.value, true)),
+      ],
+      source: 'Federal Reserve · Treasury · FRED',
+      series: seriesValues(rates?.series?.treasury10y?.observations),
+      momentumKind: 'policy',
+      loading: sourceLoading('rates'),
+      unavailable: sourceFailed('rates') || (hasSource('rates') && !finite(rates?.latest?.tenYear?.value)),
     }),
   ]
 }
@@ -548,7 +565,7 @@ async function fetchJson(path, signal) {
   }
 }
 
-const PULSE_CACHE_VERSION = 2
+const PULSE_CACHE_VERSION = 3
 
 function readPulseCache(countryCode, maxAge) {
   try {
@@ -574,7 +591,7 @@ function writePulseCache(countryCode, payload) {
 }
 
 export default function WorkspacePulse({ countryCode }) {
-  const sourceTotal = countryCode === 'JP' ? 9 : 7
+  const sourceTotal = countryCode === 'JP' ? 9 : 8
   const [cards, setCards] = useState(() => countryCode === 'JP' ? japanCards({}) : usCards({}))
   const [progress, setProgress] = useState({ completed: 0, total: sourceTotal })
   const [cacheMode, setCacheMode] = useState('none')
@@ -606,6 +623,7 @@ export default function WorkspacePulse({ countryCode }) {
             jolts: '/api/us-jolts',
             manufacturing: '/api/us-manufacturing',
             macro: '/api/us-macro',
+            rates: '/api/us-rates',
           },
           build: usCards,
         }

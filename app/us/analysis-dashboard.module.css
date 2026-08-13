@@ -242,6 +242,7 @@
 }
 .analysis li:last-child { border-bottom: 0; }
 .analysis li span { color: var(--muted); font-size: 10px; line-height: 1.45; }
+.analysis li span small { display: block; margin-top: 3px; color: var(--dim); font-size: 8px; }
 .analysis li b { font-size: 11px; text-align: right; }
 .positiveText { color: var(--green) !important; }
 .negativeText { color: var(--red) !important; }
