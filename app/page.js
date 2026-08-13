@@ -54,6 +54,23 @@ const indicators = [
     ],
   },
   {
+    group: { en: 'Policy & Transmission', ja: '金融政策・波及経路' },
+    color: '#F08A24',
+    bg: '#FFF8F0',
+    border: '#F0A050',
+    items: [
+      {
+        href: '/boj-policy',
+        significance: 3,
+        title:    { en: 'BOJ Policy Monitor', ja: '日銀政策モニター' },
+        subtitle: { en: 'Wages / Demand / Underlying Inflation', ja: '賃金 / 需給 / 基調的インフレ' },
+        badge:    { en: 'Monthly / Quarterly', ja: '月次 / 四半期' },
+        desc:     { en: 'Connects external costs, corporate pricing, labor tightness, wages, the output gap and BOJ measures of underlying inflation.',
+                    ja: '外部コスト、企業の価格設定、労働需給、賃金、需給ギャップ、日銀の基調的物価指標を一つの波及経路として分析。' },
+      },
+    ],
+  },
+  {
     group: { en: 'Economic Growth', ja: '経済成長' },
     color: '#27AE60',
     bg: '#F0FAF4',
