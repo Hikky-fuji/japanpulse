@@ -99,6 +99,13 @@
   margin-top: 16px;
 }
 
+.metricGridFive {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
 .metricCard,
 .panel,
 .analysis,
@@ -288,7 +295,8 @@
 .error { color: var(--red); }
 
 @media (max-width: 960px) {
-  .metricGrid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .metricGrid,
+  .metricGridFive { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .mainGrid,
   .equalGrid { grid-template-columns: 1fr; }
 }
@@ -298,7 +306,8 @@
   .topbar,
   .sectionHeader { align-items: flex-start; flex-direction: column; }
   .sectionHeader p { text-align: left; }
-  .metricGrid { grid-template-columns: 1fr; }
+  .metricGrid,
+  .metricGridFive { grid-template-columns: 1fr; }
   .hero { padding: 19px; }
   .chart { height: 300px; }
 }

@@ -85,7 +85,7 @@ function rateRegime(model) {
   signals.push({
     label: 'Front-end policy pricing',
     value: finite(policyGap)
-      ? policyGap <= -25 ? 'Easing priced' : policyGap >= 25 ? 'Further tightening priced' : 'Near current policy rate'
+      ? policyGap <= -25 ? 'Lower path priced' : policyGap >= 25 ? 'Higher path / term premium' : 'Near current policy rate'
       : 'Awaiting data',
     tone: finite(policyGap) && policyGap <= -25 ? 'positiveText' : finite(policyGap) && policyGap >= 25 ? 'negativeText' : 'neutralText',
     detail: finite(policyGap) ? `${signed(policyGap, 0, 'bp')} · 2Y minus effective fed funds` : 'No common observation',
@@ -288,7 +288,7 @@ export default function UsRatesDashboard() {
           </div>
         </section>
 
-        <section className={styles.metricGrid} aria-label="Latest rates and conditions">
+        <section className={styles.metricGridFive} aria-label="Latest rates and conditions">
           <MetricCard
             label="Effective Fed Funds"
             value={percent(model.fedFunds?.value)}
