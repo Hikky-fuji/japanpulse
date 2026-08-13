@@ -163,7 +163,7 @@ function parsePeriod(value) {
   match = text.match(/((?:19|20)\d{2})\s*(?:[/.-]?\s*[Qq]\s*([1-4])|[.-]\s*([1-4])\s*[Qq]|年\s*第?\s*([1-4])\s*四半期)/)
   if (match) return `${match[1]}/Q${match[2] || match[3] || match[4]}`
 
-  match = text.match(/((?:19|20)\d{2})\s*(?:年|[-/.])\s*(\d{1,2})\s*月?/) 
+  match = text.match(/((?:19|20)\d{2})\s*(?:年|[-/.])\s*(\d{1,2})\s*月?/)
   if (match && Number(match[2]) >= 1 && Number(match[2]) <= 12) {
     return `${match[1]}/${String(match[2]).padStart(2, '0')}`
   }
