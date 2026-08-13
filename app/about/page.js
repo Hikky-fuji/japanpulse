@@ -56,6 +56,17 @@ export default function AboutPage() {
           </p>
         </article>
 
+        <article id="macro-significance">
+          <h2>Macro significance</h2>
+          <p>
+            Dashboard stars are an editorial monitoring hierarchy—not a rating of data quality,
+            reliability or forecast accuracy. <strong>★★★ Core</strong> indicators have broad
+            cycle, policy or market relevance. <strong>★★ Supporting</strong> indicators add
+            timely confirmation, leading detail or a transmission channel. <strong>★ Specialized</strong>
+            indicators answer a narrower sector question and are best read with broader data.
+          </p>
+        </article>
+
         <article>
           <h2>Known limitations</h2>
           <ul>

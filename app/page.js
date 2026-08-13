@@ -25,6 +25,7 @@ const indicators = [
     items: [
       {
         href: '/cpi',
+        significance: 3,
         title:    { en: 'CPI (Consumer Prices)',         ja: 'CPI（消費者物価指数）' },
         subtitle: { en: 'National / Core / Core-Core',   ja: '全国 / コア / コアコア' },
         badge:    { en: 'Monthly',                       ja: '月次' },
@@ -33,6 +34,7 @@ const indicators = [
       },
       {
         href: '/tokyo-cpi',
+        significance: 2,
         title:    { en: 'Tokyo CPI',                     ja: '東京都区部 CPI' },
         subtitle: { en: 'Tokyo Metropolitan Area',       ja: '東京都区部' },
         badge:    { en: 'Monthly / Leading Indicator',   ja: '月次 / 先行指標' },
@@ -42,6 +44,7 @@ const indicators = [
       },
       {
         href: '/ppi',
+        significance: 2,
         title:    { en: 'PPI (Producer Prices)',         ja: 'PPI（企業物価指数）' },
         subtitle: { en: 'CGPI / SPPI',                  ja: 'CGPI / SPPI' },
         badge:    { en: 'Monthly',                       ja: '月次' },
@@ -58,6 +61,7 @@ const indicators = [
     items: [
       {
         href: '/gdp',
+        significance: 3,
         title:    { en: 'GDP (Gross Domestic Product)',  ja: 'GDP（国内総生産）' },
         subtitle: { en: 'Real / Seasonally Adjusted',   ja: '実質 / 季節調整済み' },
         badge:    { en: 'Quarterly',                     ja: '四半期' },
@@ -66,6 +70,7 @@ const indicators = [
       },
       {
         href: '/iip',
+        significance: 2,
         title:    { en: 'Industrial Production Index',  ja: '鉱工業生産指数（IIP）' },
         subtitle: { en: 'IIP',                          ja: 'IIP' },
         badge:    { en: 'Monthly',                       ja: '月次' },
@@ -74,6 +79,7 @@ const indicators = [
       },
       {
         href: '/tsip',
+        significance: 2,
         title:    { en: 'Tertiary Sector Activity Index', ja: '第3次産業活動指数（TSIP）' },
         subtitle: { en: 'TSIP by sector',               ja: '業種別' },
         badge:    { en: 'Monthly',                       ja: '月次' },
@@ -90,6 +96,7 @@ const indicators = [
     items: [
       {
         href: '/machine-orders',
+        significance: 2,
         title:    { en: 'Machine Orders',                  ja: '機械受注' },
         subtitle: { en: 'Core Private Orders (ex-Ships/Elec)', ja: '民需（船舶・電力除く）' },
         badge:    { en: 'Monthly',                         ja: '月次' },
@@ -106,6 +113,7 @@ const indicators = [
     items: [
       {
         href: '/consumption',
+        significance: 2,
         title:    { en: 'Household Consumption',        ja: '家計消費' },
         subtitle: { en: 'Family Income & Expenditure Survey', ja: '家計調査' },
         badge:    { en: 'Monthly',                       ja: '月次' },
@@ -122,6 +130,7 @@ const indicators = [
     items: [
       {
         href: '/tankan',
+        significance: 3,
         title:    { en: 'Tankan Survey',                ja: '日銀短観' },
         subtitle: { en: 'Business Conditions DI',       ja: '業況判断DI' },
         badge:    { en: 'Quarterly',                     ja: '四半期' },
@@ -130,6 +139,7 @@ const indicators = [
       },
       {
         href: '/watcher',
+        significance: 2,
         title:    { en: 'Economy Watchers',             ja: '景気ウォッチャー調査' },
         subtitle: { en: 'Current / Outlook DI vs. Nikkei', ja: '現状・先行きDI vs 日経平均' },
         badge:    { en: 'Monthly',                       ja: '月次' },
@@ -146,6 +156,7 @@ const indicators = [
     items: [
       {
         href: '/wages',
+        significance: 3,
         title:    { en: 'Monthly Labor Survey',         ja: '毎月勤労統計調査' },
         subtitle: { en: 'Nominal / Real Wages',         ja: '名目 / 実質賃金' },
         badge:    { en: 'Monthly',                       ja: '月次' },
@@ -154,6 +165,7 @@ const indicators = [
       },
       {
         href: '/labour',
+        significance: 3,
         title:    { en: 'Labour Force Survey',          ja: '労働力調査' },
         subtitle: { en: 'Unemployment / Employment / Participation', ja: '完全失業率 / 就業者数 / 労働参加率' },
         badge:    { en: 'Monthly · SA',                 ja: '月次 · 季調済' },
@@ -162,6 +174,7 @@ const indicators = [
       },
       {
         href: '/job-ratio',
+        significance: 2,
         title:    { en: 'Job-to-Applicant Ratio',       ja: '有効求人倍率' },
         subtitle: { en: 'Job Market Tightness',         ja: '需給バランス' },
         badge:    { en: 'Monthly · SA',                 ja: '月次 · 季調済' },
@@ -178,11 +191,21 @@ const indicators = [
     items: [
       {
         href: '/trade',
+        significance: 2,
         title:    { en: 'Trade Statistics',             ja: '貿易統計' },
         subtitle: { en: 'Export / Import / Balance',    ja: '輸出 / 輸入 / 貿易収支' },
         badge:    { en: 'Monthly',                       ja: '月次' },
         desc:     { en: 'Japan trade statistics: exports, imports, trade balance by commodity and destination. Source: MOF Customs.',
                     ja: '日本の貿易統計：品目別・仕向地別の輸出入・貿易収支。財務省税関。' },
+      },
+      {
+        href: '/inbound-tourism',
+        significance: 2,
+        title:    { en: 'Inbound Tourism & Services Exports', ja: '訪日外国人・サービス輸出' },
+        subtitle: { en: 'Arrivals / Spending / Accommodation', ja: '訪日客数 / 消費額 / 宿泊' },
+        badge:    { en: 'Monthly / Quarterly', ja: '月次 / 四半期' },
+        desc:     { en: 'Visitor volumes, source-market breadth, travel spending, spend per visitor and foreign guest nights. Sources: JNTO / Japan Tourism Agency.',
+                    ja: '訪日客数、国別の広がり、旅行消費額、1人当たり支出、外国人延べ宿泊者数。JNTO・観光庁。' },
       },
     ],
   },
@@ -200,7 +223,7 @@ export default function HomePage() {
       }}
       indicators={indicators}
       bilingual
-      sourceNetwork="e-Stat · BOJ · MOF"
+      sourceNetwork="e-Stat · BOJ · MOF · JNTO"
     />
   )
 }

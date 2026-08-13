@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState } from 'react'
 import WorkspaceOperations from './WorkspaceOperations'
 import WorkspacePulse from './WorkspacePulse'
+import { SIGNIFICANCE_LEVELS, significanceDefinition } from '../lib/significance'
 
 const SOURCE_BY_PATH = {
   '/cpi': 'MIC · e-Stat',
@@ -20,6 +21,7 @@ const SOURCE_BY_PATH = {
   '/labour': 'MIC · e-Stat',
   '/job-ratio': 'MHLW · e-Stat',
   '/trade': 'MOF',
+  '/inbound-tourism': 'JNTO · Japan Tourism Agency',
   '/us/employment': 'BLS · FRED',
   '/us/initial-claims': 'ETA · FRED',
   '/us/cpi': 'BLS · FRED',
@@ -64,8 +66,18 @@ export default function MacroWorkspace({
   sourceNetwork,
 }) {
   const [lang, setLang] = useState('en')
+  const [significanceFilter, setSignificanceFilter] = useState('all')
   const t = (value) => valueForLanguage(value, lang)
   const indicatorCount = indicators.reduce((total, group) => total + group.items.length, 0)
+  const visibleIndicators = indicators
+    .map(group => ({
+      ...group,
+      items: group.items.filter(item => (
+        significanceFilter === 'all' || item.significance === Number(significanceFilter)
+      )),
+    }))
+    .filter(group => group.items.length)
+  const visibleCount = visibleIndicators.reduce((total, group) => total + group.items.length, 0)
 
   return (
     <main className="macro-workspace">
@@ -118,10 +130,37 @@ export default function MacroWorkspace({
       <WorkspacePulse countryCode={countryCode} />
       <WorkspaceOperations countryCode={countryCode} />
 
+      <section className="macro-workspace__filterbar" aria-label="Filter by macro significance">
+        <div>
+          <span>MACRO SIGNIFICANCE</span>
+          <p>Relative monitoring value—not a data-quality or forecast-accuracy score.</p>
+        </div>
+        <div className="macro-workspace__filters">
+          <button
+            aria-pressed={significanceFilter === 'all'}
+            type="button"
+            onClick={() => setSignificanceFilter('all')}
+          >
+            All <b>{indicatorCount}</b>
+          </button>
+          {Object.entries(SIGNIFICANCE_LEVELS).reverse().map(([level, definition]) => (
+            <button
+              aria-pressed={significanceFilter === level}
+              key={level}
+              type="button"
+              onClick={() => setSignificanceFilter(level)}
+            >
+              <span aria-hidden="true">{definition.stars}</span> {definition.label}
+            </button>
+          ))}
+        </div>
+        <output aria-live="polite">Showing {visibleCount} of {indicatorCount}</output>
+      </section>
+
       <div className="macro-workspace__body">
         <aside className="macro-workspace__rail" aria-label="Indicator categories">
           <div className="macro-workspace__rail-label">NAVIGATOR</div>
-          {indicators.map((group, index) => {
+          {visibleIndicators.map((group, index) => {
             const groupName = t(group.group)
             const id = `section-${slugify(valueForLanguage(group.group, 'en'))}`
             return (
@@ -134,7 +173,7 @@ export default function MacroWorkspace({
         </aside>
 
         <div className="macro-workspace__content">
-          {indicators.map(group => {
+          {visibleIndicators.map(group => {
             const englishGroupName = valueForLanguage(group.group, 'en')
             const groupName = t(group.group)
             const id = `section-${slugify(englishGroupName)}`
@@ -151,24 +190,35 @@ export default function MacroWorkspace({
                 </header>
 
                 <div className="macro-section__grid">
-                  {group.items.map((item, itemIndex) => (
-                    <Link
-                      className="macro-tile"
-                      href={item.href}
-                      key={`${item.href}-${itemIndex}`}
-                    >
-                      <div className="macro-tile__topline">
-                        <span>{t(item.badge)}</span>
-                        <b aria-hidden="true">→</b>
-                      </div>
-                      <h3>{t(item.title)}</h3>
-                      <p>{t(item.subtitle)}</p>
-                      <footer>
-                        <span>{sourceForPath(item.href, sourceNetwork)}</span>
-                        <span className="macro-tile__destination">Open dashboard</span>
-                      </footer>
-                    </Link>
-                  ))}
+                  {group.items.map((item, itemIndex) => {
+                    const significance = significanceDefinition(item.significance)
+                    return (
+                      <Link
+                        className="macro-tile"
+                        href={item.href}
+                        key={`${item.href}-${itemIndex}`}
+                      >
+                        <div className="macro-tile__topline">
+                          <span>{t(item.badge)}</span>
+                          <b aria-hidden="true">→</b>
+                        </div>
+                        <h3>{t(item.title)}</h3>
+                        <p>{t(item.subtitle)}</p>
+                        <div
+                          className={`macro-significance macro-significance--${item.significance}`}
+                          title={significance.description}
+                        >
+                          <span aria-hidden="true">{significance.stars}</span>
+                          <b>{significance.label}</b>
+                          <span className="sr-only">{significance.stars} {significance.label}: {significance.description}</span>
+                        </div>
+                        <footer>
+                          <span>{sourceForPath(item.href, sourceNetwork)}</span>
+                          <span className="macro-tile__destination">Open dashboard</span>
+                        </footer>
+                      </Link>
+                    )
+                  })}
                 </div>
               </section>
             )

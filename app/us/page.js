@@ -33,6 +33,7 @@ const indicators = [
     items: [
       {
         href: '/us/cpi',
+        significance: 3,
         title: 'CPI & Inflation',
         subtitle: 'Headline / Core / Services ex Shelter',
         badge: 'Monthly',
@@ -40,6 +41,7 @@ const indicators = [
       },
       {
         href: '/us/ppi',
+        significance: 2,
         title: 'PPI & Pipeline Inflation',
         subtitle: 'Headline / Core / Core ex Trade',
         badge: 'Monthly',
@@ -55,6 +57,7 @@ const indicators = [
     items: [
       {
         href: '/us-macro#growth',
+        significance: 3,
         title: 'GDP & Retail Sales',
         subtitle: 'GDP QoQ SAAR / Retail YoY',
         badge: 'Quarterly / Monthly',
@@ -70,6 +73,7 @@ const indicators = [
     items: [
       {
         href: '/us/consumption',
+        significance: 3,
         title: 'PCE & Consumer Pulse',
         subtitle: 'PCE Inflation / Real Spending / Income / Saving',
         badge: 'Monthly',
@@ -85,6 +89,7 @@ const indicators = [
     items: [
       {
         href: '/us/manufacturing',
+        significance: 3,
         title: 'Manufacturing Momentum',
         subtitle: 'NY Empire → Philly Fed → ISM',
         badge: 'Monthly Sequence',
@@ -100,6 +105,7 @@ const indicators = [
     items: [
       {
         href: '/us/employment',
+        significance: 3,
         title: 'US Employment',
         subtitle: 'NFP / Unemployment / AHE',
         badge: 'Monthly',
@@ -107,6 +113,7 @@ const indicators = [
       },
       {
         href: '/us/initial-claims',
+        significance: 2,
         title: 'Initial Jobless Claims',
         subtitle: 'Claims / 4W Avg / Continued Claims',
         badge: 'Weekly',
@@ -114,6 +121,7 @@ const indicators = [
       },
       {
         href: '/us/jolts',
+        significance: 2,
         title: 'JOLTS Labor Market Pulse',
         subtitle: 'Openings / Hires / Quits / Layoffs',
         badge: 'Monthly',
@@ -129,6 +137,7 @@ const indicators = [
     items: [
       {
         href: '/us-macro#fed-policy',
+        significance: 3,
         title: 'Fed Policy',
         subtitle: 'Fed Funds / Taylor Rules / FOMC',
         badge: 'Monthly',

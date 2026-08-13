@@ -44,6 +44,24 @@ const DEFINITIONS = {
         ? `Headline totals auto-update from Japan Customs; country and product detail is a ${data._meta.detailLatest} reference snapshot.`
         : null,
     },
+    {
+      key: 'jp-inbound-tourism',
+      label: 'Inbound Tourism',
+      href: '/inbound-tourism',
+      path: '/api/inbound-tourism',
+      cadence: 'Monthly / Quarterly',
+      maxAge: 100,
+      source: 'JNTO · Japan Tourism Agency',
+      mode: 'HYBRID',
+      extract: data => data?.arrivalSummary?.period ?? null,
+      describe: data => {
+        const sources = data?.meta?.sources || []
+        const fallbackCount = sources.filter(source => !source.live).length
+        return fallbackCount
+          ? `${sources.length - fallbackCount}/${sources.length} official workbooks parsed live; preserved official snapshots cover unavailable files.`
+          : 'Arrivals, spending and accommodation workbooks parsed live from official publishers.'
+      },
+    },
   ],
   US: [
     { key: 'us-cpi', label: 'Consumer Price Index', href: '/us/cpi', path: '/api/us-cpi', cadence: 'Monthly', maxAge: 100, source: 'BLS · FRED', extract: data => fredDate(data?.series?.headline) },

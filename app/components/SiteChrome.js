@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { createPortal } from 'react-dom'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { significanceDefinition, significanceForPath } from '../lib/significance'
 
 const NAV_ITEMS = [
   {
@@ -35,6 +36,7 @@ const SEARCH_ITEMS = [
   { href: '/labour', country: 'JP', label: 'Labor Market', description: 'Employment and unemployment', keywords: 'jobs unemployment' },
   { href: '/job-ratio', country: 'JP', label: 'Job-to-Applicant Ratio', description: 'Labor demand relative to applicants', keywords: 'jobs openings mhlw' },
   { href: '/trade', country: 'JP', label: 'Trade', description: 'Exports, imports and trade balance', keywords: 'external sector flow map' },
+  { href: '/inbound-tourism', country: 'JP', label: 'Inbound Tourism', description: 'Visitor arrivals, spending and accommodation', keywords: 'jnto tourism services exports foreign visitors travel' },
   { href: '/us', country: 'US', label: 'US Macro Workspace', description: 'All US indicators and current pulse', keywords: 'overview home united states' },
   { href: '/us/cpi', country: 'US', label: 'US CPI', description: 'Headline, core and supercore inflation', keywords: 'prices inflation bls' },
   { href: '/us/ppi', country: 'US', label: 'US PPI', description: 'Producer prices and pipeline inflation', keywords: 'prices inflation producer core final demand bls' },
@@ -172,6 +174,8 @@ function ShareControl({ onComplete }) {
 export function SiteHeader() {
   const pathname = usePathname() || '/'
   const [menuOpen, setMenuOpen] = useState(false)
+  const significanceLevel = significanceForPath(pathname)
+  const significance = significanceLevel ? significanceDefinition(significanceLevel) : null
 
   useEffect(() => {
     setMenuOpen(false)
@@ -228,6 +232,16 @@ export function SiteHeader() {
           <span>Workspace · Macro Monitor</span>
         </div>
       </div>
+      {significance ? (
+        <div className={`terminal-significance terminal-significance--${significanceLevel}`}>
+          <div>
+            <span>MACRO SIGNIFICANCE</span>
+            <strong aria-label={`${significance.stars} ${significance.label}`}>{significance.stars} {significance.label}</strong>
+            <small>{significance.description}</small>
+            <Link href="/about#macro-significance">Methodology →</Link>
+          </div>
+        </div>
+      ) : null}
     </header>
   )
 }
