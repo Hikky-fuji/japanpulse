@@ -678,7 +678,7 @@ export default function USMacroDashboard() {
 
       {/* ── Footer ── */}
       <div style={{ marginTop: '32px', paddingTop: '16px', borderTop: '1px solid #eee', fontSize: '11px', color: '#aaa', textAlign: 'center' }}>
-        Data: FRED (Federal Reserve Bank of St. Louis) · Personal use only
+        Data: original publishers via FRED · Verify material decisions against the linked official releases
       </div>
     </main>
   )

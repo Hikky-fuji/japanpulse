@@ -89,8 +89,6 @@ const hpTrend = (values, lambda = 1600) => {
 }
 
 export async function GET() {
-  console.log('⚠️ Remember to add FRED_API_KEY to Vercel Environment Variables')
-
   const apiKey = process.env.FRED_API_KEY
   if (!apiKey) {
     return Response.json({ error: 'FRED_API_KEY not set' })

@@ -3,6 +3,45 @@ import ChartTheme from './components/ChartTheme'
 import { SiteFooter, SiteHeader } from './components/SiteChrome'
 import './globals.css'
 
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': 'https://japanpulse.vercel.app/#website',
+      name: 'JapanPulse',
+      url: 'https://japanpulse.vercel.app/',
+      description: 'Official-source Japan and US macroeconomic dashboards for fast cross-indicator analysis.',
+      inLanguage: ['en', 'ja'],
+    },
+    {
+      '@type': 'DataCatalog',
+      '@id': 'https://japanpulse.vercel.app/#catalog',
+      name: 'JapanPulse Macro Data Workspace',
+      url: 'https://japanpulse.vercel.app/',
+      description: 'A curated catalog of Japan and United States macroeconomic dashboards built from official APIs and published datasets.',
+      dataset: [
+        {
+          '@type': 'Dataset',
+          name: 'Japan macroeconomic indicators',
+          url: 'https://japanpulse.vercel.app/',
+          temporalCoverage: '2021/..',
+          spatialCoverage: 'Japan',
+          creator: { '@type': 'Organization', name: 'JapanPulse' },
+        },
+        {
+          '@type': 'Dataset',
+          name: 'United States macroeconomic indicators',
+          url: 'https://japanpulse.vercel.app/us',
+          temporalCoverage: '2015/..',
+          spatialCoverage: 'United States',
+          creator: { '@type': 'Organization', name: 'JapanPulse' },
+        },
+      ],
+    },
+  ],
+}
+
 export const metadata = {
   metadataBase: new URL('https://japanpulse.vercel.app'),
   title: {
@@ -51,6 +90,11 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body>
+        <script
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData).replace(/</g, '\\u003c') }}
+          id="japanpulse-structured-data"
+          type="application/ld+json"
+        />
         <ChartTheme />
         <SiteHeader />
         <div className="site-content">{children}</div>
