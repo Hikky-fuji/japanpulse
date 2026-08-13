@@ -8,6 +8,19 @@ const DEFINITIONS = {
   JP: [
     { key: 'jp-cpi', label: 'National CPI', href: '/cpi', path: '/api/cpi', cadence: 'Monthly', maxAge: 100, source: 'MIC · e-Stat', extract: data => observationDate(data?.headline) },
     { key: 'jp-ppi', label: 'CGPI / SPPI', href: '/ppi', path: '/api/ppi', cadence: 'Monthly', maxAge: 100, source: 'BOJ', extract: data => observationDate(data?.cgpi) },
+    {
+      key: 'jp-boj-policy',
+      label: 'BOJ Policy Monitor',
+      href: '/boj-policy',
+      path: '/api/boj-policy',
+      cadence: 'Monthly / Quarterly',
+      maxAge: 240,
+      source: 'BOJ research data',
+      extract: data => data?.latest?.coreInflation ?? data?.latest?.activity ?? null,
+      describe: data => data?.meta?.partial
+        ? `Partial official workbook refresh: ${(data.meta.warnings || []).join(' · ')}`
+        : 'Underlying inflation, output gap and labor-market workbooks parsed automatically.',
+    },
     { key: 'jp-gdp', label: 'GDP', href: '/gdp', path: '/api/gdp', cadence: 'Quarterly', maxAge: 240, source: 'Cabinet Office', extract: data => observationDate(data?.gdp_qoq) },
     {
       key: 'jp-iip',
