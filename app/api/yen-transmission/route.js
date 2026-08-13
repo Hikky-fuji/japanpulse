@@ -88,7 +88,10 @@ export async function GET() {
 
     for (const [key, definition] of Object.entries(SERIES)) {
       const match = resultsets[definition.db]?.find(item => item.SERIES_CODE === definition.code)
-      series[key] = parseSeries(match)
+      const parsed = parseSeries(match)
+      series[key] = key === 'callRate' || key === 'usdJpy'
+        ? parsed.filter(item => item.value !== 0)
+        : parsed
     }
 
     if (!series.usdJpy.length || !series.reer.length) {

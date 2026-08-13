@@ -30,6 +30,7 @@ const COLORS = {
 const finite = value => Number.isFinite(value)
 const last = series => Array.isArray(series) && series.length ? series.at(-1) : null
 const clean = series => (series || []).filter(point => finite(point?.value))
+const monthKey = value => String(value ?? '').replace(/\//g, '-').slice(0, 7)
 
 function signed(value, digits = 1, suffix = '') {
   if (!finite(value)) return '—'
@@ -42,18 +43,23 @@ function fixed(value, digits = 1, suffix = '') {
 
 function dateLabel(value, monthly = false) {
   if (!value) return '—'
+  const normalized = String(value).replace(/\//g, '-')
+  const isoDate = /^\d{4}-\d{2}$/.test(normalized) ? `${normalized}-01` : normalized.slice(0, 10)
+  const parsed = new Date(`${isoDate}T12:00:00Z`)
+  if (Number.isNaN(parsed.getTime())) return String(value)
   return new Intl.DateTimeFormat('en-US', {
     month: 'short',
     ...(monthly ? {} : { day: 'numeric' }),
     year: 'numeric',
     timeZone: 'UTC',
-  }).format(new Date(`${value.slice(0, 10)}T12:00:00Z`))
+  }).format(parsed)
 }
 
 function yearAgoValue(series, current) {
   if (!current?.date) return null
-  const target = `${Number(current.date.slice(0, 4)) - 1}${current.date.slice(4, 7)}`
-  return series.find(item => item.date.slice(0, 7) === target)?.value ?? null
+  const currentMonth = monthKey(current.date)
+  const target = `${Number(currentMonth.slice(0, 4)) - 1}${currentMonth.slice(4)}`
+  return series.find(item => monthKey(item.date) === target)?.value ?? null
 }
 
 function yoySeries(series) {
@@ -68,12 +74,12 @@ function yoySeries(series) {
 
 function monthlyLast(series) {
   const months = new Map()
-  for (const item of clean(series)) months.set(item.date.slice(0, 7), item)
+  for (const item of clean(series)) months.set(monthKey(item.date), item)
   return [...months.values()].sort((a, b) => a.date.localeCompare(b.date))
 }
 
 function nearest(series, dates) {
-  const map = new Map(series.map(item => [item.date.slice(0, 7), item.value]))
+  const map = new Map(series.map(item => [monthKey(item.date), item.value]))
   return dates.map(date => map.get(date) ?? null)
 }
 
@@ -186,9 +192,9 @@ export default function YenTransmissionDashboard() {
     const cgpiYoy = yoySeries(bundle.ppi?.cgpi)
     const core = clean(bundle.cpi?.core)
     const dates = [...new Set([
-      ...usdYoy.map(item => item.date.slice(0, 7)),
-      ...importYoy.map(item => item.date.slice(0, 7)),
-      ...core.map(item => item.date.slice(0, 7)),
+      ...usdYoy.map(item => monthKey(item.date)),
+      ...importYoy.map(item => monthKey(item.date)),
+      ...core.map(item => monthKey(item.date)),
     ])].sort().slice(-36)
     const latestImportYoy = last(importYoy)?.value
     const latestCore = last(core)?.value

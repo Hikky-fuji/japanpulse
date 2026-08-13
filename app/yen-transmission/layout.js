@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Yen & External Cost Transmission | JapanPulse',
+  title: { absolute: 'Yen & External Cost Transmission | JapanPulse' },
   description:
     'Japan yen and inflation transmission dashboard covering USD/JPY, effective exchange rates, import prices, CPI and the overnight call rate.',
   alternates: { canonical: '/yen-transmission' },
