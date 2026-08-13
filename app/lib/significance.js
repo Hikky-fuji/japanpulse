@@ -21,6 +21,7 @@ export const SIGNIFICANCE_BY_PATH = {
   '/tokyo-cpi': 2,
   '/ppi': 2,
   '/boj-policy': 3,
+  '/yen-transmission': 3,
   '/gdp': 3,
   '/iip': 2,
   '/tsip': 2,

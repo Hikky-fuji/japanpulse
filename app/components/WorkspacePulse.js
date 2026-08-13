@@ -237,10 +237,13 @@ function japanCards(payload) {
   const hasSource = key => Object.prototype.hasOwnProperty.call(payload, key)
   const sourceLoading = key => !hasSource(key)
   const sourceFailed = key => hasSource(key) && payload[key] === null
-  const { cpi, gdp, iip, consumption, watcher, labour, jobRatio, wages, trade } = payload
+  const { cpi, yen, gdp, iip, consumption, watcher, labour, jobRatio, wages, trade } = payload
   const headline = last(cpi?.headline)
   const core = last(cpi?.core)
   const corecore = last(cpi?.corecore)
+  const usdJpy = yen?.latest?.usdJpy
+  const yenMove = yen?.latest?.changes?.usdJpyThreeMonthPct
+  const reer = yen?.latest?.reer
   const gdpLatest = last(gdp?.gdp_qoq)
   const iipLatest = last(iip?.['鉱工業'])
   const consLatest = last(consumption?.total)
@@ -277,6 +280,22 @@ function japanCards(payload) {
       momentumKind: 'inflation',
       loading: sourceLoading('cpi'),
       unavailable: sourceFailed('cpi') || (hasSource('cpi') && !finite(headline?.value)),
+    }),
+    card({
+      label: 'Yen & External Costs',
+      href: '/yen-transmission',
+      mainLabel: 'USD / JPY',
+      value: fixed(usdJpy?.value, 2),
+      period: usdJpy?.date,
+      toneName: tone(yenMove, true),
+      details: [
+        detail('3-month move', signed(yenMove, 1, '%'), tone(yenMove, true)),
+        detail('Real effective yen', fixed(reer?.value, 1)),
+      ],
+      source: 'BOJ Time-Series API',
+      series: seriesValues(yen?.series?.usdJpy),
+      loading: sourceLoading('yen'),
+      unavailable: sourceFailed('yen') || (hasSource('yen') && !finite(usdJpy?.value)),
     }),
     card({
       label: 'Growth & Production',
@@ -565,7 +584,7 @@ async function fetchJson(path, signal) {
   }
 }
 
-const PULSE_CACHE_VERSION = 3
+const PULSE_CACHE_VERSION = 4
 
 function readPulseCache(countryCode, maxAge) {
   try {
@@ -591,7 +610,7 @@ function writePulseCache(countryCode, payload) {
 }
 
 export default function WorkspacePulse({ countryCode }) {
-  const sourceTotal = countryCode === 'JP' ? 9 : 8
+  const sourceTotal = countryCode === 'JP' ? 10 : 8
   const [cards, setCards] = useState(() => countryCode === 'JP' ? japanCards({}) : usCards({}))
   const [progress, setProgress] = useState({ completed: 0, total: sourceTotal })
   const [cacheMode, setCacheMode] = useState('none')
@@ -603,6 +622,7 @@ export default function WorkspacePulse({ countryCode }) {
       ? {
           paths: {
             cpi: '/api/cpi',
+            yen: '/api/yen-transmission',
             gdp: '/api/gdp',
             iip: '/api/iip',
             consumption: '/api/consumption',
