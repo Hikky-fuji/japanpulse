@@ -157,11 +157,11 @@ function parsePeriod(value) {
   const text = String(value ?? '').normalize('NFKC').trim()
   if (!text) return null
 
-  let match = text.match(/((?:19|20)\d{2})\s*(?:[/.-]?\s*[Qq]|[.-]\s*([1-4])\s*[Qq]|年?\s*第?)\s*([1-4])?\s*(?:四半期)?/)
-  if (match) return `${match[1]}/Q${match[2] || match[3]}`
-
-  match = text.match(/^((?:19|20)\d{2})\.([12])\s*:/)
+  let match = text.match(/^((?:19|20)\d{2})\.([12])\s*:/)
   if (match) return `FY${match[1]}/H${match[2]}`
+
+  match = text.match(/((?:19|20)\d{2})\s*(?:[/.-]?\s*[Qq]\s*([1-4])|[.-]\s*([1-4])\s*[Qq]|年\s*第?\s*([1-4])\s*四半期)/)
+  if (match) return `${match[1]}/Q${match[2] || match[3] || match[4]}`
 
   match = text.match(/((?:19|20)\d{2})\s*(?:年|[-/.])\s*(\d{1,2})\s*月?/) 
   if (match && Number(match[2]) >= 1 && Number(match[2]) <= 12) {
@@ -313,7 +313,6 @@ async function parseWorkbook(buffer, definitions) {
   const XLSX = await import('xlsx')
   const workbook = XLSX.read(buffer, { type: 'array', cellDates: true })
   const candidates = []
-  const previews = []
 
   for (const sheetName of workbook.SheetNames) {
     const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
@@ -322,31 +321,12 @@ async function parseWorkbook(buffer, definitions) {
       defval: null,
       blankrows: false,
     })
-    previews.push({
-      sheet: sheetName,
-      rows: rows.slice(0, 28).map(row => row.slice(0, 14).map(cell => (
-        cell instanceof Date ? cell.toISOString() : cell
-      ))),
-    })
     candidates.push(...collectCandidates(rows, sheetName, 'columns'))
     candidates.push(...collectCandidates(transpose(rows), sheetName, 'rows'))
   }
 
   const resolved = resolveSeries(candidates, definitions)
-  return {
-    ...resolved,
-    sheets: workbook.SheetNames,
-    candidateCount: candidates.length,
-    candidateHeaders: candidates.slice(0, 160).map(candidate => ({
-      sheet: candidate.sheet,
-      orientation: candidate.orientation,
-      header: candidate.header,
-      first: candidate.series[0],
-      last: candidate.series.at(-1),
-      count: candidate.series.length,
-    })),
-    previews,
-  }
+  return { ...resolved, sheets: workbook.SheetNames, candidateCount: candidates.length }
 }
 
 async function fetchWorkbook(url) {
@@ -369,7 +349,7 @@ function latestPeriod(seriesCollection) {
     .at(-1) ?? null
 }
 
-export async function GET(request) {
+export async function GET() {
   const fetchedAt = new Date().toISOString()
   const [coreResult, gapResult] = await Promise.allSettled([
     fetchWorkbook(BOJ_CORE_CPI_URL).then(buffer => parseWorkbook(buffer, CORE_CPI_DEFINITIONS)),
@@ -391,14 +371,13 @@ export async function GET(request) {
     gapResult.status === 'rejected' ? `Output gap: ${gapResult.reason?.message}` : null,
   ].filter(Boolean)
 
-  const debug = request ? new URL(request.url).searchParams.get('debug') === '1' : false
-
   return Response.json({
     coreInflation: core.series,
     activity: gap.series,
     latest: {
       coreInflation: latestPeriod(core.series),
-      activity: latestPeriod(gap.series),
+      activity: gap.series.outputGap?.at(-1)?.date ?? latestPeriod(gap.series),
+      laborMarket: gap.series.tankanEmploymentDI?.at(-1)?.date ?? null,
     },
     meta: {
       fetchedAt,
@@ -409,10 +388,6 @@ export async function GET(request) {
         { label: 'BOJ Indicators for Core CPI', url: BOJ_CORE_CPI_URL, cadence: 'Monthly' },
         { label: 'BOJ Output Gap and Labor Market Indicators', url: BOJ_GAP_URL, cadence: 'Quarterly' },
       ],
-      diagnostics: debug ? {
-        core: { sheets: core.sheets, matches: core.matches, candidateCount: core.candidateCount, candidateHeaders: core.candidateHeaders, previews: core.previews },
-        gap: { sheets: gap.sheets, matches: gap.matches, candidateCount: gap.candidateCount, candidateHeaders: gap.candidateHeaders, previews: gap.previews },
-      } : undefined,
       methodology: 'The analytical chain is informed by a 2023 MUMSS framework; every displayed observation is fetched from current official BOJ workbooks.',
     },
   }, {
