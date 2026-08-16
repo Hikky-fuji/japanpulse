@@ -82,7 +82,7 @@ export const metadata = {
   },
   manifest: '/manifest.json',
   icons: {
-    icon: '/icon.svg',
+    icon: '/icon-v2.svg',
   },
 }
 
