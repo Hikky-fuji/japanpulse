@@ -104,6 +104,19 @@ const DEFINITIONS = {
     },
     { key: 'us-growth', label: 'GDP & Retail Sales', href: '/us-macro#growth', path: '/api/us-macro', cadence: 'Quarterly / Monthly', maxAge: 240, source: 'BEA · Census · FRED', extract: data => observationDate(data?.growth?.realGdpGrowth) },
     { key: 'us-manufacturing', label: 'Manufacturing Surveys', href: '/us/manufacturing', path: '/api/us-manufacturing', cadence: 'Monthly', maxAge: 100, source: 'NY Fed · Philly Fed · ISM', mode: 'MIXED', extract: data => observationDate(data?.ism?.headline) },
+    {
+      key: 'us-sentiment',
+      label: 'Michigan Consumer Sentiment',
+      href: '/us/sentiment',
+      path: '/api/us-sentiment',
+      cadence: 'Monthly · one-month public lag',
+      maxAge: 140,
+      source: 'University of Michigan · FRED',
+      mode: 'AUTO · DELAYED',
+      previewSeriesId: 'UMCSENT',
+      extract: data => fredDate(data?.series?.sentiment),
+      describe: data => data?.availability?.lag || null,
+    },
     { key: 'us-employment', label: 'Employment Situation', href: '/us/employment', path: '/api/us-employment', cadence: 'Monthly', maxAge: 100, source: 'BLS · FRED', extract: data => observationDate(data?.employment?.payems) },
     { key: 'us-claims', label: 'Initial Claims', href: '/us/initial-claims', path: '/api/us-initial-claims', cadence: 'Weekly', maxAge: 21, source: 'ETA · FRED', extract: data => fredDate(data?.series?.initialClaims) },
     { key: 'us-jolts', label: 'JOLTS', href: '/us/jolts', path: '/api/us-jolts', cadence: 'Monthly', maxAge: 110, source: 'BLS · FRED', extract: data => fredDate(data?.series?.openings) },
@@ -150,6 +163,27 @@ async function fetchWithTimeout(url, milliseconds = 30000) {
   }
 }
 
+async function previewFredDate(seriesId) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 30000)
+  try {
+    const response = await fetch(
+      `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${seriesId}`,
+      { cache: 'no-store', signal: controller.signal },
+    )
+    if (!response.ok) throw new Error(`FRED preview probe returned HTTP ${response.status}`)
+    const rows = (await response.text())
+      .trim()
+      .split(/\r?\n/)
+      .slice(1)
+      .map(row => row.split(','))
+      .filter(([date, value]) => date && value && value !== '.')
+    return rows.at(-1)?.[0] ?? null
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 async function inspectSource(origin, definition) {
   const checkedAt = new Date().toISOString()
   try {
@@ -167,6 +201,7 @@ async function inspectSource(origin, definition) {
       ...definition,
       extract: undefined,
       describe: undefined,
+      previewSeriesId: undefined,
       reference: undefined,
       referenceMessage: undefined,
       mode: definition.mode || 'AUTO',
@@ -176,10 +211,30 @@ async function inspectSource(origin, definition) {
       message: detailMessage || fresh.message,
     }
   } catch (error) {
+    if (process.env.VERCEL_ENV === 'preview' && definition.previewSeriesId) {
+      try {
+        const latestPeriod = await previewFredDate(definition.previewSeriesId)
+        const fresh = freshness(latestPeriod, definition.maxAge)
+        return {
+          ...definition,
+          extract: undefined,
+          describe: undefined,
+          previewSeriesId: undefined,
+          mode: definition.mode || 'AUTO',
+          latestPeriod,
+          checkedAt,
+          ...fresh,
+          message: 'Preview verified against the same public FRED series; production monitors the JapanPulse endpoint after merge.',
+        }
+      } catch {
+        // Fall through to the endpoint failure below when the public probe also fails.
+      }
+    }
     return {
       ...definition,
       extract: undefined,
       describe: undefined,
+      previewSeriesId: undefined,
       reference: undefined,
       referenceMessage: undefined,
       mode: definition.mode || 'AUTO',

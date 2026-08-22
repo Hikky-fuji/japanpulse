@@ -13,7 +13,7 @@ const NAV_ITEMS = [
     label: 'Japan',
     match: path => !path.startsWith('/us') && !['/cpi', '/tokyo-cpi', '/ppi'].includes(path),
   },
-  { href: '/us', label: 'United States', match: path => path === '/us' || path === '/us-macro' || path === '/us/rates' },
+  { href: '/us', label: 'United States', match: path => ['/us', '/us-macro', '/us/rates', '/us/manufacturing', '/us/sentiment'].includes(path) },
   { href: '/cpi', label: 'Japan CPI', match: path => path === '/cpi' || path === '/tokyo-cpi' || path === '/ppi' },
   { href: '/us/cpi', label: 'US Prices', match: path => path === '/us/cpi' || path === '/us/ppi' },
   { href: '/us/employment', label: 'US Employment', match: path => ['/us/employment', '/us/initial-claims', '/us/jolts'].includes(path) },
@@ -48,6 +48,7 @@ const SEARCH_ITEMS = [
   { href: '/us/consumption', country: 'US', label: 'PCE, Income & Dining Demand', description: 'PCE inflation, spending, income, saving and real restaurant sales', keywords: 'core pce deflator consumption dining restaurant census bea' },
   { href: '/us/jolts', country: 'US', label: 'JOLTS', description: 'Openings, hires, quits and separations', keywords: 'labor flows vacancies bls' },
   { href: '/us/manufacturing', country: 'US', label: 'Manufacturing Surveys', description: 'Empire, Philly Fed and ISM sequence', keywords: 'ny new york sentiment soft data' },
+  { href: '/us/sentiment', country: 'US', label: 'Consumer Sentiment', description: 'Michigan sentiment and one-year inflation expectations', keywords: 'university michigan confidence survey price beliefs soft data' },
   { href: '/us/rates', country: 'US', label: 'US Rates & Financial Conditions', description: 'Treasury curve, real yields, breakevens and NFCI', keywords: 'bonds yields fixed income fed policy financial markets duration inflation expectations' },
   { href: '/us-macro', country: 'US', label: 'US Growth & Fed Policy', description: 'GDP, fed funds, FOMC and policy rules', keywords: 'fomc rates monetary policy taylor clarida bullard' },
 ]

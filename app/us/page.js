@@ -95,6 +95,14 @@ const indicators = [
         badge: 'Monthly Sequence',
         desc: 'Sequences NY, Philadelphia and ISM surveys to detect shifts in factory momentum.',
       },
+      {
+        href: '/us/sentiment',
+        significance: 3,
+        title: 'Consumer Sentiment',
+        subtitle: 'Michigan / 1Y Inflation Expectations',
+        badge: 'Monthly · FRED Lag',
+        desc: 'Checks household confidence and price beliefs against realized inflation and consumer spending.',
+      },
     ],
   },
   {
