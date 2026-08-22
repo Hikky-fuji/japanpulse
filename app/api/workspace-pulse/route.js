@@ -25,6 +25,10 @@ const SOURCES = {
   },
 }
 
+const SOURCE_TIMEOUTS = {
+  trade: 25000,
+}
+
 async function fetchSource(origin, key, path, timeoutMs = 8500) {
   const controller = new AbortController()
   const timeout = setTimeout(() => controller.abort(), timeoutMs)
@@ -68,7 +72,9 @@ export async function GET(request) {
     ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
     : new URL(request.url).origin
   const entries = Object.entries(SOURCES[country])
-  const results = await Promise.all(entries.map(([key, path]) => fetchSource(origin, key, path)))
+  const results = await Promise.all(entries.map(([key, path]) => (
+    fetchSource(origin, key, path, SOURCE_TIMEOUTS[key] || 8500)
+  )))
   const sources = Object.fromEntries(results.map(result => [result.key, result.payload]))
   const status = Object.fromEntries(results.map(result => [result.key, {
     status: result.status,
