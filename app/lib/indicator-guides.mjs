@@ -77,6 +77,13 @@ export const INDICATOR_GUIDES = {
     'The household survey is volatile and does not cover all forms of consumption.',
     [{ href: '/wages', label: 'Wages' }, { href: '/watcher', label: 'Economy Watchers' }],
   ),
+  '/housing': guide(
+    'Tracks residential construction as a cyclical household-demand and investment signal.',
+    'Read the seasonally adjusted annual rate together with tenure-level year-over-year breadth.',
+    'Broad gains across owner-occupied, rental and built-for-sale starts are stronger than a single volatile segment.',
+    'Monthly starts are noisy and construction activity does not directly measure house prices or completed investment.',
+    [{ href: '/gdp', label: 'GDP' }, { href: '/consumption', label: 'Consumption' }],
+  ),
   '/tankan': guide(
     'The BOJ’s flagship survey of business conditions, investment and inflation expectations.',
     'Read levels, change and the large-small firm gap across manufacturing and services.',
@@ -146,6 +153,20 @@ export const INDICATOR_GUIDES = {
     'Spending that persistently outruns income can be strong now but less sustainable later.',
     'Advance retail estimates are revised and real dining sales are an approximation.',
     [{ href: '/us/cpi', label: 'US CPI' }, { href: '/us/rates', label: 'Rates' }],
+  ),
+  '/us/retail-sales': guide(
+    'Provides a timely hard-data read on household goods spending before the broader PCE release.',
+    'Separate volatile autos and gasoline, then compare nominal momentum with inflation-adjusted sales and category breadth.',
+    'Broad real gains point to resilient demand; nominal growth concentrated in prices or one category is less durable.',
+    'Advance estimates are revised and category detail is released on a different vintage than the headline.',
+    [{ href: '/us/consumption', label: 'PCE & Income' }, { href: '/us/cpi', label: 'US CPI' }],
+  ),
+  '/us/housing': guide(
+    'Connects an interest-rate-sensitive sector to construction, household demand and financial conditions.',
+    'Follow permits, starts and completions through the pipeline, then read sales, inventory, mortgage rates and prices.',
+    'Permits leading starts while sales improve can signal recovery; rising inventory and financing costs indicate pressure.',
+    'Housing series have different frequencies and release dates, so each latest observation must remain separately labeled.',
+    [{ href: '/us/rates', label: 'Rates' }, { href: '/us/retail-sales', label: 'Retail Sales' }],
   ),
   '/us/manufacturing': guide(
     'Sequences early regional surveys into the national ISM manufacturing signal.',

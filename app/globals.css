@@ -852,6 +852,30 @@ button:focus-visible {
   text-transform: uppercase;
 }
 
+.dashboard-freshness__links {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.dashboard-freshness__links > span {
+  color: #828d93;
+  font-size: 8px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.dashboard-freshness__links a {
+  color: #d9e0e3;
+  text-decoration-color: #69747a;
+  text-underline-offset: 3px;
+}
+
+.dashboard-freshness__links a:hover {
+  color: #fff;
+  text-decoration-color: var(--jp-orange);
+}
+
 .dashboard-state {
   display: flex;
   width: min(720px, calc(100% - 24px));
@@ -2414,6 +2438,10 @@ button:focus-visible {
     gap: 10px;
     margin-bottom: 10px;
     font-size: 9px;
+  }
+
+  .dashboard-freshness__links {
+    margin-left: 0;
   }
 
   .dashboard-page > div:first-child:not(.dashboard-freshness),

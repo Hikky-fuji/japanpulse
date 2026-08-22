@@ -21,6 +21,12 @@ export default function AboutPage() {
           for monitoring direction, momentum and cross-indicator context—not for replacing
           the underlying official releases.
         </p>
+        <p>
+          Japanese economic statistics are fragmented across multiple government agencies and
+          can be difficult to navigate, especially for non-Japanese users. JapanPulse consolidates
+          key indicators, standardizes their presentation and makes Japan’s macro data easier to
+          access and interpret while keeping the official source one click away.
+        </p>
       </section>
 
       <section className="about-page__grid">
@@ -81,6 +87,12 @@ export default function AboutPage() {
             signal, not a chain-weighted BEA consumption measure, and the advance sales estimate
             is subject to revision.
           </p>
+          <p>
+            Retail-sales headlines use one common advance-release month, while category breadth
+            retains the latest common month from the revised Monthly Retail Trade Survey. Housing
+            cards retain their individual weekly, monthly or quarterly observation dates rather
+            than presenting different frequencies as if they were a single-period comparison.
+          </p>
         </article>
 
         <article id="macro-significance">
@@ -113,6 +125,15 @@ export default function AboutPage() {
             <a href="https://fred.stlouisfed.org/docs/api/terms_of_use.html" rel="noreferrer" target="_blank">
               FRED API Terms of Use
             </a>.
+          </p>
+        </article>
+
+        <article className="is-wide about-page__notice">
+          <h2>Statistics Dashboard API credit</h2>
+          <p>
+            This service uses the API feature of Statistics Dashboard, but the contents of this
+            service are not guaranteed by the Statistics Bureau of Japan. Japan housing data is
+            sourced from the Ministry of Land, Infrastructure, Transport and Tourism through that API.
           </p>
         </article>
 

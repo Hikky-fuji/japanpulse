@@ -1,7 +1,9 @@
 'use client'
 
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
+import { officialSourcesForPath } from '../lib/official-sources.mjs'
 
 const PERIOD_KEYS = new Set(['date', 'period', 'month', 'quarter', 'observation_date'])
 
@@ -109,12 +111,24 @@ function findLatestFetchTime(data) {
 }
 
 export function DashboardFreshness({ data, source = 'Official source', mode = 'auto' }) {
+  const pathname = usePathname()
   const latestPeriod = useMemo(() => findLatestPeriod(data), [data])
   const fetchedAt = useMemo(() => findLatestFetchTime(data), [data])
+  const officialSources = officialSourcesForPath(pathname)
 
   return (
     <div className="dashboard-freshness" aria-label="Data status">
       <span className="dashboard-freshness__source">{source}</span>
+      {officialSources.length ? (
+        <span className="dashboard-freshness__links">
+          <span>Official</span>
+          {officialSources.map(item => (
+            <a href={item.url} key={item.url} rel="noopener noreferrer" target="_blank">
+              {item.label} ↗
+            </a>
+          ))}
+        </span>
+      ) : null}
       {latestPeriod ? <span>Latest observation · {latestPeriod}</span> : null}
       {fetchedAt ? <span>Retrieved · {fetchedAt}</span> : null}
       <span>{mode === 'reference' ? 'Preserved reference snapshot' : 'Updated automatically'}</span>

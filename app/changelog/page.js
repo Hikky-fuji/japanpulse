@@ -9,6 +9,16 @@ export const metadata = {
 const releases = [
   {
     date: 'August 2026',
+    title: 'Retail, housing and official-source traceability',
+    items: [
+      'Added a dedicated US Retail Demand Monitor with advance sales, real demand and common-month category breadth.',
+      'Added US and Japan housing dashboards covering construction, demand, financing and tenure-level momentum.',
+      'Added page-level links to primary official releases across every indicator dashboard.',
+      'Separated retail sales from the GDP dashboard and expanded navigation, release calendars and data-health coverage.',
+    ],
+  },
+  {
+    date: 'August 2026',
     title: 'Reliability and analytical consistency',
     items: [
       'Added edge-aggregated workspace data with progressive card-level fallback and cached snapshots.',
