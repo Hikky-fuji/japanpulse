@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import { DashboardFreshness } from '../../components/DashboardStatus'
 import { Bar, Line } from 'react-chartjs-2'
 import {
   BarElement,
@@ -379,6 +380,7 @@ export default function InitialClaimsDashboard() {
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
+        <DashboardFreshness data={payload} source="ETA · FRED" />
         <nav className={styles.topbar}>
           <div><Link href="/">JapanPulse</Link> / <Link href="/us">US Macro</Link> / Initial Claims</div>
           <Link href="/us">← US dashboard</Link>

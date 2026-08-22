@@ -420,6 +420,17 @@ function usCards(payload) {
   const realPce = consumption?.series?.realPce?.observations?.filter(item => finite(item.value)) || []
   const realDpi = consumption?.series?.realDisposableIncome?.observations?.filter(item => finite(item.value)) || []
   const saving = last(consumption?.series?.savingRate?.observations?.filter(item => finite(item.value)))
+  const restaurantSales = consumption?.series?.restaurantSales?.observations?.filter(item => finite(item.value)) || []
+  const foodAwayPrices = consumption?.series?.foodAwayCpi?.observations?.filter(item => finite(item.value)) || []
+  const foodAwayByDate = new Map(foodAwayPrices.map(item => [item.date, item.value]))
+  const diningLatest = last(restaurantSales.filter(item => finite(foodAwayByDate.get(item.date))))
+  const diningYearAgoSales = yearAgoValue(restaurantSales, diningLatest)
+  const diningYearAgoPrice = diningLatest
+    ? foodAwayByDate.get(`${Number(diningLatest.date.slice(0, 4)) - 1}${diningLatest.date.slice(4)}`)
+    : null
+  const diningRealYoy = diningLatest && finite(diningYearAgoSales) && finite(diningYearAgoPrice)
+    ? pctChange(diningLatest.value / foodAwayByDate.get(diningLatest.date), diningYearAgoSales / diningYearAgoPrice)
+    : null
   const realPceLatest = last(realPce)
   const realDpiLatest = last(realDpi)
   const realGdp = last(macro?.growth?.realGdpGrowth)
@@ -490,8 +501,9 @@ function usCards(payload) {
       details: [
         detail('Real DPI MoM', signed(pctChange(realDpiLatest?.value, realDpi.at(-2)?.value), 2, '%'), tone(pctChange(realDpiLatest?.value, realDpi.at(-2)?.value))),
         detail('Saving rate', fixed(saving?.value, 1, '%')),
+        detail('Dining real YoY', signed(diningRealYoy, 1, '%'), tone(diningRealYoy)),
       ],
-      source: 'BEA · FRED',
+      source: 'BEA · Census · BLS · FRED',
       series: changeSeries(realPce),
       baseline: 0,
       momentumKind: 'growth',
@@ -596,7 +608,7 @@ async function fetchJson(path, parentSignal, timeoutMs = 12000) {
   }
 }
 
-const PULSE_CACHE_VERSION = 4
+const PULSE_CACHE_VERSION = 5
 
 function readPulseCache(countryCode, maxAge) {
   try {
@@ -626,6 +638,7 @@ export default function WorkspacePulse({ countryCode }) {
   const [cards, setCards] = useState(() => countryCode === 'JP' ? japanCards({}) : usCards({}))
   const [progress, setProgress] = useState({ completed: 0, total: sourceTotal })
   const [cacheMode, setCacheMode] = useState('none')
+  const [deliveryMode, setDeliveryMode] = useState('progressive')
 
   useEffect(() => {
     const controller = new AbortController()
@@ -665,51 +678,84 @@ export default function WorkspacePulse({ countryCode }) {
     const cachedPayload = readPulseCache(countryCode, cacheMaxAge)
     const collected = cachedPayload ? { ...cachedPayload } : {}
     const freshResults = {}
-    let completed = 0
+    const completedKeys = new Set()
+    const inFlightKeys = new Set()
+    let fallbackTimer = null
 
     setCards(config.build({ ...collected }))
     setProgress({ completed: 0, total: sources.length })
     setCacheMode(cachedPayload ? 'refreshing' : 'none')
+    setDeliveryMode('progressive')
 
-    sources.forEach(([key, path]) => {
-      fetchJson(path, controller.signal)
-        .then(value => {
-          if (!active) return
-          freshResults[key] = value
-          if (value !== null || !Object.prototype.hasOwnProperty.call(collected, key)) {
-            collected[key] = value
-          }
-          completed += 1
-          setCards(config.build({ ...collected }))
-          setProgress({ completed, total: sources.length })
-          if (completed === sources.length) {
-            const allFresh = sources.every(([sourceKey]) => freshResults[sourceKey] !== null)
-            if (allFresh) {
-              writePulseCache(countryCode, freshResults)
-              setCards(config.build({ ...freshResults }))
-              setCacheMode('none')
-            } else {
-              setCacheMode(cachedPayload ? 'fallback' : 'none')
-            }
-          }
+    const finalize = () => {
+      if (completedKeys.size !== sources.length) return
+      const allFresh = sources.every(([sourceKey]) => freshResults[sourceKey] !== null)
+      if (allFresh) {
+        writePulseCache(countryCode, freshResults)
+        setCards(config.build({ ...freshResults }))
+        setCacheMode('none')
+      } else {
+        setCacheMode(cachedPayload ? 'fallback' : 'none')
+      }
+    }
+
+    const publish = (key, value) => {
+      if (!active) return
+      if (value === null && freshResults[key]) return
+      freshResults[key] = value
+      if (value !== null || !Object.prototype.hasOwnProperty.call(collected, key)) {
+        collected[key] = value
+      }
+      completedKeys.add(key)
+      setCards(config.build({ ...collected }))
+      setProgress({ completed: completedKeys.size, total: sources.length })
+      finalize()
+    }
+
+    const fetchIndividuals = (requested = sources) => {
+      setDeliveryMode('progressive')
+      requested.forEach(([key, path]) => {
+        if (inFlightKeys.has(key) || freshResults[key]) return
+        inFlightKeys.add(key)
+        fetchJson(path, controller.signal)
+          .then(value => publish(key, value))
+          .catch(error => {
+            if (!active || error.name === 'AbortError') return
+            publish(key, null)
+          })
+          .finally(() => inFlightKeys.delete(key))
+      })
+    }
+
+    fallbackTimer = window.setTimeout(() => {
+      if (!cachedPayload && completedKeys.size === 0) fetchIndividuals()
+    }, 450)
+
+    fetchJson(`/api/workspace-pulse?country=${countryCode}`, controller.signal, 10000)
+      .then(bundle => {
+        if (!active) return
+        window.clearTimeout(fallbackTimer)
+        if (!bundle?.sources) {
+          fetchIndividuals()
+          return
+        }
+
+        setDeliveryMode(bundle.complete ? 'aggregated' : 'progressive')
+        sources.forEach(([key]) => {
+          if (!freshResults[key]) publish(key, bundle.sources[key] ?? null)
         })
-        .catch(error => {
-          if (!active || error.name === 'AbortError') return
-          freshResults[key] = null
-          if (!Object.prototype.hasOwnProperty.call(collected, key)) {
-            collected[key] = null
-          }
-          completed += 1
-          setCards(config.build({ ...collected }))
-          setProgress({ completed, total: sources.length })
-          if (completed === sources.length) {
-            setCacheMode(cachedPayload ? 'fallback' : 'none')
-          }
-        })
-    })
+        const failedSources = sources.filter(([key]) => bundle.sources[key] === null)
+        if (failedSources.length) fetchIndividuals(failedSources)
+      })
+      .catch(error => {
+        if (!active || error.name === 'AbortError') return
+        window.clearTimeout(fallbackTimer)
+        fetchIndividuals()
+      })
 
     return () => {
       active = false
+      window.clearTimeout(fallbackTimer)
       controller.abort()
     }
   }, [countryCode])
@@ -721,7 +767,9 @@ export default function WorkspacePulse({ countryCode }) {
       ? 'Cached snapshot · refresh incomplete'
       : progress.total > 0 && progress.completed < progress.total
         ? `Loading official sources · ${progress.completed}/${progress.total}`
-        : 'Official sources · card-level status'
+        : deliveryMode === 'aggregated'
+          ? 'Official sources · edge-aggregated'
+          : 'Official sources · card-level fallback'
 
   return (
     <section className="workspace-pulse" aria-label={`${countryCode} macro at a glance`}>

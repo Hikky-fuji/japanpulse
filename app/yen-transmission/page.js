@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import { DashboardFreshness } from '../components/DashboardStatus'
 import { Line } from 'react-chartjs-2'
 import {
   CategoryScale,
@@ -234,6 +235,7 @@ export default function YenTransmissionDashboard() {
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
+        <DashboardFreshness data={bundle} source="BOJ Time-Series API" />
         <div className={styles.topbar}>
           <Link href="/">← Japan workspace</Link>
           <span>Bank of Japan / MIC via official APIs</span>

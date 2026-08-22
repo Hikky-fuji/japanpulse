@@ -2,6 +2,8 @@ export const dynamic = 'force-dynamic'
 export const maxDuration = 60
 
 const ENDPOINTS = [
+  '/api/workspace-pulse?country=JP',
+  '/api/workspace-pulse?country=US',
   '/api/data-health?country=JP',
   '/api/data-health?country=US',
   '/api/release-calendar',

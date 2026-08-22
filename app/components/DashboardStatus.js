@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 
 const PERIOD_KEYS = new Set(['date', 'period', 'month', 'quarter', 'observation_date'])
@@ -69,13 +70,53 @@ function findLatestPeriod(data) {
   return latest?.label ?? null
 }
 
+function findLatestFetchTime(data) {
+  let latest = null
+  let visited = 0
+  const stack = [data]
+
+  while (stack.length && visited < 5000) {
+    const value = stack.pop()
+    visited += 1
+    if (!value || typeof value !== 'object') continue
+
+    if (Array.isArray(value)) {
+      for (const item of value) stack.push(item)
+      continue
+    }
+
+    for (const [key, childValue] of Object.entries(value)) {
+      if (typeof childValue === 'string' && ['fetchedAt', 'updatedAt', 'checkedAt', 'generatedAt'].includes(key)) {
+        const timestamp = Date.parse(childValue)
+        if (Number.isFinite(timestamp) && (!latest || timestamp > latest)) latest = timestamp
+      } else if (childValue && typeof childValue === 'object') {
+        stack.push(childValue)
+      }
+    }
+  }
+
+  return latest
+    ? new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        timeZone: 'UTC',
+        timeZoneName: 'short',
+      }).format(new Date(latest))
+    : null
+}
+
 export function DashboardFreshness({ data, source = 'Official source', mode = 'auto' }) {
   const latestPeriod = useMemo(() => findLatestPeriod(data), [data])
+  const fetchedAt = useMemo(() => findLatestFetchTime(data), [data])
 
   return (
     <div className="dashboard-freshness" aria-label="Data status">
       <span className="dashboard-freshness__source">{source}</span>
       {latestPeriod ? <span>Latest observation · {latestPeriod}</span> : null}
+      {fetchedAt ? <span>Retrieved · {fetchedAt}</span> : null}
       <span>{mode === 'reference' ? 'Preserved reference snapshot' : 'Updated automatically'}</span>
     </div>
   )
@@ -84,23 +125,31 @@ export function DashboardFreshness({ data, source = 'Official source', mode = 'a
 export function DashboardState({ type = 'loading', message }) {
   const isError = type === 'error'
   const [isSlow, setIsSlow] = useState(false)
+  const [isDelayed, setIsDelayed] = useState(false)
 
   useEffect(() => {
     if (isError) return undefined
-    const timer = window.setTimeout(() => setIsSlow(true), 8000)
-    return () => window.clearTimeout(timer)
+    const slowTimer = window.setTimeout(() => setIsSlow(true), 8000)
+    const delayedTimer = window.setTimeout(() => setIsDelayed(true), 18000)
+    return () => {
+      window.clearTimeout(slowTimer)
+      window.clearTimeout(delayedTimer)
+    }
   }, [isError])
 
-  const fallbackMessage = isSlow
+  const fallbackMessage = isDelayed
+    ? 'The official source did not complete within the normal window. Other dashboards remain available while this request continues.'
+    : isSlow
     ? 'The official source is taking longer than usual. This page will continue trying.'
     : 'Connecting to the official source…'
 
   return (
-    <main className={`dashboard-state dashboard-state--${type}`} role={isError ? 'alert' : 'status'}>
-      <span className="dashboard-state__mark" aria-hidden="true">{isError ? '!' : '•••'}</span>
+    <main className={`dashboard-state dashboard-state--${isDelayed ? 'delayed' : type}`} role={isError ? 'alert' : 'status'}>
+      <span className="dashboard-state__mark" aria-hidden="true">{isError ? '!' : isDelayed ? '…' : '•••'}</span>
       <div>
-        <strong>{isError ? 'Data unavailable' : 'Loading official data'}</strong>
+        <strong>{isError ? 'Data unavailable' : isDelayed ? 'Official source delayed' : 'Loading official data'}</strong>
         <p>{message || (isError ? 'The source did not return usable data.' : fallbackMessage)}</p>
+        {(isError || isDelayed) ? <Link href="/status">Check feed status →</Link> : null}
       </div>
     </main>
   )

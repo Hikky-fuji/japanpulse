@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import { DashboardFreshness } from '../../components/DashboardStatus'
 import { Line } from 'react-chartjs-2'
 import {
   CategoryScale,
@@ -153,15 +154,24 @@ export default function ConsumptionDashboard() {
     const maps = Object.fromEntries(
       Object.entries(source).map(([key, definition]) => [key, byMonth(definition.observations)]),
     )
+    const requiredKeys = [
+      'headlinePce',
+      'corePce',
+      'realPce',
+      'realDisposableIncome',
+      'realGoods',
+      'realServices',
+      'savingRate',
+    ]
     const commonMonth = [...maps.headlinePce.keys()]
-      .filter(month => Object.values(maps).every(map => map.has(month)))
+      .filter(month => requiredKeys.every(key => maps[key]?.has(month)))
       .sort()
       .at(-1)
     if (!commonMonth) return null
 
     const months = [...maps.headlinePce.keys()].filter(month => month <= commonMonth).sort()
     const currentIndex = months.indexOf(commonMonth)
-    const value = (key, offset = 0) => maps[key].get(months[currentIndex - offset])
+    const value = (key, offset = 0) => maps[key]?.get(months[currentIndex - offset])
     const headlineYoy = change(value('headlinePce'), value('headlinePce', 12))
     const coreYoy = change(value('corePce'), value('corePce', 12))
     const headlineMom = change(value('headlinePce'), value('headlinePce', 1))
@@ -176,6 +186,33 @@ export default function ConsumptionDashboard() {
     const servicesYoy = change(value('realServices'), value('realServices', 12))
     const savingRate = value('savingRate')
     const savingChange = savingRate - value('savingRate', 12)
+
+    const diningMonths = maps.restaurantSales && maps.foodAwayCpi
+      ? [...maps.restaurantSales.keys()]
+          .filter(month => maps.foodAwayCpi.has(month))
+          .sort()
+      : []
+    const diningMonth = diningMonths.at(-1) || null
+    const diningIndex = diningMonth ? diningMonths.length - 1 : -1
+    const diningValue = (key, offset = 0) => maps[key]?.get(diningMonths[diningIndex - offset])
+    const realDiningLevel = offset => {
+      const sales = diningValue('restaurantSales', offset)
+      const prices = diningValue('foodAwayCpi', offset)
+      return valid(sales) && valid(prices) && prices !== 0 ? sales / prices : null
+    }
+    const restaurantSalesMom = change(diningValue('restaurantSales'), diningValue('restaurantSales', 1))
+    const restaurantSalesYoy = change(diningValue('restaurantSales'), diningValue('restaurantSales', 12))
+    const diningPriceYoy = change(diningValue('foodAwayCpi'), diningValue('foodAwayCpi', 12))
+    const realDiningMom = change(realDiningLevel(0), realDiningLevel(1))
+    const realDiningYoy = change(realDiningLevel(0), realDiningLevel(12))
+    const realDining3m = annualizedChange(realDiningLevel(0), realDiningLevel(3), 3)
+    const diningState = !valid(realDiningYoy)
+      ? { label: 'Source unavailable', tone: 'neutralText' }
+      : realDining3m > 2
+        ? { label: 'Dining demand accelerating', tone: 'positiveText' }
+        : realDining3m < 0
+          ? { label: 'Dining demand cooling', tone: 'warningText' }
+          : { label: 'Dining demand steady', tone: 'neutralText' }
 
     const chartMonths = months.slice(-60)
     const labels = chartMonths.map(month => monthLabel(`${month}-01`))
@@ -204,6 +241,22 @@ export default function ConsumptionDashboard() {
         ? { label: 'Income cushion building', tone: 'positiveText' }
         : { label: 'Income and spending aligned', tone: 'neutralText' }
 
+    const diningChartMonths = diningMonths.slice(-60)
+    const diningMonthIndex = new Map(diningMonths.map((month, index) => [month, index]))
+    const diningGrowth = (kind, periods = 12) => diningChartMonths.map(month => {
+      const index = diningMonthIndex.get(month)
+      if (!Number.isInteger(index) || index < periods) return null
+      if (kind === 'real') {
+        const currentSales = maps.restaurantSales.get(month)
+        const currentPrices = maps.foodAwayCpi.get(month)
+        const previousMonth = diningMonths[index - periods]
+        const previousSales = maps.restaurantSales.get(previousMonth)
+        const previousPrices = maps.foodAwayCpi.get(previousMonth)
+        return change(currentSales / currentPrices, previousSales / previousPrices)
+      }
+      return change(maps[kind].get(month), maps[kind].get(diningMonths[index - periods]))
+    })
+
     return {
       commonMonth,
       headlineYoy,
@@ -220,6 +273,14 @@ export default function ConsumptionDashboard() {
       servicesYoy,
       savingRate,
       savingChange,
+      diningMonth,
+      restaurantSalesMom,
+      restaurantSalesYoy,
+      diningPriceYoy,
+      realDiningMom,
+      realDiningYoy,
+      realDining3m,
+      diningState,
       inflationState,
       consumerState,
       labels,
@@ -245,6 +306,14 @@ export default function ConsumptionDashboard() {
           { label: 'Real services YoY', data: yoyData('realServices'), borderColor: COLORS.green, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2 },
         ],
       },
+      diningChart: diningMonth ? {
+        labels: diningChartMonths.map(month => monthLabel(`${month}-01`)),
+        datasets: [
+          { label: 'Nominal restaurant sales YoY', data: diningGrowth('restaurantSales'), borderColor: COLORS.orange, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 1.8 },
+          { label: 'Approx. real restaurant sales YoY', data: diningGrowth('real'), borderColor: COLORS.green, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2.2 },
+          { label: 'Food away from home CPI YoY', data: diningGrowth('foodAwayCpi'), borderColor: COLORS.violet, backgroundColor: 'transparent', borderDash: [5, 4], tension: .25, pointRadius: 0, borderWidth: 1.7 },
+        ],
+      } : null,
     }
   }, [payload])
 
@@ -256,6 +325,7 @@ export default function ConsumptionDashboard() {
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
+        <DashboardFreshness data={payload} source="BEA / Census / BLS · FRED" />
         <nav className={styles.topbar}>
           <Link href="/us">← US Macro Dashboard</Link>
           <span>PRICES + PRIVATE CONSUMPTION / MONTHLY</span>
@@ -275,7 +345,7 @@ export default function ConsumptionDashboard() {
           </div>
         </header>
 
-        <section className={styles.metricGrid}>
+        <section className={styles.metricGridFive}>
           <MetricCard label="Headline PCE" value={pct(model.headlineYoy)} period="YoY" tone="warning" rows={[
             { label: 'MoM', value: signedPct(model.headlineMom, 2) },
             { label: '3M ann.', value: pct(model.headline3m) },
@@ -291,6 +361,10 @@ export default function ConsumptionDashboard() {
           <MetricCard label="Personal Saving Rate" value={pct(model.savingRate)} period="of DPI" rows={[
             { label: 'YoY change', value: `${model.savingChange > 0 ? '+' : ''}${model.savingChange.toFixed(1)} pt` },
             { label: 'Reference', value: monthLabel(`${model.commonMonth}-01`) },
+          ]} />
+          <MetricCard label="Dining Demand" value={signedPct(model.realDiningYoy)} period="approx. real YoY" tone="positive" rows={[
+            { label: '3M ann.', value: signedPct(model.realDining3m) },
+            { label: 'Nominal YoY', value: signedPct(model.restaurantSalesYoy) },
           ]} />
         </section>
 
@@ -343,7 +417,42 @@ export default function ConsumptionDashboard() {
 
         <section className={styles.section}>
           <header className={styles.sectionHeader}>
-            <div><span>03 / MONTHLY SCORECARD</span><h2>Household demand and buffer</h2></div>
+            <div><span>03 / DINING DEMAND</span><h2>Restaurant spending after menu-price inflation</h2></div>
+            <p>Official restaurant sales are divided by the food-away-from-home CPI to approximate real dining demand.</p>
+          </header>
+          {model.diningChart ? (
+            <div className={styles.mainGrid}>
+              <article className={styles.panel}>
+                <div className={styles.panelHeading}>
+                  <div><h3>Dining demand pulse</h3><p>YoY percent · official Census and BLS series</p></div>
+                  <span className={styles.tag}>{model.diningState.label}</span>
+                </div>
+                <div className={styles.chartSmall}><Line data={model.diningChart} options={chartOptions()} /></div>
+              </article>
+              <aside className={styles.analysis}>
+                <div>
+                  <div className={styles.analysisKicker}>SUPPORTING / OFFICIAL</div>
+                  <div className={styles.analysisScore}>
+                    <div><strong className={styles[model.diningState.tone]}>{model.diningState.label}</strong><small>Real-sales proxy · {monthLabel(`${model.diningMonth}-01`)}</small></div>
+                    <b>{signedPct(model.realDiningYoy)}</b>
+                  </div>
+                  <ul>
+                    <li><span>Nominal restaurant sales</span><b>{signedPct(model.restaurantSalesYoy)} YoY</b></li>
+                    <li><span>Menu-price inflation</span><b>{pct(model.diningPriceYoy)} YoY</b></li>
+                    <li><span>Real-demand momentum</span><b className={styles[model.diningState.tone]}>{signedPct(model.realDining3m)} 3M ann.</b></li>
+                    <li><span>Latest monthly impulse</span><b>{signedPct(model.realDiningMom, 2)} MoM</b></li>
+                  </ul>
+                </div>
+              </aside>
+            </div>
+          ) : (
+            <article className={styles.panel}>Dining feeds are temporarily unavailable; the PCE dashboard remains fully usable.</article>
+          )}
+        </section>
+
+        <section className={styles.section}>
+          <header className={styles.sectionHeader}>
+            <div><span>04 / MONTHLY SCORECARD</span><h2>Household demand and buffer</h2></div>
             <p>Every comparison below uses {monthLabel(`${model.commonMonth}-01`)} to avoid mixing release months.</p>
           </header>
           <article className={styles.panel}>
@@ -366,7 +475,11 @@ export default function ConsumptionDashboard() {
           <strong>Methodology.</strong> PCE inflation is calculated from the BEA chain-type price indexes.
           Real spending and income are seasonally adjusted annual rates; MoM changes are calculated from
           the level series, not annualized. All headline comparisons use the latest month available across
-          all seven series. Source: <a href="https://fred.stlouisfed.org/release?rid=54" target="_blank" rel="noreferrer">BEA Personal Income and Outlays via FRED</a>.
+          the seven PCE and income series. The dining proxy divides seasonally adjusted Census restaurant
+          sales by the seasonally adjusted food-away-from-home CPI; it is an approximation, and the advance
+          sales estimate is revised. Sources: <a href="https://fred.stlouisfed.org/release?rid=54" target="_blank" rel="noreferrer">BEA Personal Income and Outlays</a>,{' '}
+          <a href="https://fred.stlouisfed.org/series/RSFSDP" target="_blank" rel="noreferrer">Census restaurant sales</a> and{' '}
+          <a href="https://fred.stlouisfed.org/series/CUSR0000SEFV" target="_blank" rel="noreferrer">BLS food-away-from-home CPI</a> via FRED.
         </footer>
       </div>
     </main>

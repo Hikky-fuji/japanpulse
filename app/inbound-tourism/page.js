@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import { DashboardFreshness } from '../components/DashboardStatus'
 import { Bar, Doughnut } from 'react-chartjs-2'
 import {
   ArcElement,
@@ -276,6 +277,7 @@ export default function InboundTourismPage() {
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
+        <DashboardFreshness data={payload} source="JNTO · Japan Tourism Agency" />
         <div className={styles.topbar}>
           <Link href="/">← Japan workspace</Link>
           <span>TRADE / SERVICES EXPORT CHANNEL</span>
