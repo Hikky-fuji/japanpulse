@@ -572,15 +572,27 @@ function usCards(payload) {
   ]
 }
 
-async function fetchJson(path, signal) {
+async function fetchJson(path, parentSignal, timeoutMs = 12000) {
+  const controller = new AbortController()
+  let timedOut = false
+  const abortFromParent = () => controller.abort()
+  const timeout = window.setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, timeoutMs)
+  parentSignal.addEventListener('abort', abortFromParent, { once: true })
+
   try {
-    const response = await fetch(path, { signal })
+    const response = await fetch(path, { signal: controller.signal })
     if (!response.ok) return null
     const payload = await response.json()
     return payload?.error ? null : payload
   } catch (error) {
-    if (error.name === 'AbortError') throw error
+    if (error.name === 'AbortError' && parentSignal.aborted && !timedOut) throw error
     return null
+  } finally {
+    window.clearTimeout(timeout)
+    parentSignal.removeEventListener('abort', abortFromParent)
   }
 }
 

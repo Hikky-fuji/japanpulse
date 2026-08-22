@@ -35,9 +35,9 @@ const indicators = [
         href: '/us/cpi',
         significance: 3,
         title: 'CPI & Inflation',
-        subtitle: 'Headline / Core / Services ex Shelter',
+        subtitle: 'Headline / Core / Base Effects / Scenario Lab',
         badge: 'Monthly',
-        desc: 'Tracks headline, core and services inflation to assess underlying price pressure.',
+        desc: 'Tracks underlying price pressure and maps 0.2%–0.4% monthly CPI paths into future year-over-year inflation.',
       },
       {
         href: '/us/ppi',

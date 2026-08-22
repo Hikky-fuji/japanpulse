@@ -27,26 +27,33 @@ function preserveOfficialGap(observations) {
     .sort((a, b) => a.date.localeCompare(b.date))
 }
 
-async function fetchSeries(apiKey, definition) {
-  if (!apiKey) {
-    const response = await fetch(
-      `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${definition.id}&cosd=2019-01-01`,
-      { next: { revalidate: 3600 } },
-    )
-    if (!response.ok) {
-      throw new Error(`FRED returned HTTP ${response.status} for ${definition.id}`)
-    }
-    const rows = (await response.text()).trim().split(/\r?\n/).slice(1)
-    return {
-      ...definition,
-      observations: preserveOfficialGap(rows.map(row => {
-        const [date, rawValue] = row.split(',')
-        const value = Number(rawValue)
-        return { date, value: rawValue === '.' || !Number.isFinite(value) ? null : value }
-      })),
-    }
+async function fetchWithTimeout(url, options = {}, milliseconds = 15000) {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), milliseconds)
+  try {
+    return await fetch(url, { ...options, signal: controller.signal })
+  } finally {
+    clearTimeout(timeout)
   }
+}
 
+async function fetchCsvSeries(definition) {
+  const response = await fetchWithTimeout(
+    `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${definition.id}&cosd=2019-01-01`,
+    { next: { revalidate: 3600 } },
+  )
+  if (!response.ok) {
+    throw new Error(`FRED CSV returned HTTP ${response.status} for ${definition.id}`)
+  }
+  const rows = (await response.text()).trim().split(/\r?\n/).slice(1)
+  return preserveOfficialGap(rows.map(row => {
+    const [date, rawValue] = row.split(',')
+    const value = Number(rawValue)
+    return { date, value: rawValue === '.' || !Number.isFinite(value) ? null : value }
+  }))
+}
+
+async function fetchApiSeries(apiKey, definition) {
   const params = new URLSearchParams({
     series_id: definition.id,
     api_key: apiKey,
@@ -55,7 +62,7 @@ async function fetchSeries(apiKey, definition) {
     sort_order: 'asc',
   })
 
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `https://api.stlouisfed.org/fred/series/observations?${params}`,
     { next: { revalidate: 3600 } },
   )
@@ -69,12 +76,38 @@ async function fetchSeries(apiKey, definition) {
     throw new Error(`${definition.id}: ${payload.error_message}`)
   }
 
+  return preserveOfficialGap((payload.observations || []).map(observation => {
+    const value = Number(observation.value)
+    return {
+      date: observation.date,
+      value: observation.value === '.' || !Number.isFinite(value) ? null : value,
+    }
+  }))
+}
+
+async function fetchSeries(apiKey, definition) {
+  if (apiKey) {
+    try {
+      return {
+        ...definition,
+        delivery: 'FRED API',
+        observations: await fetchApiSeries(apiKey, definition),
+      }
+    } catch (apiError) {
+      const observations = await fetchCsvSeries(definition)
+      return {
+        ...definition,
+        delivery: 'FRED CSV fallback',
+        warning: apiError.name === 'AbortError' ? 'FRED API timed out' : apiError.message,
+        observations,
+      }
+    }
+  }
+
   return {
     ...definition,
-    observations: preserveOfficialGap((payload.observations || []).map(observation => ({
-      date: observation.date,
-      value: observation.value === '.' ? null : Number(observation.value),
-    }))),
+    delivery: 'FRED CSV',
+    observations: await fetchCsvSeries(definition),
   }
 }
 
@@ -82,12 +115,39 @@ export async function GET() {
   const apiKey = process.env.FRED_API_KEY
 
   try {
-    const entries = await Promise.all(
-      Object.entries(SERIES).map(async ([key, definition]) => [
-        key,
-        await fetchSeries(apiKey, definition),
-      ]),
+    const definitions = Object.entries(SERIES)
+    const settled = await Promise.allSettled(
+      definitions.map(async ([key, definition]) => [key, await fetchSeries(apiKey, definition)]),
     )
+    const incompleteSeries = []
+    const warnings = []
+    const entries = settled.map((result, index) => {
+      const [key, definition] = definitions[index]
+      if (result.status === 'fulfilled') {
+        const [, series] = result.value
+        if (series.warning) warnings.push(`${definition.id}: ${series.warning}`)
+        if (!series.observations.some(observation => Number.isFinite(observation.value))) {
+          incompleteSeries.push(key)
+          warnings.push(`${definition.id}: no usable observations returned`)
+        }
+        return result.value
+      }
+
+      incompleteSeries.push(key)
+      warnings.push(`${definition.id}: ${result.reason?.message || 'Official feed unavailable'}`)
+      return [key, {
+        ...definition,
+        delivery: 'Unavailable',
+        observations: [],
+      }]
+    })
+    const series = Object.fromEntries(entries)
+
+    for (const required of ['headline', 'core']) {
+      if (!series[required]?.observations?.some(observation => Number.isFinite(observation.value))) {
+        throw new Error(`Required ${required} CPI series is unavailable`)
+      }
+    }
 
     return Response.json({
       source: 'Federal Reserve Bank of St. Louis (FRED); underlying CPI data from BLS',
@@ -107,7 +167,17 @@ export async function GET() {
         coreGoods: 0.19176,
         coreServices: 0.60744,
       },
-      series: Object.fromEntries(entries),
+      sourceStatus: {
+        complete: incompleteSeries.length === 0,
+        incompleteSeries,
+        warnings,
+        deliveryModes: [...new Set(entries.map(([, item]) => item.delivery))],
+      },
+      series,
+    }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+      },
     })
   } catch (error) {
     console.error('[US CPI]', error)
