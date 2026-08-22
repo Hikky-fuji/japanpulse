@@ -14,6 +14,9 @@ import {
   PointElement,
   Tooltip,
 } from 'chart.js'
+import { DashboardState } from '../../components/DashboardStatus'
+import { addMonths } from '../../lib/us-cpi-scenarios.mjs'
+import CpiScenarioLab from './CpiScenarioLab'
 import styles from './page.module.css'
 
 ChartJS.register(
@@ -71,24 +74,28 @@ function metrics(series) {
   if (latestIndex < 0) return {}
 
   const latest = observations[latestIndex]
-  const previous = observations[latestIndex - 1]
-  const yearAgo = observations[latestIndex - 12]
-  const threeMonthsAgo = observations[latestIndex - 3]
+  const values = pointMap(series)
+  const previousDate = addMonths(latest.date, -1)
+  const yearAgoDate = addMonths(latest.date, -12)
+  const threeMonthsAgoDate = addMonths(latest.date, -3)
+  const previous = values.get(previousDate)
+  const yearAgo = values.get(yearAgoDate)
+  const threeMonthsAgo = values.get(threeMonthsAgoDate)
 
-  const mom = valid(previous?.value)
-    ? (latest.value / previous.value - 1) * 100
+  const mom = valid(previous)
+    ? (latest.value / previous - 1) * 100
     : null
-  const yoy = valid(yearAgo?.value)
-    ? (latest.value / yearAgo.value - 1) * 100
+  const yoy = valid(yearAgo)
+    ? (latest.value / yearAgo - 1) * 100
     : null
-  const annualized3m = valid(threeMonthsAgo?.value)
-    ? ((latest.value / threeMonthsAgo.value) ** 4 - 1) * 100
+  const annualized3m = valid(threeMonthsAgo)
+    ? ((latest.value / threeMonthsAgo) ** 4 - 1) * 100
     : null
 
   let previousYoy = null
-  const previousYearAgo = observations[latestIndex - 13]
-  if (valid(previous?.value) && valid(previousYearAgo?.value)) {
-    previousYoy = (previous.value / previousYearAgo.value - 1) * 100
+  const previousYearAgo = values.get(addMonths(previousDate, -12))
+  if (valid(previous) && valid(previousYearAgo)) {
+    previousYoy = (previous / previousYearAgo - 1) * 100
   }
 
   return {
@@ -252,27 +259,34 @@ export default function USCpiDashboard() {
 
   if (error) {
     return (
-      <main className={styles.page}>
-        <div className={styles.state}>
-          <div className={styles.stateCard}>
-            <h1>CPI data is temporarily unavailable</h1>
-            <p>{error} Check that FRED_API_KEY is configured in the deployment environment.</p>
-          </div>
-        </div>
-      </main>
+      <div className={styles.page}>
+        <DashboardState type="error" message={`${error} The page will recover automatically when the official feed is available.`} />
+      </div>
     )
   }
 
   if (!model) {
     return (
-      <main className={styles.page}>
-        <div className={styles.state}><div className={styles.stateCard}><h1>Loading US CPI…</h1><p>Fetching the latest seasonally adjusted series from FRED.</p></div></div>
-      </main>
+      <div className={styles.page}>
+        <DashboardState message="Fetching the latest seasonally adjusted CPI indices from FRED." />
+      </div>
     )
   }
 
   const latestMonth = monthLabel(model.headlineStats.date, true)
-  const cooling = model.headlineStats.yoyChange < 0
+  const disinflating = model.headlineStats.yoy >= 0 && model.headlineStats.yoyChange < -0.05
+  const inflationDirection = model.headlineStats.yoy < 0
+    ? 'in deflation'
+    : disinflating
+      ? 'disinflating'
+      : model.headlineStats.yoyChange > 0.05
+        ? 'accelerating'
+        : 'broadly stable'
+  const directionClass = disinflating
+    ? styles.cool
+    : model.headlineStats.yoyChange > 0.05
+      ? styles.hot
+      : ''
 
   return (
     <main className={styles.page}>
@@ -295,8 +309,15 @@ export default function USCpiDashboard() {
             <span><i className={styles.statusDot} />Latest observation: {latestMonth}</span>
             <span>Monthly · Seasonally adjusted</span>
             <span>Updated {new Date(payload.fetchedAt).toLocaleString('en-US')}</span>
+            {payload.sourceStatus?.incompleteSeries?.length ? <span>Partial category coverage</span> : <span>Official feed complete</span>}
           </div>
         </header>
+
+        <nav className={styles.sectionNav} aria-label="CPI analysis sections">
+          <a href="#inflation-pulse">Inflation pulse</a>
+          <a href="#scenario-lab">Scenario lab</a>
+          <a href="#composition">Composition</a>
+        </nav>
 
         <section className={styles.kpiGrid} aria-label="Latest CPI readings">
           <KpiCard label="Headline CPI" stats={model.headlineStats} />
@@ -304,7 +325,7 @@ export default function USCpiDashboard() {
           <KpiCard label="Services ex Shelter" stats={model.servicesStats} note="CPI supercore proxy; includes energy services" />
         </section>
 
-        <section className={styles.section}>
+        <section className={styles.section} id="inflation-pulse">
           <div className={styles.sectionHeader}>
             <div><div className={styles.sectionKicker}>Inflation pulse</div><h2>Direction and persistence</h2></div>
             <p>Year-over-year rates preserve the official October 2025 gap. The 2% line is a policy reference, not a CPI target.</p>
@@ -337,8 +358,8 @@ export default function USCpiDashboard() {
               <h3>Latest read</h3>
               <ul className={styles.insightList}>
                 <li>
-                  <strong className={cooling ? styles.cool : styles.hot}>
-                    Headline inflation is {cooling ? 'cooling' : 'accelerating'}
+                  <strong className={directionClass}>
+                    Headline inflation is {inflationDirection}
                   </strong>
                   <span>{signed(model.headlineStats.yoyChange, 1, 'pp')} versus the prior month on a year-over-year basis.</span>
                 </li>
@@ -369,7 +390,9 @@ export default function USCpiDashboard() {
           </div>
         </section>
 
-        <section className={styles.section}>
+        <CpiScenarioLab series={payload.series} />
+
+        <section className={styles.section} id="composition">
           <div className={styles.sectionHeader}>
             <div><div className={styles.sectionKicker}>Composition</div><h2>What is driving inflation?</h2></div>
             <p>Approximate contribution using December 2025 CPI-U relative-importance weights.</p>

@@ -64,6 +64,12 @@ export default function AboutPage() {
             higher BOJ effective exchange-rate indices (yen appreciation). Co-movement with
             import or consumer prices is descriptive and is not presented as a causal estimate.
           </p>
+          <p>
+            CPI scenario paths compound the selected constant monthly rate from the latest
+            seasonally adjusted official index and compare each projected level with its actual
+            year-ago index. They are conditional arithmetic paths—not forecasts—and missing
+            official comparison months are not interpolated.
+          </p>
         </article>
 
         <article id="macro-significance">
@@ -83,6 +89,7 @@ export default function AboutPage() {
             <li>Official data can be revised after initial publication.</li>
             <li>Some source files do not expose stable API identifiers and are labeled as reference snapshots.</li>
             <li>Series can have different release lags, base years and seasonal-adjustment methods.</li>
+            <li>Mechanical scenarios do not incorporate energy shocks, policy reactions or changing category weights.</li>
           </ul>
         </article>
 

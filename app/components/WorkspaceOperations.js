@@ -21,11 +21,38 @@ function daysUntil(value) {
   return Math.ceil((target.getTime() - today.getTime()) / 86400000)
 }
 
+async function fetchOperationsJson(path, parentSignal, timeoutMs = 15000) {
+  const controller = new AbortController()
+  let timedOut = false
+  const abortFromParent = () => controller.abort()
+  const timeout = window.setTimeout(() => {
+    timedOut = true
+    controller.abort()
+  }, timeoutMs)
+  parentSignal.addEventListener('abort', abortFromParent, { once: true })
+
+  try {
+    const response = await fetch(path, { signal: controller.signal })
+    if (!response.ok) return null
+    const payload = await response.json()
+    return payload?.error ? null : payload
+  } catch (error) {
+    if (error.name === 'AbortError' && parentSignal.aborted && !timedOut) throw error
+    return null
+  } finally {
+    window.clearTimeout(timeout)
+    parentSignal.removeEventListener('abort', abortFromParent)
+  }
+}
+
 function StatusBadge({ status }) {
   return <b className={`operations-status is-${status}`}>{status.toUpperCase()}</b>
 }
 
 function HealthSummary({ health }) {
+  if (health?.unavailable) {
+    return <div className="operations-loading">Feed check timed out. Indicator pages remain available and will retry on the next visit.</div>
+  }
   if (!health) {
     return <div className="operations-loading">Checking official data feeds…</div>
   }
@@ -86,21 +113,22 @@ export default function WorkspaceOperations({ countryCode, expanded = false }) {
     let active = true
     const requestCountries = countryCode === 'ALL' ? ['JP', 'US'] : [countryCode]
 
-    fetch('/api/release-calendar', { signal: controller.signal })
-      .then(response => response.ok ? response.json() : null)
+    fetchOperationsJson('/api/release-calendar', controller.signal)
       .then(payload => {
-        if (active && payload && !payload.error) setCalendar(payload)
+        if (active) setCalendar(payload && !payload.error ? payload : { events: [], unavailable: true })
       })
       .catch(error => {
         if (error.name !== 'AbortError') console.error('[Release calendar]', error)
       })
 
     requestCountries.forEach(country => {
-      fetch(`/api/data-health?country=${country}`, { signal: controller.signal })
-        .then(response => response.ok ? response.json() : null)
+      fetchOperationsJson(`/api/data-health?country=${country}`, controller.signal)
         .then(payload => {
-          if (!active || !payload || payload.error) return
-          setHealthByCountry(current => ({ ...current, [country]: payload }))
+          if (!active) return
+          setHealthByCountry(current => ({
+            ...current,
+            [country]: payload && !payload.error ? payload : { unavailable: true },
+          }))
         })
         .catch(error => {
           if (error.name !== 'AbortError') console.error(`[${country} data health]`, error)
@@ -151,10 +179,10 @@ export default function WorkspaceOperations({ countryCode, expanded = false }) {
               <article key={country}>
                 <header>
                   <div><span>{country}</span><h2>{country === 'JP' ? 'Japan data feeds' : 'United States data feeds'}</h2></div>
-                  {health ? <small>Checked {new Date(health.checkedAt).toLocaleTimeString()}</small> : null}
+                  {health?.checkedAt ? <small>Checked {new Date(health.checkedAt).toLocaleTimeString()}</small> : null}
                 </header>
                 <HealthSummary health={health} />
-                {health ? (
+                {health?.items ? (
                   <div className="operations-health__table">
                     {health.items.map(item => (
                       <Link href={item.href} key={item.key}>
@@ -235,7 +263,10 @@ export default function WorkspaceOperations({ countryCode, expanded = false }) {
               Reset filters
             </button>
           </div>
-          <ReleaseRows events={filteredEvents} emptyMessage="No scheduled releases match these filters." />
+          <ReleaseRows
+            events={filteredEvents}
+            emptyMessage={calendar?.unavailable ? 'Release schedule is temporarily unavailable.' : 'No scheduled releases match these filters.'}
+          />
         </section>
       </div>
     )
@@ -264,7 +295,11 @@ export default function WorkspaceOperations({ countryCode, expanded = false }) {
             <span>NEXT RELEASES</span>
             <b>OFFICIAL · 6H</b>
           </div>
-          <ReleaseRows events={events} limit={3} />
+          <ReleaseRows
+            events={events}
+            limit={3}
+            emptyMessage={calendar?.unavailable ? 'Release schedule is temporarily unavailable.' : undefined}
+          />
         </article>
       </div>
     </section>
