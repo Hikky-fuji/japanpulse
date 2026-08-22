@@ -50,7 +50,7 @@ const indicators = [
     ],
   },
   {
-    group: 'Economic Growth',
+    group: 'Growth & Business Activity',
     color: '#27AE60',
     bg: '#F0FAF4',
     border: '#5DBF80',
@@ -66,10 +66,10 @@ const indicators = [
     ],
   },
   {
-    group: 'Private Consumption',
-    color: '#16A085',
-    bg: '#F0FAF8',
-    border: '#50C4A8',
+    group: 'Households & Housing',
+    color: '#9B59B6',
+    bg: '#FAF0FF',
+    border: '#C080E0',
     items: [
       {
         href: '/us/consumption',
@@ -87,14 +87,6 @@ const indicators = [
         badge: 'Monthly',
         desc: 'Provides a timely hard-data read on consumer demand while separating autos, gasoline, prices and category breadth.',
       },
-    ],
-  },
-  {
-    group: 'Housing & Real Estate',
-    color: '#42A9BC',
-    bg: '#F0FAFC',
-    border: '#70C2D0',
-    items: [
       {
         href: '/us/housing',
         significance: 2,
@@ -154,7 +146,7 @@ const indicators = [
     ],
   },
   {
-    group: 'Monetary Policy',
+    group: 'Policy & Financial Conditions',
     color: '#7C3AED',
     bg: '#F5F3FF',
     border: '#A78BFA',
@@ -167,14 +159,6 @@ const indicators = [
         badge: 'Monthly',
         desc: 'Compares the policy rate with rule-based benchmarks and the FOMC calendar.',
       },
-    ],
-  },
-  {
-    group: 'Financial Conditions',
-    color: '#42A9BC',
-    bg: '#F0FAFC',
-    border: '#70C2D0',
-    items: [
       {
         href: '/us/rates',
         significance: 3,

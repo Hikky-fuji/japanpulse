@@ -133,3 +133,21 @@ test('retail and housing dashboards preserve official definitions and comparison
   assert.match(jpHousingApi, /contents of this service are not guaranteed/)
   assert.match(retailPage, /latest common MRTS month/i)
 })
+
+test('Japan and US navigators share a compact macro taxonomy and ordering', () => {
+  const japanGroups = [...read('app/page.js').matchAll(/group:\s*\{\s*en:\s*'([^']+)'/g)]
+    .map(match => match[1])
+  const usGroups = [...read('app/us/page.js').matchAll(/group:\s*'([^']+)'/g)]
+    .map(match => match[1])
+  const commonGroups = [
+    'Prices',
+    'Growth & Business Activity',
+    'Households & Housing',
+    'Surveys & Sentiment',
+    'Employment & Wages',
+    'Policy & Financial Conditions',
+  ]
+
+  assert.deepEqual(usGroups, commonGroups)
+  assert.deepEqual(japanGroups, [...commonGroups, 'External Sector'])
+})
