@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import test from 'node:test'
 
 import { INDICATOR_GUIDES } from '../app/lib/indicator-guides.mjs'
+import { OFFICIAL_SOURCES } from '../app/lib/official-sources.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const appRoot = join(root, 'app')
@@ -61,6 +62,17 @@ test('guided indicator routes publish titles, descriptions and canonical URLs', 
   }
 })
 
+test('every guided indicator links to a concise set of primary official sources', () => {
+  assert.deepEqual(Object.keys(OFFICIAL_SOURCES).sort(), Object.keys(INDICATOR_GUIDES).sort())
+  for (const [pathname, sources] of Object.entries(OFFICIAL_SOURCES)) {
+    assert.ok(sources.length >= 1 && sources.length <= 2, `${pathname} should have one or two official links`)
+    for (const source of sources) {
+      assert.ok(source.label.length >= 5, `${pathname} has an incomplete official-source label`)
+      assert.match(source.url, /^https:\/\//, `${pathname} official source must use HTTPS`)
+    }
+  }
+})
+
 test('static internal links resolve to an App Router page', () => {
   const broken = []
   const files = walk(appRoot).filter(path => path.endsWith('.js') && !path.includes(`${join('app', 'api')}/`))
@@ -103,4 +115,21 @@ test('public-quality routes and official dining series remain registered', () =>
   assert.match(consumptionApi, /id:\s*'RSFSDP'/)
   assert.match(consumptionApi, /id:\s*'CUSR0000SEFV'/)
   assert.match(footer, /href="\/changelog"/)
+})
+
+test('retail and housing dashboards preserve official definitions and comparison discipline', () => {
+  const retailApi = read('app/api/us-retail-sales/route.js')
+  const usHousingApi = read('app/api/us-housing/route.js')
+  const jpHousingApi = read('app/api/housing/route.js')
+  const retailPage = read('app/us/retail-sales/page.js')
+
+  for (const seriesId of ['RSAFS', 'RSFSXMV', 'MARTSSM44W72USS', 'RRSFS']) {
+    assert.ok(retailApi.includes(`id: '${seriesId}'`), `retail API is missing ${seriesId}`)
+  }
+  for (const seriesId of ['HOUST', 'PERMIT', 'HSN1F', 'MORTGAGE30US', 'USSTHPI']) {
+    assert.ok(usHousingApi.includes(`id: '${seriesId}'`), `US housing API is missing ${seriesId}`)
+  }
+  assert.match(jpHousingApi, /0802010103000010001/)
+  assert.match(jpHousingApi, /contents of this service are not guaranteed/)
+  assert.match(retailPage, /latest common MRTS month/i)
 })

@@ -5,7 +5,7 @@ export const metadata = {
     absolute: 'Japan Macro Dashboard | JapanPulse',
   },
   description:
-    'Japan macro dashboard covering inflation, GDP, production, consumption, surveys, employment, wages and trade from official sources.',
+    'Japan macro dashboard covering inflation, GDP, production, housing, consumption, surveys, employment, wages and trade from official sources.',
   alternates: {
     canonical: '/',
   },
@@ -128,6 +128,23 @@ const indicators = [
         badge:    { en: 'Monthly',                         ja: '月次' },
         desc:     { en: 'Provides a 6–9 month lead on private capital-expenditure momentum.',
                     ja: '民間設備投資のモメンタムをGDPに6〜9か月先行して確認。' },
+      },
+    ],
+  },
+  {
+    group: { en: 'Housing & Real Estate', ja: '住宅・不動産' },
+    color: '#42A9BC',
+    bg: '#F0FAFC',
+    border: '#70C2D0',
+    items: [
+      {
+        href: '/housing',
+        significance: 2,
+        title:    { en: 'Housing Starts Monitor', ja: '住宅着工モニター' },
+        subtitle: { en: 'Starts / Owner / Rental / Built for Sale', ja: '着工 / 持家 / 貸家 / 分譲' },
+        badge:    { en: 'Monthly', ja: '月次' },
+        desc:     { en: 'Tracks the housing construction cycle and breadth across major tenure categories.',
+                    ja: '住宅着工の循環と、持家・貸家・分譲住宅の広がりを確認。' },
       },
     ],
   },

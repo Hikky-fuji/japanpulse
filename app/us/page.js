@@ -5,13 +5,13 @@ export const metadata = {
     absolute: 'US Macro Dashboard | JapanPulse',
   },
   description:
-    'US macro dashboard covering CPI, PPI, GDP, consumption, surveys, employment, Fed policy, rates and financial conditions.',
+    'US macro dashboard covering prices, GDP, retail demand, housing, surveys, employment, Fed policy and financial conditions.',
   alternates: {
     canonical: '/us',
   },
   openGraph: {
     title: 'US Macro Dashboard | JapanPulse',
-    description: 'Track US inflation, growth, consumption, surveys, labor, monetary policy and financial conditions from official sources.',
+    description: 'Track US inflation, growth, retail demand, housing, labor, monetary policy and financial conditions from official sources.',
     url: '/us',
     images: [
       {
@@ -58,10 +58,10 @@ const indicators = [
       {
         href: '/us-macro#growth',
         significance: 3,
-        title: 'GDP & Retail Sales',
-        subtitle: 'GDP QoQ SAAR / Retail YoY',
-        badge: 'Quarterly / Monthly',
-        desc: 'Combines broad economic growth with timely consumer-demand momentum.',
+        title: 'GDP & Growth',
+        subtitle: 'Real GDP / Demand Contributions',
+        badge: 'Quarterly',
+        desc: 'Tracks broad economic growth and the demand components driving each quarter.',
       },
     ],
   },
@@ -78,6 +78,30 @@ const indicators = [
         subtitle: 'PCE / Real Spending / Income / Dining Demand',
         badge: 'Monthly',
         desc: 'Tracks the Fed’s preferred inflation gauge alongside real spending, income, saving and price-adjusted restaurant sales.',
+      },
+      {
+        href: '/us/retail-sales',
+        significance: 3,
+        title: 'Retail Demand Monitor',
+        subtitle: 'Advance Sales / Real Demand / Category Breadth',
+        badge: 'Monthly',
+        desc: 'Provides a timely hard-data read on consumer demand while separating autos, gasoline, prices and category breadth.',
+      },
+    ],
+  },
+  {
+    group: 'Housing & Real Estate',
+    color: '#42A9BC',
+    bg: '#F0FAFC',
+    border: '#70C2D0',
+    items: [
+      {
+        href: '/us/housing',
+        significance: 2,
+        title: 'Housing Cycle Monitor',
+        subtitle: 'Starts / Sales / Mortgage Rates / House Prices',
+        badge: 'Weekly / Monthly / Quarterly',
+        desc: 'Links residential construction and demand with financing pressure, inventory and house-price momentum.',
       },
     ],
   },
@@ -169,7 +193,7 @@ export default function USHomePage() {
       country="United States"
       countryCode="US"
       title="US Macro Dashboard"
-      description="A focused view of US inflation, growth, consumption, surveys, labor, monetary policy and financial conditions from official sources."
+      description="A focused view of US inflation, growth, consumption, housing, surveys, labor, monetary policy and financial conditions from official sources."
       indicators={indicators}
       sourceNetwork="FRED · BLS · BEA"
     />

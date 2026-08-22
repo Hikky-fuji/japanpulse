@@ -7,7 +7,9 @@ const FRED_RELEASES = [
   { releaseId: 192, label: 'JOLTS', href: '/us/jolts', category: 'Labor' },
   { releaseId: 54, label: 'PCE & Personal Income', href: '/us/consumption', category: 'Consumption' },
   { releaseId: 53, label: 'Gross Domestic Product', href: '/us-macro#growth', category: 'Growth' },
-  { releaseId: 9, label: 'Retail Sales', href: '/us-macro#growth', category: 'Consumption' },
+  { releaseId: 9, label: 'Retail Sales', href: '/us/retail-sales', category: 'Consumption' },
+  { releaseId: 27, label: 'Housing Starts & Permits', href: '/us/housing', category: 'Housing' },
+  { releaseId: 97, label: 'New Home Sales', href: '/us/housing', category: 'Housing' },
 ]
 
 const JAPAN_SOURCES = {

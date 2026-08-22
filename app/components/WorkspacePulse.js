@@ -237,7 +237,7 @@ function japanCards(payload) {
   const hasSource = key => Object.prototype.hasOwnProperty.call(payload, key)
   const sourceLoading = key => !hasSource(key)
   const sourceFailed = key => hasSource(key) && payload[key] === null
-  const { cpi, yen, gdp, iip, consumption, watcher, labour, jobRatio, wages, trade } = payload
+  const { cpi, yen, gdp, iip, consumption, housing, watcher, labour, jobRatio, wages, trade } = payload
   const headline = last(cpi?.headline)
   const core = last(cpi?.core)
   const corecore = last(cpi?.corecore)
@@ -249,6 +249,10 @@ function japanCards(payload) {
   const consLatest = last(consumption?.total)
   const basicLatest = last(consumption?.basic)
   const discLatest = last(consumption?.discretionary)
+  const housingStarts = housing?.series?.startsSaar?.observations?.filter(item => finite(item.value)) || []
+  const housingLatest = last(housingStarts)
+  const housingTotalYoy = last(housing?.series?.totalYoy?.observations?.filter(item => finite(item.value)))
+  const housingRentalYoy = last(housing?.series?.rentedYoy?.observations?.filter(item => finite(item.value)))
   const watcherCurrent = last(watcher?.current_all)
   const watcherOutlook = last(watcher?.outlook_all)
   const labourLatest = last(labour?.data)
@@ -334,6 +338,24 @@ function japanCards(payload) {
       unavailable: sourceFailed('consumption') || (hasSource('consumption') && !finite(consLatest?.value)),
     }),
     card({
+      label: 'Housing & Real Estate',
+      href: '/housing',
+      mainLabel: 'Housing starts · SAAR',
+      value: finite(housingLatest?.value) ? `${Math.round(housingLatest.value / 1000).toLocaleString('en-US')}K` : '—',
+      period: housingLatest?.date?.slice(0, 7),
+      toneName: tone(housingTotalYoy?.value),
+      details: [
+        detail('Total YoY', signed(housingTotalYoy?.value, 1, '%'), tone(housingTotalYoy?.value)),
+        detail('Rental YoY', signed(housingRentalYoy?.value, 1, '%'), tone(housingRentalYoy?.value)),
+      ],
+      source: 'MLIT · Statistics Dashboard API',
+      series: seriesValues(housingStarts),
+      baseline: 0,
+      momentumKind: 'activity',
+      loading: sourceLoading('housing'),
+      unavailable: sourceFailed('housing') || (hasSource('housing') && !finite(housingLatest?.value)),
+    }),
+    card({
       label: 'Surveys & Sentiment',
       href: '/watcher',
       mainLabel: 'Economy Watchers',
@@ -412,7 +434,7 @@ function usCards(payload) {
   const hasSource = key => Object.prototype.hasOwnProperty.call(payload, key)
   const sourceLoading = key => !hasSource(key)
   const sourceFailed = key => hasSource(key) && payload[key] === null
-  const { cpi, ppi, employment, consumption, jolts, manufacturing, macro, rates } = payload
+  const { cpi, ppi, employment, consumption, retailSales, housing, jolts, manufacturing, macro, rates } = payload
   const headlineCpi = yoyFromIndex(cpi?.series?.headline?.observations)
   const coreCpi = yoyFromIndex(cpi?.series?.core?.observations)
   const headlinePpi = yoyFromIndex(ppi?.series?.headline?.observations)
@@ -434,9 +456,18 @@ function usCards(payload) {
   const realPceLatest = last(realPce)
   const realDpiLatest = last(realDpi)
   const realGdp = last(macro?.growth?.realGdpGrowth)
-  const retail = macro?.growth?.retail || []
+  const retail = retailSales?.series?.total?.observations?.filter(item => finite(item.value)) || []
+  const retailReal = retailSales?.series?.realTotal?.observations?.filter(item => finite(item.value)) || []
   const retailLatest = last(retail)
+  const retailRealLatest = last(retailReal)
   const retailYearAgo = yearAgoValue(retail, retailLatest)
+  const retailRealYearAgo = yearAgoValue(retailReal, retailRealLatest)
+  const housingStarts = housing?.series?.starts?.observations?.filter(item => finite(item.value)) || []
+  const housingStartsLatest = last(housingStarts)
+  const housingStartsYearAgo = yearAgoValue(housingStarts, housingStartsLatest)
+  const mortgage = last(housing?.series?.mortgage?.observations?.filter(item => finite(item.value)))
+  const homeSales = housing?.series?.newHomeSales?.observations?.filter(item => finite(item.value)) || []
+  const homeSalesLatest = last(homeSales)
   const empire = last(manufacturing?.regional?.empire?.series?.headline?.observations?.filter(item => finite(item.value)))
   const philly = last(manufacturing?.regional?.philly?.series?.headline?.observations?.filter(item => finite(item.value)))
   const ism = last(manufacturing?.ism?.headline)
@@ -481,10 +512,10 @@ function usCards(payload) {
       period: quarterLabel(realGdp?.date),
       toneName: tone(realGdp?.value),
       details: [
-        detail('Retail sales YoY', signed(pctChange(retailLatest?.value, retailYearAgo), 1, '%'), tone(pctChange(retailLatest?.value, retailYearAgo))),
+        detail('GDP direction', momentum(seriesValues(macro?.growth?.realGdpGrowth), 'growth').label),
         detail('Real PCE YoY', signed(pctChange(realPceLatest?.value, realPce.at(-13)?.value), 1, '%'), tone(pctChange(realPceLatest?.value, realPce.at(-13)?.value))),
       ],
-      source: 'BEA · Census · FRED',
+      source: 'BEA · FRED',
       series: seriesValues(macro?.growth?.realGdpGrowth),
       baseline: 0,
       momentumKind: 'growth',
@@ -509,6 +540,43 @@ function usCards(payload) {
       momentumKind: 'growth',
       loading: sourceLoading('consumption'),
       unavailable: sourceFailed('consumption') || (hasSource('consumption') && !finite(realPceLatest?.value)),
+    }),
+    card({
+      label: 'Retail Demand',
+      href: '/us/retail-sales',
+      mainLabel: 'Retail sales YoY',
+      value: signed(pctChange(retailLatest?.value, retailYearAgo), 1, '%'),
+      period: retailLatest?.date?.slice(0, 7),
+      toneName: tone(pctChange(retailRealLatest?.value, retailRealYearAgo)),
+      details: [
+        detail('Latest MoM', signed(pctChange(retailLatest?.value, retail.at(-2)?.value), 2, '%'), tone(pctChange(retailLatest?.value, retail.at(-2)?.value))),
+        detail('Real sales YoY', signed(pctChange(retailRealLatest?.value, retailRealYearAgo), 1, '%'), tone(pctChange(retailRealLatest?.value, retailRealYearAgo))),
+      ],
+      source: 'Census · FRED',
+      series: yoySeries(retail),
+      baseline: 0,
+      momentumKind: 'growth',
+      loading: sourceLoading('retailSales'),
+      unavailable: sourceFailed('retailSales') || (hasSource('retailSales') && !finite(retailLatest?.value)),
+    }),
+    card({
+      label: 'Housing & Real Estate',
+      href: '/us/housing',
+      mainLabel: 'Housing starts',
+      value: finite(housingStartsLatest?.value) ? `${housingStartsLatest.value.toLocaleString('en-US')}K` : '—',
+      period: housingStartsLatest?.date?.slice(0, 7),
+      toneName: tone(pctChange(housingStartsLatest?.value, housingStartsYearAgo)),
+      details: [
+        detail('Starts YoY', signed(pctChange(housingStartsLatest?.value, housingStartsYearAgo), 1, '%'), tone(pctChange(housingStartsLatest?.value, housingStartsYearAgo))),
+        detail('30Y mortgage', fixed(mortgage?.value, 2, '%')),
+        detail('New home sales', fixed(homeSalesLatest?.value, 0, 'K')),
+      ],
+      source: 'Census · HUD · FHFA · FRED',
+      series: yoySeries(housingStarts),
+      baseline: 0,
+      momentumKind: 'activity',
+      loading: sourceLoading('housing'),
+      unavailable: sourceFailed('housing') || (hasSource('housing') && !finite(housingStartsLatest?.value)),
     }),
     card({
       label: 'Surveys & Sentiment',
@@ -608,7 +676,7 @@ async function fetchJson(path, parentSignal, timeoutMs = 12000) {
   }
 }
 
-const PULSE_CACHE_VERSION = 5
+const PULSE_CACHE_VERSION = 6
 
 function readPulseCache(countryCode, maxAge) {
   try {
@@ -634,7 +702,7 @@ function writePulseCache(countryCode, payload) {
 }
 
 export default function WorkspacePulse({ countryCode }) {
-  const sourceTotal = countryCode === 'JP' ? 10 : 8
+  const sourceTotal = countryCode === 'JP' ? 11 : 10
   const [cards, setCards] = useState(() => countryCode === 'JP' ? japanCards({}) : usCards({}))
   const [progress, setProgress] = useState({ completed: 0, total: sourceTotal })
   const [cacheMode, setCacheMode] = useState('none')
@@ -651,6 +719,7 @@ export default function WorkspacePulse({ countryCode }) {
             gdp: '/api/gdp',
             iip: '/api/iip',
             consumption: '/api/consumption',
+            housing: '/api/housing',
             watcher: '/api/watcher',
             labour: '/api/labour',
             jobRatio: '/api/job-ratio',
@@ -665,6 +734,8 @@ export default function WorkspacePulse({ countryCode }) {
             ppi: '/api/us-ppi',
             employment: '/api/us-employment',
             consumption: '/api/us-consumption',
+            retailSales: '/api/us-retail-sales',
+            housing: '/api/us-housing',
             jolts: '/api/us-jolts',
             manufacturing: '/api/us-manufacturing',
             macro: '/api/us-macro',

@@ -48,6 +48,7 @@ const DEFINITIONS = {
     { key: 'jp-tsip', label: 'Tertiary Activity', href: '/tsip', path: '/api/tsip', cadence: 'Monthly', maxAge: 110, source: 'METI · e-Stat', extract: data => data?.latest?.date ?? null },
     { key: 'jp-machinery', label: 'Machine Orders', href: '/machine-orders', path: '/api/machine-orders', cadence: 'Monthly', maxAge: 110, source: 'Cabinet Office', extract: data => data?.latest?.date ?? null },
     { key: 'jp-consumption', label: 'Household Consumption', href: '/consumption', path: '/api/consumption', cadence: 'Monthly', maxAge: 110, source: 'MIC · e-Stat', extract: data => observationDate(data?.total) },
+    { key: 'jp-housing', label: 'Housing Starts', href: '/housing', path: '/api/housing', cadence: 'Monthly', maxAge: 100, source: 'MLIT · Statistics Dashboard API', extract: data => observationDate(data?.series?.startsSaar?.observations) },
     { key: 'jp-tankan', label: 'BOJ Tankan', href: '/tankan', path: '/api/tankan', cadence: 'Quarterly', maxAge: 240, source: 'BOJ', extract: data => observationDate(data?.large_mfg) },
     { key: 'jp-watchers', label: 'Economy Watchers', href: '/watcher', path: '/api/watcher', cadence: 'Monthly', maxAge: 100, source: 'Cabinet Office', extract: data => observationDate(data?.current_all) },
     { key: 'jp-wages', label: 'Wages', href: '/wages', path: '/api/wages', cadence: 'Monthly', maxAge: 110, source: 'MHLW', extract: data => data?.latest_date ?? observationDate(data?.nominal) },
@@ -102,7 +103,9 @@ const DEFINITIONS = {
         ? `Core PCE data are current; optional dining detail is partial: ${(data.meta.warnings || []).join(' · ')}`
         : 'PCE, income, restaurant sales and dining-price data loaded from official sources.',
     },
-    { key: 'us-growth', label: 'GDP & Retail Sales', href: '/us-macro#growth', path: '/api/us-macro', cadence: 'Quarterly / Monthly', maxAge: 240, source: 'BEA · Census · FRED', extract: data => observationDate(data?.growth?.realGdpGrowth) },
+    { key: 'us-retail', label: 'Retail Sales', href: '/us/retail-sales', path: '/api/us-retail-sales', cadence: 'Monthly', maxAge: 100, source: 'Census · FRED', extract: data => fredDate(data?.series?.total) },
+    { key: 'us-housing', label: 'Housing Cycle', href: '/us/housing', path: '/api/us-housing', cadence: 'Weekly / Monthly / Quarterly', maxAge: 100, source: 'Census · HUD · FHFA · FRED', extract: data => fredDate(data?.series?.starts) },
+    { key: 'us-growth', label: 'GDP & Growth', href: '/us-macro#growth', path: '/api/us-macro', cadence: 'Quarterly', maxAge: 240, source: 'BEA · FRED', extract: data => observationDate(data?.growth?.realGdpGrowth) },
     { key: 'us-manufacturing', label: 'Manufacturing Surveys', href: '/us/manufacturing', path: '/api/us-manufacturing', cadence: 'Monthly', maxAge: 100, source: 'NY Fed · Philly Fed · ISM', mode: 'MIXED', extract: data => observationDate(data?.ism?.headline) },
     { key: 'us-employment', label: 'Employment Situation', href: '/us/employment', path: '/api/us-employment', cadence: 'Monthly', maxAge: 100, source: 'BLS · FRED', extract: data => observationDate(data?.employment?.payems) },
     { key: 'us-claims', label: 'Initial Claims', href: '/us/initial-claims', path: '/api/us-initial-claims', cadence: 'Weekly', maxAge: 21, source: 'ETA · FRED', extract: data => fredDate(data?.series?.initialClaims) },
