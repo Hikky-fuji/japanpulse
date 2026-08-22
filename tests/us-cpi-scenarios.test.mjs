@@ -7,6 +7,8 @@ import {
   buildConstantRateScenario,
   nextMonthHurdles,
   scenarioSummary,
+  weightedContribution,
+  weightedResidual,
 } from '../app/lib/us-cpi-scenarios.mjs'
 
 const closeTo = (actual, expected, tolerance = 1e-8) => {
@@ -21,6 +23,21 @@ test('calendar arithmetic remains monthly across year boundaries', () => {
 test('annualized pace compounds the monthly assumption', () => {
   closeTo(annualizeMonthlyRate(0.2), 2.426576794540325)
   closeTo(annualizeMonthlyRate(0.3), 3.659998028813005)
+})
+
+test('weighted residual produces a non-overlapping implied category rate', () => {
+  const residual = weightedResidual(3, 0.60744, [
+    { rate: 4, weight: 0.35333 },
+    { rate: 2, weight: 0.06935 },
+    { rate: 1, weight: 0.06315 },
+  ])
+
+  closeTo(residual.weight, 0.12161)
+  closeTo(residual.contribution, weightedContribution(3, 0.60744)
+    - weightedContribution(4, 0.35333)
+    - weightedContribution(2, 0.06935)
+    - weightedContribution(1, 0.06315))
+  closeTo(residual.rate, residual.contribution / residual.weight)
 })
 
 test('scenario path compounds the index and uses the actual year-ago base', () => {

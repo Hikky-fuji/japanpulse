@@ -24,6 +24,31 @@ export function annualizeMonthlyRate(rate) {
   return finite(rate) ? ((1 + rate / 100) ** 12 - 1) * 100 : null
 }
 
+export function weightedContribution(rate, weight) {
+  return finite(rate) && finite(weight) ? rate * weight : null
+}
+
+export function weightedResidual(aggregateRate, aggregateWeight, components = []) {
+  if (!finite(aggregateRate) || !finite(aggregateWeight) || components.some(component => !finite(component.rate) || !finite(component.weight))) {
+    return null
+  }
+  const componentWeight = components.reduce((sum, component) => sum + component.weight, 0)
+  const residualWeight = aggregateWeight - componentWeight
+  if (residualWeight <= 0) return null
+
+  const aggregateContribution = weightedContribution(aggregateRate, aggregateWeight)
+  const componentContribution = components.reduce(
+    (sum, component) => sum + weightedContribution(component.rate, component.weight),
+    0,
+  )
+  const contribution = aggregateContribution - componentContribution
+  return {
+    rate: contribution / residualWeight,
+    weight: residualWeight,
+    contribution,
+  }
+}
+
 export function observationMap(observations = []) {
   return new Map(observations.map(point => [point.date, point.value]))
 }
