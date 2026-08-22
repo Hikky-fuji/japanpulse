@@ -37,6 +37,18 @@ const SERIES = {
     label: 'Personal Saving Rate',
     unit: 'percent',
   },
+  restaurantSales: {
+    id: 'RSFSDP',
+    label: 'Advance Retail Sales: Food Services and Drinking Places',
+    unit: 'millions of dollars, seasonally adjusted',
+    optional: true,
+  },
+  foodAwayCpi: {
+    id: 'CUSR0000SEFV',
+    label: 'CPI: Food Away from Home',
+    unit: 'index, seasonally adjusted',
+    optional: true,
+  },
 }
 
 function parseCsv(text) {
@@ -58,7 +70,7 @@ async function fetchSeries(apiKey, definition) {
   if (!apiKey) {
     const response = await fetch(
       `https://fred.stlouisfed.org/graph/fredgraph.csv?id=${definition.id}&cosd=2015-01-01`,
-      { next: { revalidate } },
+      { next: { revalidate }, signal: AbortSignal.timeout(12000) },
     )
     if (!response.ok) {
       throw new Error(`FRED returned HTTP ${response.status} for ${definition.id}`)
@@ -75,7 +87,7 @@ async function fetchSeries(apiKey, definition) {
   })
   const response = await fetch(
     `https://api.stlouisfed.org/fred/series/observations?${params}`,
-    { next: { revalidate } },
+    { next: { revalidate }, signal: AbortSignal.timeout(12000) },
   )
   if (!response.ok) {
     throw new Error(`FRED returned HTTP ${response.status} for ${definition.id}`)
@@ -95,20 +107,36 @@ async function fetchSeries(apiKey, definition) {
 export async function GET() {
   try {
     const apiKey = process.env.FRED_API_KEY
-    const entries = await Promise.all(
-      Object.entries(SERIES).map(async ([key, definition]) => [
-        key,
-        await fetchSeries(apiKey, definition),
-      ]),
+    const definitions = Object.entries(SERIES)
+    const settled = await Promise.allSettled(
+      definitions.map(([, definition]) => fetchSeries(apiKey, definition)),
     )
+    const entries = []
+    const warnings = []
+
+    settled.forEach((result, index) => {
+      const [key, definition] = definitions[index]
+      if (result.status === 'fulfilled') {
+        entries.push([key, result.value])
+      } else if (definition.optional) {
+        warnings.push(`${definition.id}: ${result.reason?.message || 'optional feed unavailable'}`)
+      } else {
+        throw result.reason
+      }
+    })
 
     return Response.json({
-      source: 'U.S. Bureau of Economic Analysis via FRED',
-      release: 'Personal Income and Outlays',
+      source: 'U.S. Bureau of Economic Analysis, Census Bureau and BLS via FRED',
+      release: 'Personal Income and Outlays / Advance Retail Sales / Consumer Price Index',
       frequency: 'Monthly',
       seasonalAdjustment: 'Seasonally Adjusted',
       fetchedAt: new Date().toISOString(),
       series: Object.fromEntries(entries),
+      meta: {
+        partial: warnings.length > 0,
+        warnings,
+        diningMethod: 'Restaurant sales divided by the food-away-from-home CPI; growth rates are an approximate real-demand signal.',
+      },
     })
   } catch (error) {
     console.error('[US Personal Income and Outlays]', error)

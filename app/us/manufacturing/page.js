@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import { DashboardFreshness } from '../../components/DashboardStatus'
 import { Bar, Line } from 'react-chartjs-2'
 import {
   BarElement,
@@ -382,6 +383,7 @@ export default function ManufacturingMomentumPage() {
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
+        <DashboardFreshness data={payload} source="NY Fed · Philadelphia Fed · ISM" />
         <div className={styles.topbar}>
           <Link href="/us">← US Macro Dashboard</Link>
           <span>NY FED → PHILLY FED → ISM</span>

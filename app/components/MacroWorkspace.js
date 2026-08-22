@@ -28,7 +28,7 @@ const SOURCE_BY_PATH = {
   '/us/initial-claims': 'ETA · FRED',
   '/us/cpi': 'BLS · FRED',
   '/us/ppi': 'BLS · FRED',
-  '/us/consumption': 'BEA · FRED',
+  '/us/consumption': 'BEA · Census · BLS · FRED',
   '/us/jolts': 'BLS · FRED',
   '/us/manufacturing': 'NY Fed · Philadelphia Fed · ISM',
   '/us/rates': 'Federal Reserve · Treasury · FRED',

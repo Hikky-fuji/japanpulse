@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import { DashboardFreshness } from '../../components/DashboardStatus'
 import { Line } from 'react-chartjs-2'
 import {
   CategoryScale,
@@ -255,6 +256,7 @@ export default function JoltsDashboard() {
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
+        <DashboardFreshness data={payload} source="BLS · FRED" />
         <nav className={styles.topbar}>
           <Link href="/us">← US Macro Dashboard</Link>
           <span>EMPLOYMENT & WAGES / MONTHLY</span>

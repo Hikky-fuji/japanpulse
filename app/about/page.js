@@ -41,6 +41,11 @@ export default function AboutPage() {
             observation available for that series—not a common calendar month across all pages.
           </p>
           <p>
+            Workspace summaries use an edge-cached aggregate endpoint and automatically fall
+            back to independent card-level requests when a source is slow. Cached browser
+            snapshots can preserve the last complete workspace while a refresh is incomplete.
+          </p>
+          <p>
             The <Link href="/status">Data Status monitor</Link> identifies current, reference,
             stale and failed feeds and separates live data from preserved snapshots.
           </p>
@@ -69,6 +74,12 @@ export default function AboutPage() {
             seasonally adjusted official index and compare each projected level with its actual
             year-ago index. They are conditional arithmetic paths—not forecasts—and missing
             official comparison months are not interpolated.
+          </p>
+          <p>
+            The US dining-demand proxy divides seasonally adjusted Census restaurant sales by
+            the BLS food-away-from-home CPI. Its growth rate is an approximate real-spending
+            signal, not a chain-weighted BEA consumption measure, and the advance sales estimate
+            is subject to revision.
           </p>
         </article>
 

@@ -14,7 +14,7 @@ import {
   PointElement,
   Tooltip,
 } from 'chart.js'
-import { DashboardState } from '../../components/DashboardStatus'
+import { DashboardFreshness, DashboardState } from '../../components/DashboardStatus'
 import {
   addMonths,
   weightedContribution,
@@ -353,6 +353,7 @@ export default function USCpiDashboard() {
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
+        <DashboardFreshness data={payload} source="BLS · FRED" />
         <nav className={styles.topbar}>
           <div className={styles.breadcrumb}>
             <Link href="/">JapanPulse</Link> / <Link href="/us">US Macro</Link> / CPI

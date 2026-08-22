@@ -3,6 +3,7 @@ const routes = [
   { path: '/us', priority: 1, changeFrequency: 'daily' },
   { path: '/status', priority: 0.8, changeFrequency: 'daily' },
   { path: '/about', priority: 0.6, changeFrequency: 'monthly' },
+  { path: '/changelog', priority: 0.5, changeFrequency: 'monthly' },
   { path: '/cpi', priority: 0.9, changeFrequency: 'monthly' },
   { path: '/tokyo-cpi', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/ppi', priority: 0.8, changeFrequency: 'monthly' },

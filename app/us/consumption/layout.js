@@ -3,7 +3,7 @@ export const metadata = {
     absolute: 'US PCE & Consumer | JapanPulse',
   },
   description:
-    'US PCE inflation, real consumption, disposable income, goods and services demand, and personal saving dashboard.',
+    'US PCE inflation, real consumption, disposable income, saving and official price-adjusted restaurant sales dashboard.',
   alternates: {
     canonical: '/us/consumption',
   },

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { createPortal } from 'react-dom'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { indicatorGuideForPath } from '../lib/indicator-guides.mjs'
 import { significanceDefinition, significanceForPath } from '../lib/significance'
 
 const NAV_ITEMS = [
@@ -44,7 +45,7 @@ const SEARCH_ITEMS = [
   { href: '/us/ppi', country: 'US', label: 'US PPI', description: 'Producer prices and pipeline inflation', keywords: 'prices inflation producer core final demand bls' },
   { href: '/us/employment', country: 'US', label: 'US Employment', description: 'Payrolls, unemployment and wages', keywords: 'nfp jobs earnings' },
   { href: '/us/initial-claims', country: 'US', label: 'Initial Claims', description: 'Weekly unemployment insurance claims', keywords: 'continuing labor weekly' },
-  { href: '/us/consumption', country: 'US', label: 'PCE & Personal Income', description: 'PCE inflation, spending, income and saving', keywords: 'core pce deflator consumption bea' },
+  { href: '/us/consumption', country: 'US', label: 'PCE, Income & Dining Demand', description: 'PCE inflation, spending, income, saving and real restaurant sales', keywords: 'core pce deflator consumption dining restaurant census bea' },
   { href: '/us/jolts', country: 'US', label: 'JOLTS', description: 'Openings, hires, quits and separations', keywords: 'labor flows vacancies bls' },
   { href: '/us/manufacturing', country: 'US', label: 'Manufacturing Surveys', description: 'Empire, Philly Fed and ISM sequence', keywords: 'ny new york sentiment soft data' },
   { href: '/us/rates', country: 'US', label: 'US Rates & Financial Conditions', description: 'Treasury curve, real yields, breakevens and NFCI', keywords: 'bonds yields fixed income fed policy financial markets duration inflation expectations' },
@@ -179,6 +180,7 @@ export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false)
   const significanceLevel = significanceForPath(pathname)
   const significance = significanceLevel ? significanceDefinition(significanceLevel) : null
+  const indicatorGuide = indicatorGuideForPath(pathname)
 
   useEffect(() => {
     setMenuOpen(false)
@@ -245,6 +247,37 @@ export function SiteHeader() {
           </div>
         </div>
       ) : null}
+      {indicatorGuide ? (
+        <details className="terminal-indicator-guide">
+          <summary>
+            <span>ANALYSIS GUIDE</span>
+            <strong>{indicatorGuide.why}</strong>
+            <b>Open framework</b>
+          </summary>
+          <div className="terminal-indicator-guide__body">
+            <article>
+              <span>HOW TO READ</span>
+              <p>{indicatorGuide.signal}</p>
+            </article>
+            <article>
+              <span>MARKET LENS</span>
+              <p>{indicatorGuide.market}</p>
+            </article>
+            <article>
+              <span>DATA CAVEAT</span>
+              <p>{indicatorGuide.caveat}</p>
+            </article>
+            <nav aria-label="Related indicators">
+              <span>RELATED</span>
+              <div>
+                {indicatorGuide.related.map(item => (
+                  <Link href={item.href} key={item.href}>{item.label} →</Link>
+                ))}
+              </div>
+            </nav>
+          </div>
+        </details>
+      ) : null}
     </header>
   )
 }
@@ -256,6 +289,7 @@ export function SiteFooter() {
         <span>JapanPulse · Macro Data Workspace</span>
         <nav aria-label="Site information">
           <Link href="/about">About & Methodology</Link>
+          <Link href="/changelog">Changelog</Link>
           <Link href="/status">Data Status</Link>
           <a href="https://github.com/Hikky-fuji/japanpulse" rel="noreferrer" target="_blank">GitHub ↗</a>
         </nav>

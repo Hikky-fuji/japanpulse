@@ -89,7 +89,19 @@ const DEFINITIONS = {
   US: [
     { key: 'us-cpi', label: 'Consumer Price Index', href: '/us/cpi', path: '/api/us-cpi', cadence: 'Monthly', maxAge: 100, source: 'BLS · FRED', extract: data => fredDate(data?.series?.headline) },
     { key: 'us-ppi', label: 'Producer Price Index', href: '/us/ppi', path: '/api/us-ppi', cadence: 'Monthly', maxAge: 100, source: 'BLS · FRED', extract: data => fredDate(data?.series?.headline) },
-    { key: 'us-pce', label: 'PCE & Personal Income', href: '/us/consumption', path: '/api/us-consumption', cadence: 'Monthly', maxAge: 100, source: 'BEA · FRED', extract: data => fredDate(data?.series?.headlinePce) },
+    {
+      key: 'us-pce',
+      label: 'PCE, Income & Dining Demand',
+      href: '/us/consumption',
+      path: '/api/us-consumption',
+      cadence: 'Monthly',
+      maxAge: 100,
+      source: 'BEA · Census · BLS · FRED',
+      extract: data => fredDate(data?.series?.headlinePce),
+      describe: data => data?.meta?.partial
+        ? `Core PCE data are current; optional dining detail is partial: ${(data.meta.warnings || []).join(' · ')}`
+        : 'PCE, income, restaurant sales and dining-price data loaded from official sources.',
+    },
     { key: 'us-growth', label: 'GDP & Retail Sales', href: '/us-macro#growth', path: '/api/us-macro', cadence: 'Quarterly / Monthly', maxAge: 240, source: 'BEA · Census · FRED', extract: data => observationDate(data?.growth?.realGdpGrowth) },
     { key: 'us-manufacturing', label: 'Manufacturing Surveys', href: '/us/manufacturing', path: '/api/us-manufacturing', cadence: 'Monthly', maxAge: 100, source: 'NY Fed · Philly Fed · ISM', mode: 'MIXED', extract: data => observationDate(data?.ism?.headline) },
     { key: 'us-employment', label: 'Employment Situation', href: '/us/employment', path: '/api/us-employment', cadence: 'Monthly', maxAge: 100, source: 'BLS · FRED', extract: data => observationDate(data?.employment?.payems) },

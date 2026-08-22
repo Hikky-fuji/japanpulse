@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import { DashboardFreshness } from '../../components/DashboardStatus'
 import { Line } from 'react-chartjs-2'
 import {
   CategoryScale,
@@ -269,6 +270,7 @@ export default function UsRatesDashboard() {
   return (
     <main className={styles.page}>
       <div className={styles.shell}>
+        <DashboardFreshness data={payload} source="Federal Reserve · Treasury · FRED" />
         <div className={styles.topbar}>
           <Link href="/us">← US workspace</Link>
           <span>Federal Reserve / U.S. Treasury / Chicago Fed via FRED</span>
