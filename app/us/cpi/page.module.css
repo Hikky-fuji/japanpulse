@@ -259,6 +259,17 @@
   gap: 14px;
 }
 
+.compositionGrid {
+  display: grid;
+  grid-template-columns: minmax(360px, .9fr) minmax(0, 1.45fr);
+  align-items: start;
+  gap: 14px;
+}
+
+.compositionGrid > .panel {
+  align-self: start;
+}
+
 .panel {
   min-width: 0;
   border-radius: 4px;
@@ -285,6 +296,11 @@
 .chartSmall {
   position: relative;
   height: 270px;
+}
+
+.contributionChart {
+  position: relative;
+  height: 330px;
 }
 
 .scenarioToolbar,
@@ -722,6 +738,88 @@
   font-weight: 650;
 }
 
+.categoryTable {
+  min-width: 690px;
+}
+
+.categoryTable th,
+.categoryTable td {
+  padding-right: 6px;
+  padding-left: 6px;
+}
+
+.categoryName {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--ink);
+  font-weight: 680;
+}
+
+.categoryName i {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.weightValue {
+  display: block;
+  color: var(--ink);
+  font-weight: 700;
+}
+
+.weightTrack {
+  display: block;
+  width: 58px;
+  height: 3px;
+  margin-top: 4px;
+  margin-left: auto;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #4c555b;
+}
+
+.weightTrack i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--blue);
+}
+
+.roleBadge,
+.groupLabel {
+  display: inline-block;
+  border: 1px solid #58636a;
+  border-radius: 999px;
+  padding: 4px 7px;
+  color: #d7dcdf;
+  background: #292f33;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: .025em;
+  white-space: nowrap;
+}
+
+.detailPanel {
+  margin-top: 14px;
+}
+
+.detailPanel .tableHead {
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.detailPanel .panelSub {
+  margin-bottom: 0;
+}
+
+.detailPanel .sourceLink {
+  color: var(--blue);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
 .seriesId {
   display: block;
   margin-top: 2px;
@@ -782,6 +880,7 @@
   .kpiGrid,
   .twoCol,
   .equalCol,
+  .compositionGrid,
   .scenarioLayout {
     grid-template-columns: 1fr;
   }

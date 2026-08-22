@@ -15,7 +15,11 @@ import {
   Tooltip,
 } from 'chart.js'
 import { DashboardState } from '../../components/DashboardStatus'
-import { addMonths } from '../../lib/us-cpi-scenarios.mjs'
+import {
+  addMonths,
+  weightedContribution,
+  weightedResidual,
+} from '../../lib/us-cpi-scenarios.mjs'
 import CpiScenarioLab from './CpiScenarioLab'
 import styles from './page.module.css'
 
@@ -37,8 +41,21 @@ const COLORS = {
   food: '#5c8fd6',
   energy: '#e2703a',
   coreGoods: '#91b982',
-  coreServices: '#e5ad16',
+  shelter: '#e5ad16',
+  medicalServices: '#8d7ed0',
+  transportation: '#e56c62',
+  otherCoreServices: '#44a99a',
 }
+
+const CATEGORY_STRUCTURE = [
+  { key: 'food', role: 'Household salience' },
+  { key: 'energy', role: 'Volatile headline driver' },
+  { key: 'coreGoods', role: 'Cyclical / supply chain' },
+  { key: 'shelter', role: 'Largest persistent block' },
+  { key: 'medicalServices', role: 'Sticky service costs' },
+  { key: 'transportation', role: 'High-beta services' },
+  { key: 'otherCoreServices', label: 'Other Core Services', role: 'Wage-sensitive residual', derived: true },
+]
 
 const DETAIL_GROUPS = [
   {
@@ -47,7 +64,7 @@ const DETAIL_GROUPS = [
   },
   {
     title: 'Core services',
-    keys: ['rent', 'oer', 'medical', 'education', 'transportation'],
+    keys: ['shelter', 'rent', 'oer', 'medicalServices', 'medical', 'education', 'transportation'],
   },
 ]
 
@@ -208,16 +225,28 @@ export default function USCpiDashboard() {
     }
 
     const latestDates = trendDates.slice(-12)
-    const contributionKeys = ['food', 'energy', 'coreGoods', 'coreServices']
-    const contributions = Object.fromEntries(contributionKeys.map(key => {
-      const map = pointMap(series[key])
-      return [key, latestDates.map(date => {
-        const current = map.get(date)
-        const prior = map.get(`${Number(date.slice(0, 4)) - 1}${date.slice(4)}`)
-        if (!valid(current) || !valid(prior)) return null
-        return ((current / prior - 1) * 100) * payload.contributionWeights[key]
-      })]
-    }))
+    const categorySeriesKeys = ['food', 'energy', 'coreGoods', 'coreServices', 'shelter', 'medicalServices', 'transportation']
+    const categoryMaps = Object.fromEntries(categorySeriesKeys.map(key => [key, pointMap(series[key])]))
+    const rateAt = (key, date) => {
+      const current = categoryMaps[key]?.get(date)
+      const prior = categoryMaps[key]?.get(addMonths(date, -12))
+      return valid(current) && valid(prior) ? (current / prior - 1) * 100 : null
+    }
+    const residualAt = date => weightedResidual(
+      rateAt('coreServices', date),
+      payload.aggregateWeights.coreServices,
+      [
+        { rate: rateAt('shelter', date), weight: payload.contributionWeights.shelter },
+        { rate: rateAt('medicalServices', date), weight: payload.contributionWeights.medicalServices },
+        { rate: rateAt('transportation', date), weight: payload.contributionWeights.transportation },
+      ],
+    )
+    const contributions = Object.fromEntries(CATEGORY_STRUCTURE.map(category => [
+      category.key,
+      latestDates.map(date => category.derived
+        ? residualAt(date)?.contribution ?? null
+        : weightedContribution(rateAt(category.key, date), payload.contributionWeights[category.key])),
+    ]))
 
     const detailRows = DETAIL_GROUPS.flatMap(group => group.keys.map(key => ({
       group: group.title,
@@ -230,12 +259,45 @@ export default function USCpiDashboard() {
       .filter(row => valid(row.stats.mom))
       .sort((a, b) => Math.abs(b.stats.mom) - Math.abs(a.stats.mom))[0]
 
+    const directCategoryStats = Object.fromEntries(
+      CATEGORY_STRUCTURE.filter(category => !category.derived).map(category => [category.key, metrics(series[category.key])]),
+    )
+    const residualMetric = metric => weightedResidual(
+      metrics(series.coreServices)[metric],
+      payload.aggregateWeights.coreServices,
+      [
+        { rate: directCategoryStats.shelter[metric], weight: payload.contributionWeights.shelter },
+        { rate: directCategoryStats.medicalServices[metric], weight: payload.contributionWeights.medicalServices },
+        { rate: directCategoryStats.transportation[metric], weight: payload.contributionWeights.transportation },
+      ],
+    )?.rate ?? null
+    const residualStats = {
+      date: metrics(series.coreServices).date,
+      mom: residualMetric('mom'),
+      annualized3m: residualMetric('annualized3m'),
+      yoy: residualMetric('yoy'),
+      yoyChange: residualMetric('yoyChange'),
+    }
+    const categoryRows = CATEGORY_STRUCTURE.map(category => {
+      const stats = category.derived ? residualStats : directCategoryStats[category.key]
+      const weight = payload.contributionWeights[category.key]
+      return {
+        ...category,
+        label: category.label || series[category.key]?.label || category.key,
+        weight,
+        importance: weight >= 0.25 ? 'Critical weight' : weight >= 0.10 ? 'High weight' : 'Medium weight',
+        stats,
+        contribution: weightedContribution(stats.yoy, weight),
+      }
+    })
+
     return {
       headlineStats,
       coreStats,
       servicesStats,
       largestMover,
       detailRows,
+      categoryRows,
       trendData: {
         labels: trendDates.map(date => monthLabel(date, true)),
         datasets: [
@@ -246,10 +308,10 @@ export default function USCpiDashboard() {
       },
       contributionData: {
         labels: latestDates.map(date => monthLabel(date)),
-        datasets: contributionKeys.map(key => ({
-          label: series[key].label,
-          data: contributions[key],
-          backgroundColor: COLORS[key],
+        datasets: CATEGORY_STRUCTURE.map(category => ({
+          label: category.label || series[category.key]?.label,
+          data: contributions[category.key],
+          backgroundColor: COLORS[category.key],
           borderWidth: 0,
           borderRadius: 2,
         })),
@@ -395,37 +457,76 @@ export default function USCpiDashboard() {
         <section className={styles.section} id="composition">
           <div className={styles.sectionHeader}>
             <div><div className={styles.sectionKicker}>Composition</div><h2>What is driving inflation?</h2></div>
-            <p>Approximate contribution using December 2025 CPI-U relative-importance weights.</p>
+            <p>Seven non-overlapping blocks using December 2025 CPI-U relative-importance weights.</p>
           </div>
-          <div className={styles.equalCol}>
+          <div className={styles.compositionGrid}>
             <div className={styles.panel}>
-              <h3 className={styles.panelTitle}>Contribution by major category</h3>
-              <p className={styles.panelSub}>Percentage points to year-over-year CPI · approximate</p>
-              <div className={styles.chartSmall}>
+              <h3 className={styles.panelTitle}>Contribution by non-overlapping category</h3>
+              <p className={styles.panelSub}>Approximate percentage points to year-over-year CPI</p>
+              <div className={styles.contributionChart}>
                 <Bar data={model.contributionData} options={chartOptions({ stacked: true })} />
               </div>
+              <p className={styles.chartFootnote}>
+                Other core services is the implied residual after shelter, medical and transportation services are removed from core services.
+              </p>
             </div>
             <div className={styles.panel}>
-              <h3 className={styles.panelTitle}>Category momentum</h3>
-              <p className={styles.panelSub}>Latest M/M and Y/Y readings</p>
+              <h3 className={styles.panelTitle}>Weight, inflation speed and macro role</h3>
+              <p className={styles.panelSub}>Latest seasonally adjusted momentum · contribution is approximate</p>
               <div className={styles.tableWrap}>
-                <table className={styles.table}>
-                  <thead><tr><th>Series</th><th>M/M</th><th>3M ann.</th><th>Y/Y</th></tr></thead>
+                <table className={`${styles.table} ${styles.categoryTable}`}>
+                  <thead><tr><th>Category</th><th>Weight</th><th>M/M</th><th>3M ann.</th><th>Y/Y</th><th>Contribution</th><th>Macro role</th></tr></thead>
                   <tbody>
-                    {model.detailRows.map(row => (
+                    {model.categoryRows.map(row => (
                       <tr key={row.key}>
                         <td>
-                          <span className={styles.tableName}>{row.series.label}</span>
-                          <span className={styles.seriesId}>{row.series.id}</span>
+                          <span className={styles.categoryName}><i style={{ backgroundColor: COLORS[row.key] }} />{row.label}</span>
+                          <span className={styles.seriesId}>{row.importance}{row.derived ? ' · IMPLIED RESIDUAL' : ''}</span>
+                        </td>
+                        <td>
+                          <span className={styles.weightValue}>{percent(row.weight * 100, 1)}</span>
+                          <span className={styles.weightTrack}><i style={{ width: `${Math.min(100, row.weight / 0.36 * 100)}%` }} /></span>
                         </td>
                         <td className={row.stats.mom >= 0 ? styles.positive : styles.negative}>{signed(row.stats.mom)}</td>
                         <td>{percent(row.stats.annualized3m)}</td>
                         <td>{percent(row.stats.yoy)}</td>
+                        <td>{signed(row.contribution, 2, 'pp')}</td>
+                        <td><span className={styles.roleBadge}>{row.role}</span></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+          <div className={`${styles.panel} ${styles.detailPanel}`}>
+            <div className={styles.tableHead}>
+              <div>
+                <h3 className={styles.panelTitle}>Detailed component monitor</h3>
+                <p className={styles.panelSub}>Diagnostic subcategories may overlap the non-overlapping blocks above and are not added together.</p>
+              </div>
+              <a className={styles.sourceLink} href={payload.weightSourceUrl} target="_blank" rel="noreferrer">
+                BLS weights · {payload.weightAsOf} ↗
+              </a>
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead><tr><th>Group</th><th>Series</th><th>M/M</th><th>3M ann.</th><th>Y/Y</th></tr></thead>
+                <tbody>
+                  {model.detailRows.map(row => (
+                    <tr key={row.key}>
+                      <td><span className={styles.groupLabel}>{row.group}</span></td>
+                      <td>
+                        <span className={styles.tableName}>{row.series.label}</span>
+                        <span className={styles.seriesId}>{row.series.id}</span>
+                      </td>
+                      <td className={row.stats.mom >= 0 ? styles.positive : styles.negative}>{signed(row.stats.mom)}</td>
+                      <td>{percent(row.stats.annualized3m)}</td>
+                      <td>{percent(row.stats.yoy)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
         </section>
