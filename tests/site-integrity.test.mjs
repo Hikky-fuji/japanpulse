@@ -186,6 +186,7 @@ test('Chart.js dashboards expose image copy and PNG download controls', () => {
   const theme = read('app/components/ChartTheme.js')
   assert.match(theme, /navigator\.clipboard\?\.write/)
   assert.match(theme, /ClipboardItem/)
+  assert.match(theme, /'image\/png': blobPromise/)
   assert.match(theme, /Copy image/)
   assert.match(theme, /Download PNG/)
 })

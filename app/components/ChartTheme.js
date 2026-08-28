@@ -32,6 +32,13 @@ function setStatus(toolbar, message) {
   window.setTimeout(() => { status.textContent = '' }, 2400)
 }
 
+function clipboardErrorMessage(error) {
+  if (!window.isSecureContext) return 'Copy requires HTTPS'
+  if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') return 'Image copy unsupported — use PNG'
+  if (error?.name === 'NotAllowedError') return 'Allow clipboard access, then retry'
+  return 'Copy failed — use PNG'
+}
+
 function addExportControls(chart) {
   const canvas = chart.canvas
   const parent = canvas?.parentElement
@@ -47,11 +54,13 @@ function addExportControls(chart) {
   toolbar.querySelector('[data-copy-chart]').addEventListener('click', async () => {
     try {
       if (!navigator.clipboard?.write || typeof ClipboardItem === 'undefined') throw new Error('Clipboard images are unavailable')
-      const blob = await canvasBlob(canvas)
-      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+      // Start clipboard.write during the click itself. Safari otherwise expires
+      // the transient user activation while canvas.toBlob is resolving.
+      const blobPromise = canvasBlob(canvas)
+      await navigator.clipboard.write([new ClipboardItem({ 'image/png': blobPromise })])
       setStatus(toolbar, 'Copied')
-    } catch {
-      setStatus(toolbar, 'Clipboard unavailable — use PNG')
+    } catch (error) {
+      setStatus(toolbar, clipboardErrorMessage(error))
     }
   })
 
