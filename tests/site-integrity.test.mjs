@@ -176,6 +176,8 @@ test('Japan CPI routes use the current official base and matching category defin
   }
   assert.match(cpiApi, /fetchSeries\('0242'\)/)
   assert.match(cpiApi, /fetchSeries\('0241'\)/)
+  assert.match(tokyoApi, /cdArea=13100/)
+  assert.doesNotMatch(tokyoApi, /13A01/)
   assert.match(page, /Goods \(ex\. Fresh Food\)/)
   assert.match(page, /2025 Base/)
 })

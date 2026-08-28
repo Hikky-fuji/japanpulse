@@ -11,7 +11,7 @@ export async function GET() {
       + `?appId=${APP_ID}`
       + `&statsDataId=${JAPAN_CPI_STATS_ID}`
       + `&metaGetFlg=N&limit=100`
-      + `&cdArea=13A01`
+      + `&cdArea=13100`
       + `&cdCat01=${cat}`
       + `&cdTab=${tab}`
     const res = await fetch(url, { next: { revalidate } })
