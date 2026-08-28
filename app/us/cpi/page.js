@@ -41,7 +41,7 @@ const COLORS = {
   food: '#5c8fd6',
   energy: '#e2703a',
   coreGoods: '#91b982',
-  shelter: '#e5ad16',
+  rentOfShelter: '#e5ad16',
   medicalServices: '#8d7ed0',
   transportation: '#e56c62',
   otherCoreServices: '#44a99a',
@@ -51,7 +51,7 @@ const CATEGORY_STRUCTURE = [
   { key: 'food', role: 'Household salience' },
   { key: 'energy', role: 'Volatile headline driver' },
   { key: 'coreGoods', role: 'Cyclical / supply chain' },
-  { key: 'shelter', role: 'Largest persistent block' },
+  { key: 'rentOfShelter', role: 'Largest persistent block' },
   { key: 'medicalServices', role: 'Sticky service costs' },
   { key: 'transportation', role: 'High-beta services' },
   { key: 'otherCoreServices', label: 'Other Core Services', role: 'Wage-sensitive residual', derived: true },
@@ -64,7 +64,7 @@ const DETAIL_GROUPS = [
   },
   {
     title: 'Core services',
-    keys: ['shelter', 'rent', 'oer', 'medicalServices', 'medical', 'education', 'transportation'],
+    keys: ['rentOfShelter', 'rent', 'oer', 'medicalServices', 'medical', 'education', 'transportation'],
   },
 ]
 
@@ -225,7 +225,7 @@ export default function USCpiDashboard() {
     }
 
     const latestDates = trendDates.slice(-12)
-    const categorySeriesKeys = ['food', 'energy', 'coreGoods', 'coreServices', 'shelter', 'medicalServices', 'transportation']
+    const categorySeriesKeys = ['food', 'energy', 'coreGoods', 'coreServices', 'rentOfShelter', 'medicalServices', 'transportation']
     const categoryMaps = Object.fromEntries(categorySeriesKeys.map(key => [key, pointMap(series[key])]))
     const rateAt = (key, date) => {
       const current = categoryMaps[key]?.get(date)
@@ -236,7 +236,7 @@ export default function USCpiDashboard() {
       rateAt('coreServices', date),
       payload.aggregateWeights.coreServices,
       [
-        { rate: rateAt('shelter', date), weight: payload.contributionWeights.shelter },
+        { rate: rateAt('rentOfShelter', date), weight: payload.contributionWeights.rentOfShelter },
         { rate: rateAt('medicalServices', date), weight: payload.contributionWeights.medicalServices },
         { rate: rateAt('transportation', date), weight: payload.contributionWeights.transportation },
       ],
@@ -266,7 +266,7 @@ export default function USCpiDashboard() {
       metrics(series.coreServices)[metric],
       payload.aggregateWeights.coreServices,
       [
-        { rate: directCategoryStats.shelter[metric], weight: payload.contributionWeights.shelter },
+        { rate: directCategoryStats.rentOfShelter[metric], weight: payload.contributionWeights.rentOfShelter },
         { rate: directCategoryStats.medicalServices[metric], weight: payload.contributionWeights.medicalServices },
         { rate: directCategoryStats.transportation[metric], weight: payload.contributionWeights.transportation },
       ],
@@ -468,7 +468,7 @@ export default function USCpiDashboard() {
                 <Bar data={model.contributionData} options={chartOptions({ stacked: true })} />
               </div>
               <p className={styles.chartFootnote}>
-                Other core services is the implied residual after shelter, medical and transportation services are removed from core services.
+                Other core services is the implied residual after rent of shelter, medical and transportation services are removed from core services.
               </p>
             </div>
             <div className={styles.panel}>

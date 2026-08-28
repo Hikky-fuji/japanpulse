@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react'
 import { Line, Bar, Doughnut } from 'react-chartjs-2'
 import { DashboardFreshness, DashboardState } from '../components/DashboardStatus'
 import { momentumSignal, movingAverage, yoyMomentum } from '../lib/japan-cpi-momentum.mjs'
+import styles from './page.module.css'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -170,12 +171,9 @@ export default function Home() {
 
   const s = {
     wrap: { maxWidth:'980px', margin:'0 auto', padding:'24px', fontFamily:'sans-serif' },
-    header: { display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:'20px', borderBottom:'1px solid #eee', paddingBottom:'12px' },
-    grid4: { display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:'12px', marginBottom:'20px' },
     card: { background:'#f8f8f6', borderRadius:'10px', padding:'14px 16px' },
     cardLabel: { fontSize:'10px', color:'#888', marginBottom:'4px', textTransform:'uppercase', letterSpacing:'0.05em' },
     cardVal: { fontSize:'22px', fontWeight:'600', color:'#111' },
-    grid2: { display:'grid', gridTemplateColumns:'1fr 1fr', gap:'16px', marginBottom:'16px' },
     box: { background:'#fff', border:'1px solid #eee', borderRadius:'12px', padding:'16px', marginBottom:'16px' },
     boxTitle: { fontSize:'13px', fontWeight:'500', marginBottom:'12px', color:'#333' },
     table: { width:'100%', borderCollapse:'collapse', fontSize:'12.5px' },
@@ -194,9 +192,9 @@ export default function Home() {
   return (
     <main className="dashboard-page" style={s.wrap}>
       <DashboardFreshness data={data} source="MIC · e-Stat" />
-      <div style={s.header}>
+      <div className={styles.dashboardHeader}>
     <h1 style={{fontSize:'20px',fontWeight:'600',color:'#111'}}>Japan CPI Dashboard</h1>
-    <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
+    <div className={styles.dashboardLinks}>
       <a href="/" style={{fontSize:'12px',color:'#555',textDecoration:'none'}}>← Home</a>
       <a href="/tokyo-cpi" style={{fontSize:'12px',color:'#378ADD',textDecoration:'none'}}>Tokyo CPI →</a>
       <a href="/ppi" style={{fontSize:'12px',color:'#D85A30',textDecoration:'none'}}>PPI →</a>
@@ -204,7 +202,7 @@ export default function Home() {
     </div>
   </div>
 
-      <div style={s.grid4}>
+      <div className={styles.cardGrid}>
         {cards.map(k => (
           <div key={k.label} style={s.card}>
             <div style={s.cardLabel}>{k.label}</div>
@@ -219,7 +217,7 @@ export default function Home() {
 
       <div style={s.box}>
         <div style={s.boxTitle}>Inflation Momentum Scorecard — latest release</div>
-        <div style={{overflowX:'auto'}}>
+        <div className={styles.tableScroller}>
           <table style={{...s.table, minWidth:'720px'}}>
             <thead>
               <tr>
@@ -256,7 +254,7 @@ export default function Home() {
         <div style={s.note}>3MMA is the average of the latest three official Y/Y rates. “3MMA Δ” compares the latest 3MMA with the prior month’s 3MMA. M/M figures are not seasonally adjusted and are shown as release detail—not as a three-month annualized pace.</div>
       </div>
 
-      <div style={s.grid2}>
+      <div className={styles.chartGrid}>
         <div style={s.box}>
           <div style={s.boxTitle}>Headline / Core / Core-Core (Y/Y %)</div>
           <Line data={chart1} options={lineOpts} />
@@ -273,14 +271,14 @@ export default function Home() {
         <div style={s.note}>Approximation using fixed 2020-base basket weights; components overlap and may not sum exactly to the official headline contribution.</div>
       </div>
 
-      <div style={s.grid2}>
+      <div className={styles.chartGrid}>
         <div style={s.box}>
           <div style={s.boxTitle}>CPI Basket Weight Composition (2020 Base, /1000)</div>
           <Doughnut data={weightData} options={doughnutOpts} />
         </div>
         <div style={s.box}>
           <div style={s.boxTitle}>M/M Highlight — Last 3 months (NSA, not seasonally adjusted)</div>
-          <table style={s.table}>
+          <div className={styles.tableScroller}><table style={{...s.table, minWidth:'420px'}}>
             <thead>
               <tr>
                 <th style={{...s.th, textAlign:'left', width:'200px'}}>Series</th>
@@ -306,7 +304,7 @@ export default function Home() {
                 </React.Fragment>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       </div>
       <div style={s.note}>Methodology: Y/Y rates and NSA monthly changes come from MIC e-Stat. Japan’s “core” excludes fresh food; “core-core” here excludes fresh food and energy, so it is not identical to the U.S. core definition. A 3-month annualized rate is intentionally not calculated from detailed NSA series.</div>

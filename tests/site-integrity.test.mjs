@@ -151,3 +151,12 @@ test('Japan and US navigators share a compact macro taxonomy and ordering', () =
   assert.deepEqual(usGroups, commonGroups)
   assert.deepEqual(japanGroups, [...commonGroups, 'External Sector'])
 })
+
+test('US CPI rent-of-shelter series matches its published relative-importance weight', () => {
+  const api = read('app/api/us-cpi/route.js')
+  const page = read('app/us/cpi/page.js')
+
+  assert.match(api, /rentOfShelter:\s*\{ id: 'CUSR0000SAS2RS'/)
+  assert.match(api, /rentOfShelter:\s*0\.35333/)
+  assert.doesNotMatch(page, /payload\.contributionWeights\.shelter/)
+})

@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
+import { calendarDaysUntil } from '../lib/calendar-days.mjs'
 
 function formatDate(value) {
   if (!value) return '—'
@@ -14,11 +15,7 @@ function formatDate(value) {
 }
 
 function daysUntil(value) {
-  if (!value) return null
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const target = new Date(`${value}T12:00:00`)
-  return Math.ceil((target.getTime() - today.getTime()) / 86400000)
+  return calendarDaysUntil(value)
 }
 
 async function fetchOperationsJson(path, parentSignal, timeoutMs = 15000) {
