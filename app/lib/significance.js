@@ -38,6 +38,7 @@ export const SIGNIFICANCE_BY_PATH = {
   '/us/cpi': 3,
   '/us/ppi': 2,
   '/us/consumption': 3,
+  '/us/household-credit': 2,
   '/us/retail-sales': 3,
   '/us/housing': 2,
   '/us/manufacturing': 3,

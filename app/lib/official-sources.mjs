@@ -25,6 +25,7 @@ export const OFFICIAL_SOURCES = {
   '/us/cpi': [source('BLS · Consumer Price Index', 'https://www.bls.gov/cpi/')],
   '/us/ppi': [source('BLS · Producer Price Index', 'https://www.bls.gov/ppi/')],
   '/us/consumption': [source('BEA · Personal Income & Outlays', 'https://www.bea.gov/data/income-saving/personal-income')],
+  '/us/household-credit': [source('NY Fed · Household Debt & Credit', 'https://www.newyorkfed.org/microeconomics/hhdc')],
   '/us/retail-sales': [source('Census · Monthly Retail Trade', 'https://www.census.gov/retail/index.html')],
   '/us/housing': [
     source('Census · New Residential Construction', 'https://www.census.gov/construction/nrc/index.html'),

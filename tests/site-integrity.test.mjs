@@ -160,3 +160,13 @@ test('US CPI rent-of-shelter series matches its published relative-importance we
   assert.match(api, /rentOfShelter:\s*0\.35333/)
   assert.doesNotMatch(page, /payload\.contributionWeights\.shelter/)
 })
+
+test('household credit dashboard uses NY Fed flow definitions without re-annualizing', () => {
+  const api = read('app/api/us-household-credit/route.js')
+  const page = read('app/us/household-credit/page.js')
+
+  assert.match(api, /Page 14 Data/)
+  assert.match(api, /Four-quarter moving sum/)
+  assert.match(page, /does not annualize or smooth them again/)
+  assert.doesNotMatch(page, /3M ann\./)
+})

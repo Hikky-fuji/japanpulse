@@ -5,7 +5,7 @@ export const metadata = {
     absolute: 'US Macro Dashboard | JapanPulse',
   },
   description:
-    'US macro dashboard covering prices, GDP, retail demand, housing, surveys, employment, Fed policy and financial conditions.',
+    'US macro dashboard covering prices, GDP, retail demand, household credit, housing, surveys, employment, Fed policy and financial conditions.',
   alternates: {
     canonical: '/us',
   },
@@ -78,6 +78,14 @@ const indicators = [
         subtitle: 'PCE / Real Spending / Income / Dining Demand',
         badge: 'Monthly',
         desc: 'Tracks the Fed’s preferred inflation gauge alongside real spending, income, saving and price-adjusted restaurant sales.',
+      },
+      {
+        href: '/us/household-credit',
+        significance: 2,
+        title: 'Household Credit Stress',
+        subtitle: 'Debt / Delinquency Flows / Credit Cards / Auto',
+        badge: 'Quarterly',
+        desc: 'Tracks actual household borrowing and fresh serious-delinquency transitions from the New York Fed Consumer Credit Panel.',
       },
       {
         href: '/us/retail-sales',

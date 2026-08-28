@@ -152,7 +152,14 @@ export const INDICATOR_GUIDES = {
     'Compare core PCE momentum, real spending, real income, saving and dining demand.',
     'Spending that persistently outruns income can be strong now but less sustainable later.',
     'Advance retail estimates are revised and real dining sales are an approximation.',
-    [{ href: '/us/cpi', label: 'US CPI' }, { href: '/us/rates', label: 'Rates' }],
+    [{ href: '/us/cpi', label: 'US CPI' }, { href: '/us/household-credit', label: 'Household Credit' }],
+  ),
+  '/us/household-credit': guide(
+    'Shows realized household borrowing and payment stress using anonymized consumer credit records rather than sentiment.',
+    'Prioritize new 90-day delinquency transitions across credit cards, auto loans and mortgages over nominal debt totals.',
+    'Broad increases in fresh delinquencies can confirm that tighter financial conditions are reaching household spending capacity.',
+    'The report is quarterly and lagged; four-quarter transition sums are flows, while 90-day delinquent shares are accumulated stocks.',
+    [{ href: '/us/consumption', label: 'PCE & Income' }, { href: '/us/rates', label: 'Rates' }],
   ),
   '/us/retail-sales': guide(
     'Provides a timely hard-data read on household goods spending before the broader PCE release.',

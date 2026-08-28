@@ -22,6 +22,7 @@ const checks = [
   { path: '/api/us-cpi', required: ['series', 'fetchedAt'] },
   { path: '/api/us-ppi', required: ['series', 'fetchedAt'] },
   { path: '/api/us-consumption', required: ['series', 'fetchedAt', 'meta'] },
+  { path: '/api/us-household-credit', required: ['series', 'latestQuarter', 'meta'] },
   { path: '/api/us-retail-sales', required: ['series', 'fetchedAt', 'meta'] },
   { path: '/api/us-housing', required: ['series', 'fetchedAt', 'meta'] },
   { path: '/api/us-employment', required: ['employment'] },

@@ -103,6 +103,17 @@ const DEFINITIONS = {
         ? `Core PCE data are current; optional dining detail is partial: ${(data.meta.warnings || []).join(' · ')}`
         : 'PCE, income, restaurant sales and dining-price data loaded from official sources.',
     },
+    {
+      key: 'us-household-credit',
+      label: 'Household Credit Stress',
+      href: '/us/household-credit',
+      path: '/api/us-household-credit',
+      cadence: 'Quarterly',
+      maxAge: 180,
+      source: 'NY Fed Consumer Credit Panel / Equifax',
+      extract: data => data?.series?.totalDebt?.at(-1)?.period ?? null,
+      describe: data => data?.meta?.seriousFlowDefinition,
+    },
     { key: 'us-retail', label: 'Retail Sales', href: '/us/retail-sales', path: '/api/us-retail-sales', cadence: 'Monthly', maxAge: 100, source: 'Census · FRED', extract: data => fredDate(data?.series?.total) },
     { key: 'us-housing', label: 'Housing Cycle', href: '/us/housing', path: '/api/us-housing', cadence: 'Weekly / Monthly / Quarterly', maxAge: 100, source: 'Census · HUD · FHFA · FRED', extract: data => fredDate(data?.series?.starts) },
     { key: 'us-growth', label: 'GDP & Growth', href: '/us-macro#growth', path: '/api/us-macro', cadence: 'Quarterly', maxAge: 240, source: 'BEA · FRED', extract: data => observationDate(data?.growth?.realGdpGrowth) },

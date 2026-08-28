@@ -25,6 +25,7 @@ const routes = [
   { path: '/us/cpi', priority: 0.9, changeFrequency: 'monthly' },
   { path: '/us/ppi', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/us/consumption', priority: 0.8, changeFrequency: 'monthly' },
+  { path: '/us/household-credit', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/us/retail-sales', priority: 0.9, changeFrequency: 'monthly' },
   { path: '/us/housing', priority: 0.8, changeFrequency: 'weekly' },
   { path: '/us/employment', priority: 0.9, changeFrequency: 'weekly' },
