@@ -6,6 +6,7 @@ import test from 'node:test'
 
 import { INDICATOR_GUIDES } from '../app/lib/indicator-guides.mjs'
 import { OFFICIAL_SOURCES } from '../app/lib/official-sources.mjs'
+import { JAPAN_CPI_STATS_ID, JAPAN_CPI_WEIGHTS } from '../app/lib/japan-cpi-config.mjs'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const appRoot = join(root, 'app')
@@ -159,6 +160,32 @@ test('US CPI rent-of-shelter series matches its published relative-importance we
   assert.match(api, /rentOfShelter:\s*\{ id: 'CUSR0000SAS2RS'/)
   assert.match(api, /rentOfShelter:\s*0\.35333/)
   assert.doesNotMatch(page, /payload\.contributionWeights\.shelter/)
+})
+
+test('Japan CPI routes use the current official base and matching category definitions', () => {
+  const cpiApi = read('app/api/cpi/route.js')
+  const tokyoApi = read('app/api/tokyo-cpi/route.js')
+  const labourApi = read('app/api/labour/route.js')
+  const page = read('app/cpi/page.js')
+
+  assert.equal(JAPAN_CPI_STATS_ID, '0004052037')
+  assert.ok(Math.abs(Object.values(JAPAN_CPI_WEIGHTS).reduce((sum, value) => sum + value, 0) - 10000) <= 5)
+  for (const source of [cpiApi, tokyoApi, labourApi]) {
+    assert.match(source, /JAPAN_CPI_STATS_ID/)
+    assert.doesNotMatch(source, /0003427113/)
+  }
+  assert.match(cpiApi, /fetchSeries\('0242'\)/)
+  assert.match(cpiApi, /fetchSeries\('0241'\)/)
+  assert.match(page, /Goods \(ex\. Fresh Food\)/)
+  assert.match(page, /2025 Base/)
+})
+
+test('Chart.js dashboards expose image copy and PNG download controls', () => {
+  const theme = read('app/components/ChartTheme.js')
+  assert.match(theme, /navigator\.clipboard\?\.write/)
+  assert.match(theme, /ClipboardItem/)
+  assert.match(theme, /Copy image/)
+  assert.match(theme, /Download PNG/)
 })
 
 test('household credit dashboard uses NY Fed flow definitions without re-annualizing', () => {

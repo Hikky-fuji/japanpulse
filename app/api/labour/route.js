@@ -1,3 +1,5 @@
+import { JAPAN_CPI_STATS_ID } from '../../lib/japan-cpi-config.mjs'
+
 export const revalidate = 21600
 export const dynamic = 'force-dynamic'
 
@@ -37,11 +39,11 @@ export async function GET() {
       .map(v => ({ date: formatDate(v['@time']), value: parseFloat(v['$']) }))
   }
 
-  // CPI コア前年比（フィリップス曲線用）— statsDataId=0003427113 cat01=0161 tab=3
+  // CPI コア前年比（フィリップス曲線用）— current official base, cat01=0161 tab=3
   const fetchCpiCore = async () => {
     const url = `https://api.e-stat.go.jp/rest/3.0/app/json/getStatsData`
       + `?appId=${APP_ID}`
-      + `&statsDataId=0003427113`
+      + `&statsDataId=${JAPAN_CPI_STATS_ID}`
       + `&metaGetFlg=N&limit=1000`
       + `&cdArea=00000`
       + `&cdCat01=0161`

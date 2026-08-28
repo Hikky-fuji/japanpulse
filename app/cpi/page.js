@@ -32,7 +32,7 @@ export default function Home() {
 
   const {
     headline, core, corecore, services,
-    food_ex_fresh, energy, goods_ex_food_energy,
+    food_ex_fresh, energy, goods_ex_fresh,
     housing, medical, transport, education, comms, leisure, eating_out, apparel, furniture,
     headline_mm, core_mm, corecore_mm, services_mm,
     food_mm, energy_mm, goods_mm, housing_mm, medical_mm,
@@ -63,34 +63,33 @@ export default function Home() {
     ]
   }
 
-  const contribLabels = (contrib?.food_ex_fresh||[]).slice(-12).map(v=>v.date)
+  const contribLabels = (contrib?.food||[]).slice(-12).map(v=>v.date)
   const chart3 = {
     labels: contribLabels,
     datasets: [
-      { label: 'Food (ex. Fresh)', data: (contrib?.food_ex_fresh||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(55,138,221,0.8)', stack:'contrib' },
-      { label: 'Energy', data: (contrib?.energy||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(232,74,74,0.8)', stack:'contrib' },
-      { label: 'Goods (ex. Food & Energy)', data: (contrib?.goods_ex_food_energy||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(29,158,117,0.8)', stack:'contrib' },
-      { label: 'Services', data: (contrib?.services||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(255,165,0,0.8)', stack:'contrib' },
+      { label: 'Food', data: (contrib?.food||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(55,138,221,0.8)', stack:'contrib' },
+      { label: 'Housing', data: (contrib?.housing||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(245,166,35,0.8)', stack:'contrib' },
+      { label: 'Utilities', data: (contrib?.utilities||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(232,74,74,0.8)', stack:'contrib' },
+      { label: 'Furniture', data: (contrib?.furniture||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(46,204,113,0.8)', stack:'contrib' },
+      { label: 'Apparel', data: (contrib?.apparel||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(230,126,34,0.8)', stack:'contrib' },
+      { label: 'Medical', data: (contrib?.medical||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(26,188,156,0.8)', stack:'contrib' },
+      { label: 'Transport & Comms', data: (contrib?.transport_comms||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(29,158,117,0.8)', stack:'contrib' },
+      { label: 'Education', data: (contrib?.education||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(155,89,182,0.8)', stack:'contrib' },
+      { label: 'Leisure', data: (contrib?.leisure||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(52,73,94,0.8)', stack:'contrib' },
+      { label: 'Miscellaneous', data: (contrib?.miscellaneous||[]).slice(-12).map(v=>v.value), backgroundColor:'rgba(149,165,166,0.8)', stack:'contrib' },
       { label: 'Headline (Y/Y)', data: headline.slice(-12).map(v=>v.value), type:'line', borderColor:'#333', borderWidth:1.5, pointRadius:3, tension:0.3, borderDash:[3,2] },
     ]
   }
 
-  // ウェート円グラフ（2020年基準、総合1000分比）
+  // Official 2025-base 10-major-group weights (total basket = 10,000).
   const weightData = {
     labels: [
-      'Housing 16%',
-      'Food ex. Fresh 22%',
-      'Transport & Comms 14%',
-      'Services ex. Rent 11%',
-      'Leisure & Education 9%',
-      'Energy 7%',
-      'Goods ex. Food & Energy 8%',
-      'Medical 5%',
-      'Apparel 4%',
-      'Other 4%',
+      'Food 27.5%', 'Housing 21.8%', 'Transport & Comms 14.4%',
+      'Leisure 9.1%', 'Utilities 7.0%', 'Miscellaneous 5.7%',
+      'Medical 4.7%', 'Furniture 3.7%', 'Education 3.1%', 'Apparel 3.0%',
     ],
     datasets: [{
-      data: [160, 219, 143, 110, 90, 72, 80, 50, 41, 35],
+      data: [2754, 2182, 1444, 906, 698, 570, 466, 372, 311, 299],
       backgroundColor: [
         '#378ADD', '#D85A30', '#1D9E75', '#F5A623',
         '#9B59B6', '#E24B4A', '#2ECC71', '#1ABC9C',
@@ -118,7 +117,7 @@ export default function Home() {
     responsive: true,
     plugins: {
       legend: { position: 'right', labels: { font: { size: 11 }, padding: 12 } },
-      tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.raw}/1000` } }
+      tooltip: { callbacks: { label: (ctx) => ` ${ctx.label}: ${ctx.raw}/10,000` } }
     }
   }
 
@@ -129,7 +128,7 @@ export default function Home() {
     { label:'Services (ex. Imputed Rent)', yoy:services, mm:services_mm, group:'Aggregate' },
     { label:'Food (ex. Fresh)', yoy:food_ex_fresh, mm:food_mm, group:'Goods' },
     { label:'Energy', yoy:energy, mm:energy_mm, group:'Goods' },
-    { label:'Goods (ex. Food & Energy)', yoy:goods_ex_food_energy, mm:goods_mm, group:'Goods' },
+    { label:'Goods (ex. Fresh Food)', yoy:goods_ex_fresh, mm:goods_mm, group:'Goods' },
     { label:'Furniture & Household', yoy:furniture, mm:furniture_mm, group:'Goods' },
     { label:'Apparel & Footwear', yoy:apparel, mm:apparel_mm, group:'Goods' },
     { label:'Housing', yoy:housing, mm:housing_mm, group:'Services' },
@@ -155,7 +154,7 @@ export default function Home() {
     { label:'Services (ex. Imp. Rent)',  mm: services_mm,   group: 'Aggregate' },
     { label:'Food (ex. Fresh)',          mm: food_mm,       group: 'Goods' },
     { label:'Energy',                    mm: energy_mm,     group: 'Goods' },
-    { label:'Goods (ex. Food & Energy)', mm: goods_mm,      group: 'Goods' },
+    { label:'Goods (ex. Fresh Food)',    mm: goods_mm,      group: 'Goods' },
     { label:'Furniture & Household',     mm: furniture_mm,  group: 'Goods' },
     { label:'Apparel & Footwear',        mm: apparel_mm,    group: 'Goods' },
     { label:'Housing',                   mm: housing_mm,    group: 'Services' },
@@ -268,12 +267,12 @@ export default function Home() {
       <div style={s.box}>
         <div style={s.boxTitle}>Approximate Contribution to Headline CPI (Y/Y, pp) — Last 12 months</div>
         <Bar data={chart3} options={contribOpts} />
-        <div style={s.note}>Approximation using fixed 2020-base basket weights; components overlap and may not sum exactly to the official headline contribution.</div>
+        <div style={s.note}>Approximation from the official 2025-base weights for the 10 mutually exclusive major groups. Official published contributions can differ slightly because they use unrounded index levels.</div>
       </div>
 
       <div className={styles.chartGrid}>
         <div style={s.box}>
-          <div style={s.boxTitle}>CPI Basket Weight Composition (2020 Base, /1000)</div>
+          <div style={s.boxTitle}>CPI Basket Weight Composition (2025 Base, /10,000)</div>
           <Doughnut data={weightData} options={doughnutOpts} />
         </div>
         <div style={s.box}>
@@ -307,7 +306,7 @@ export default function Home() {
           </table></div>
         </div>
       </div>
-      <div style={s.note}>Methodology: Y/Y rates and NSA monthly changes come from MIC e-Stat. Japan’s “core” excludes fresh food; “core-core” here excludes fresh food and energy, so it is not identical to the U.S. core definition. A 3-month annualized rate is intentionally not calculated from detailed NSA series.</div>
+      <div style={s.note}>Methodology: 2025-base Y/Y rates and NSA monthly changes come from MIC e-Stat (table {data.metadata?.statsDataId || '0004052037'}). Japan’s “core” excludes fresh food; “core-core” here excludes fresh food and energy, so it is not identical to the U.S. core definition. A 3-month annualized rate is intentionally not calculated from detailed NSA series.</div>
     </main>
   )
 }

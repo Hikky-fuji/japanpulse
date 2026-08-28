@@ -1,3 +1,5 @@
+import { JAPAN_CPI_BASE_YEAR, JAPAN_CPI_STATS_ID } from '../../lib/japan-cpi-config.mjs'
+
 export const revalidate = 21600
 export const dynamic = 'force-dynamic'
 
@@ -7,7 +9,7 @@ export async function GET() {
   const fetchSeries = async (cat, tab = '3') => {
     const url = `https://api.e-stat.go.jp/rest/3.0/app/json/getStatsData`
       + `?appId=${APP_ID}`
-      + `&statsDataId=0003427113`
+      + `&statsDataId=${JAPAN_CPI_STATS_ID}`
       + `&metaGetFlg=N&limit=100`
       + `&cdArea=13A01`
       + `&cdCat01=${cat}`
@@ -32,15 +34,15 @@ export async function GET() {
     fetchSeries('0001'),
     fetchSeries('0161'),
     fetchSeries('0178'),
-    fetchSeries('0220'),
+    fetchSeries('0242'),
   ])
 
   const [headline_mm, core_mm, corecore_mm, services_mm] = await Promise.all([
     fetchSeries('0001', '2'),
     fetchSeries('0161', '2'),
     fetchSeries('0178', '2'),
-    fetchSeries('0220', '2'),
+    fetchSeries('0242', '2'),
   ])
 
-  return Response.json({ headline, core, corecore, services, headline_mm, core_mm, corecore_mm, services_mm })
+  return Response.json({ headline, core, corecore, services, headline_mm, core_mm, corecore_mm, services_mm, metadata: { baseYear: JAPAN_CPI_BASE_YEAR, statsDataId: JAPAN_CPI_STATS_ID } })
 }
