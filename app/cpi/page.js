@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import { Line, Bar, Doughnut } from 'react-chartjs-2'
 import { DashboardFreshness, DashboardState } from '../components/DashboardStatus'
+import { momentumSignal, movingAverage, yoyMomentum } from '../lib/japan-cpi-momentum.mjs'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -17,11 +18,6 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Title, Tooltip, Legend)
 
-const mma3 = (arr) => arr.map((v, i) => {
-  if (i < 2) return null
-  return parseFloat(((arr[i-2].value + arr[i-1].value + v.value) / 3).toFixed(2))
-})
-
 export default function Home() {
   const [data, setData] = useState(null)
 
@@ -35,29 +31,17 @@ export default function Home() {
 
   const {
     headline, core, corecore, services,
+    food_ex_fresh, energy, goods_ex_food_energy,
+    housing, medical, transport, education, comms, leisure, eating_out, apparel, furniture,
     headline_mm, core_mm, corecore_mm, services_mm,
     food_mm, energy_mm, goods_mm, housing_mm, medical_mm,
     transport_mm, education_mm, comms_mm, leisure_mm, eating_out_mm, apparel_mm, furniture_mm,
     contrib
   } = data
 
-  const latest = {
-    headline: headline.at(-1), core: core.at(-1),
-    corecore: corecore.at(-1), services: services?.at(-1)
-  }
-  const prev = {
-    headline: headline.at(-2), core: core.at(-2),
-    corecore: corecore.at(-2), services: services?.at(-2)
-  }
-  const diff = (a, b) => {
-    if (!a || !b) return { str: 'N/A', pos: true }
-    const d = (a.value - b.value).toFixed(1)
-    return { str: Number(d) > 0 ? `+${d}pp` : `${d}pp`, pos: Number(d) >= 0 }
-  }
-
   const labels = headline.map(v => v.date)
-  const core3mma = mma3(core)
-  const services3mma = mma3(services || [])
+  const core3mma = movingAverage(core).map(point => point.value)
+  const services3mma = movingAverage(services).map(point => point.value)
 
   const chart1 = {
     labels,
@@ -137,11 +121,30 @@ export default function Home() {
     }
   }
 
+  const momentumRows = [
+    { label:'Headline', yoy:headline, mm:headline_mm, group:'Aggregate' },
+    { label:'Core (ex. Fresh Food)', yoy:core, mm:core_mm, group:'Aggregate' },
+    { label:'Core-Core (ex. Fresh Food & Energy)', yoy:corecore, mm:corecore_mm, group:'Aggregate' },
+    { label:'Services (ex. Imputed Rent)', yoy:services, mm:services_mm, group:'Aggregate' },
+    { label:'Food (ex. Fresh)', yoy:food_ex_fresh, mm:food_mm, group:'Goods' },
+    { label:'Energy', yoy:energy, mm:energy_mm, group:'Goods' },
+    { label:'Goods (ex. Food & Energy)', yoy:goods_ex_food_energy, mm:goods_mm, group:'Goods' },
+    { label:'Furniture & Household', yoy:furniture, mm:furniture_mm, group:'Goods' },
+    { label:'Apparel & Footwear', yoy:apparel, mm:apparel_mm, group:'Goods' },
+    { label:'Housing', yoy:housing, mm:housing_mm, group:'Services' },
+    { label:'Medical & Healthcare', yoy:medical, mm:medical_mm, group:'Services' },
+    { label:'Transport', yoy:transport, mm:transport_mm, group:'Services' },
+    { label:'Communications', yoy:comms, mm:comms_mm, group:'Services' },
+    { label:'Education', yoy:education, mm:education_mm, group:'Services' },
+    { label:'Leisure & Culture', yoy:leisure, mm:leisure_mm, group:'Services' },
+    { label:'Eating Out', yoy:eating_out, mm:eating_out_mm, group:'Services' },
+  ].map(row => ({ ...row, stats:yoyMomentum(row.yoy, row.mm) }))
+
   const cards = [
-    { label:'Headline (Y/Y)', val:latest.headline?.value, d:diff(latest.headline, prev.headline) },
-    { label:'Core ex. Fresh Food', val:latest.core?.value, d:diff(latest.core, prev.core) },
-    { label:'Core-Core ex. Food & Energy', val:latest.corecore?.value, d:diff(latest.corecore, prev.corecore) },
-    { label:'Services ex. Imputed Rent', val:latest.services?.value, d:diff(latest.services, prev.services) },
+    { label:'Headline', stats:momentumRows[0].stats },
+    { label:'Core ex. Fresh Food', stats:momentumRows[1].stats },
+    { label:'Core-Core', stats:momentumRows[2].stats },
+    { label:'Services ex. Imputed Rent', stats:momentumRows[3].stats },
   ]
 
   const mmRows = [
@@ -178,7 +181,15 @@ export default function Home() {
     table: { width:'100%', borderCollapse:'collapse', fontSize:'12.5px' },
     th: { textAlign:'right', padding:'7px 12px', color:'#888', fontWeight:'500', borderBottom:'1px solid #eee' },
     td: { padding:'6px 12px', borderBottom:'1px solid #f5f5f5' },
+    note: { fontSize:'11px', lineHeight:'1.55', color:'#777', marginTop:'10px' },
   }
+
+  const signed = (value, digits = 1, suffix = '%') => Number.isFinite(value)
+    ? `${value > 0 ? '+' : ''}${value.toFixed(digits)}${suffix}`
+    : '—'
+  const signalColor = signal => signal === 'Accelerating'
+    ? '#D85A30'
+    : signal === 'Cooling' ? '#1D9E75' : '#777'
 
   return (
     <main className="dashboard-page" style={s.wrap}>
@@ -197,10 +208,52 @@ export default function Home() {
         {cards.map(k => (
           <div key={k.label} style={s.card}>
             <div style={s.cardLabel}>{k.label}</div>
-            <div style={s.cardVal}>{k.val != null ? k.val.toFixed(1)+'%' : '--'}</div>
-            <div style={{fontSize:'11px', color: k.d.pos?'#1D9E75':'#E24B4A', marginTop:'3px'}}>{k.d.str} vs prior</div>
+            <div style={s.cardVal}>{Number.isFinite(k.stats.yoy) ? k.stats.yoy.toFixed(1)+'%' : '—'}</div>
+            <div style={{fontSize:'11px', color:'#666', marginTop:'5px'}}>3MMA {Number.isFinite(k.stats.mma3) ? k.stats.mma3.toFixed(2)+'%' : '—'}</div>
+            <div style={{fontSize:'11px', color:signalColor(momentumSignal(k.stats.mma3Change)), marginTop:'3px'}}>
+              {momentumSignal(k.stats.mma3Change)} · {signed(k.stats.mma3Change, 2, 'pp')}
+            </div>
           </div>
         ))}
+      </div>
+
+      <div style={s.box}>
+        <div style={s.boxTitle}>Inflation Momentum Scorecard — latest release</div>
+        <div style={{overflowX:'auto'}}>
+          <table style={{...s.table, minWidth:'720px'}}>
+            <thead>
+              <tr>
+                <th style={{...s.th, textAlign:'left'}}>Series</th>
+                <th style={s.th}>Y/Y</th>
+                <th style={s.th}>3MMA Y/Y</th>
+                <th style={s.th}>3MMA Δ</th>
+                <th style={s.th}>Latest M/M</th>
+                <th style={{...s.th, textAlign:'left'}}>Signal</th>
+              </tr>
+            </thead>
+            <tbody>
+              {['Aggregate','Goods','Services'].map(group => (
+                <React.Fragment key={group}>
+                  <tr><td colSpan={6} style={{...s.td, fontSize:'11px', color:'#999', fontWeight:'600', textTransform:'uppercase', background:'#fafafa'}}>{group}</td></tr>
+                  {momentumRows.filter(row => row.group === group).map(row => {
+                    const signal = momentumSignal(row.stats.mma3Change)
+                    return (
+                      <tr key={row.label}>
+                        <td style={{...s.td, fontWeight:group === 'Aggregate' ? '600' : '400'}}>{row.label}</td>
+                        <td style={{...s.td, textAlign:'right'}}>{signed(row.stats.yoy)}</td>
+                        <td style={{...s.td, textAlign:'right'}}>{signed(row.stats.mma3, 2)}</td>
+                        <td style={{...s.td, textAlign:'right', color:signalColor(signal)}}>{signed(row.stats.mma3Change, 2, 'pp')}</td>
+                        <td style={{...s.td, textAlign:'right'}}>{signed(row.stats.monthlyNsa, 1)}</td>
+                        <td style={{...s.td, color:signalColor(signal)}}>{signal}</td>
+                      </tr>
+                    )
+                  })}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div style={s.note}>3MMA is the average of the latest three official Y/Y rates. “3MMA Δ” compares the latest 3MMA with the prior month’s 3MMA. M/M figures are not seasonally adjusted and are shown as release detail—not as a three-month annualized pace.</div>
       </div>
 
       <div style={s.grid2}>
@@ -215,8 +268,9 @@ export default function Home() {
       </div>
 
       <div style={s.box}>
-        <div style={s.boxTitle}>Contribution to Headline CPI (Y/Y, pp) — Last 12 months</div>
+        <div style={s.boxTitle}>Approximate Contribution to Headline CPI (Y/Y, pp) — Last 12 months</div>
         <Bar data={chart3} options={contribOpts} />
+        <div style={s.note}>Approximation using fixed 2020-base basket weights; components overlap and may not sum exactly to the official headline contribution.</div>
       </div>
 
       <div style={s.grid2}>
@@ -255,6 +309,7 @@ export default function Home() {
           </table>
         </div>
       </div>
+      <div style={s.note}>Methodology: Y/Y rates and NSA monthly changes come from MIC e-Stat. Japan’s “core” excludes fresh food; “core-core” here excludes fresh food and energy, so it is not identical to the U.S. core definition. A 3-month annualized rate is intentionally not calculated from detailed NSA series.</div>
     </main>
   )
 }
