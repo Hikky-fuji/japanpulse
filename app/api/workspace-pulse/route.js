@@ -1,5 +1,7 @@
 export const dynamic = 'force-dynamic'
 
+import { FetchTimeoutError, fetchWithRetry } from '../../lib/resilient-fetch.js'
+
 const SOURCES = {
   JP: {
     cpi: '/api/cpi',
@@ -33,15 +35,16 @@ const SOURCE_TIMEOUTS = {
 }
 
 async function fetchSource(origin, key, path, timeoutMs = 8500) {
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), timeoutMs)
   const startedAt = Date.now()
 
   try {
-    const response = await fetch(`${origin}${path}`, {
-      signal: controller.signal,
+    const response = await fetchWithRetry(`${origin}${path}`, {
       next: { revalidate: 900 },
       headers: { 'User-Agent': 'JapanPulse workspace aggregator' },
+    }, {
+      attempts: 2,
+      timeoutMs,
+      retryDelayMs: 200,
     })
     if (!response.ok) throw new Error(`HTTP ${response.status}`)
     const payload = await response.json()
@@ -58,10 +61,8 @@ async function fetchSource(origin, key, path, timeoutMs = 8500) {
       payload: null,
       status: 'failed',
       durationMs: Date.now() - startedAt,
-      error: error.name === 'AbortError' ? 'Timed out' : error.message,
+      error: error instanceof FetchTimeoutError ? 'Timed out after retry' : error.message,
     }
-  } finally {
-    clearTimeout(timeout)
   }
 }
 

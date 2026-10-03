@@ -1,23 +1,21 @@
 export const revalidate = 3600
 export const dynamic = 'force-dynamic'
 
+import { fetchFredSeries } from '../../lib/fred.js'
+
 export async function GET() {
   const apiKey = process.env.FRED_API_KEY
-  if (!apiKey) return Response.json({ error: 'FRED_API_KEY not set' })
+  const fallbackSeries = []
 
-  const fetchFred = async (id, limit = 120) => {
+  const fetchFred = async (id, limit = 120, options = {}) => {
     try {
-      const url =
-        `https://api.stlouisfed.org/fred/series/observations` +
-        `?series_id=${id}&api_key=${apiKey}&file_type=json&sort_order=desc&limit=${limit}`
-      const res = await fetch(url, { next: { revalidate } })
-      if (!res.ok) { console.warn(`[US-Emp] HTTP ${res.status} for ${id}`); return [] }
-      const json = await res.json()
-      if (json.error_message) { console.warn(`[US-Emp] ${id}:`, json.error_message); return [] }
-      return (json.observations || [])
-        .filter(o => o.value !== '.')
-        .map(o => ({ date: o.date, value: parseFloat(o.value) }))
-        .reverse()
+      return await fetchFredSeries(id, {
+        apiKey,
+        limit,
+        startDate: options.startDate,
+        revalidate,
+        onFallback: seriesId => fallbackSeries.push(seriesId),
+      })
     } catch (e) {
       console.warn(`[US-Emp] Failed ${id}:`, e.message)
       return []
@@ -63,11 +61,15 @@ export async function GET() {
     fetchFred('CES6500000003'),  // Edu & Health
     fetchFred('CES7000000003'),  // Leisure
     // FOMC Summary of Economic Projections
-    fetchFred('UNRATEMD', 10),    // Median Q4 unemployment projection by year
-    fetchFred('UNRATEMDLR', 8),   // Median longer-run unemployment estimate by SEP release
+    fetchFred('UNRATEMD', 10, { startDate: '2010-01-01' }),    // Median Q4 unemployment projection by year
+    fetchFred('UNRATEMDLR', 8, { startDate: '2010-01-01' }),   // Median longer-run unemployment estimate by SEP release
   ])
 
   return Response.json({
+    meta: {
+      delivery: fallbackSeries.length ? 'FRED API with official CSV fallback' : 'FRED API',
+      fallbackSeries: [...new Set(fallbackSeries)],
+    },
     employment: { payems, unrate, u6rate, civpart, prime_part, ahe },
     sectors:    { goods, construction, wholesale, retail, transportation, utilities, info, fire, pbs, ehs, lah, govt },
     sectorAhe:  {

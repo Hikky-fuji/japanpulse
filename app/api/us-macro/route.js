@@ -1,6 +1,8 @@
 export const revalidate = 3600
 export const dynamic = 'force-dynamic'
 
+import { fetchFredSeries } from '../../lib/fred.js'
+
 const FOMC_MEETINGS = [
   { start: '2026-09-15', end: '2026-09-16', sep: true },
   { start: '2026-10-27', end: '2026-10-28', sep: false },
@@ -90,40 +92,19 @@ const hpTrend = (values, lambda = 1600) => {
 
 export async function GET() {
   const apiKey = process.env.FRED_API_KEY
-  if (!apiKey) {
-    return Response.json({ error: 'FRED_API_KEY not set' })
-  }
+  const fallbackSeries = []
 
   const fetchSeries = async (seriesId, limit = 36, options = {}) => {
     try {
-      const frequency = options.frequency ? `&frequency=${options.frequency}` : ''
-      const aggregation = options.aggregation
-        ? `&aggregation_method=${options.aggregation}`
-        : ''
-      const url =
-        `https://api.stlouisfed.org/fred/series/observations` +
-        `?series_id=${seriesId}` +
-        `&api_key=${apiKey}` +
-        `&file_type=json` +
-        `&sort_order=desc` +
-        `&limit=${limit}` +
-        frequency +
-        aggregation
-      const res = await fetch(url, { next: { revalidate } })
-      if (!res.ok) {
-        console.warn(`[US Macro] HTTP ${res.status} for ${seriesId}`)
-        return []
-      }
-      const json = await res.json()
-      if (json.error_message) {
-        console.warn(`[US Macro] FRED error for ${seriesId}:`, json.error_message)
-        return []
-      }
-      const obs = json.observations || []
-      return obs
-        .filter(o => o.value !== '.')
-        .map(o => ({ date: o.date, value: parseFloat(o.value) }))
-        .reverse()
+      return await fetchFredSeries(seriesId, {
+        apiKey,
+        limit,
+        frequency: options.frequency,
+        aggregation: options.aggregation,
+        startDate: options.startDate,
+        revalidate,
+        onFallback: id => fallbackSeries.push(id),
+      })
     } catch (e) {
       console.warn(`[US Macro] Failed to fetch ${seriesId}:`, e.message)
       return []
@@ -169,9 +150,9 @@ export async function GET() {
     fetchSeries('RSAFS'),
     fetchSeries('FEDFUNDS', 240),
     fetchSeries('PCEPILFE', 240),
-    fetchSeries('GDPC1', 100),
-    fetchSeries('GDPPOT', 100),
-    fetchSeries('NROU', 100),
+    fetchSeries('GDPC1', 100, { startDate: '1995-01-01' }),
+    fetchSeries('GDPPOT', 100, { startDate: '1995-01-01' }),
+    fetchSeries('NROU', 100, { startDate: '1995-01-01' }),
     fetchSeries('T5YIE', 240, { frequency: 'm', aggregation: 'avg' }),
     fetchSeries('GS1', 600),
     fetchSeries('PCETRIM12M159SFRBDAL', 600),
@@ -282,6 +263,10 @@ export async function GET() {
   const nextFomc = FOMC_MEETINGS.find(meeting => meeting.end >= today) || null
 
   return Response.json({
+    meta: {
+      delivery: fallbackSeries.length ? 'FRED API with official CSV fallback' : 'FRED API',
+      fallbackSeries: [...new Set(fallbackSeries)],
+    },
     employment: { nfp: payems, unrate, u6rate, civpart, prime_part, ahe },
     sectors: { goods, construction, trade, info, fire, pbs, ehs, lah, govt },
     wages: {

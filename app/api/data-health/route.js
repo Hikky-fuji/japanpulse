@@ -1,5 +1,7 @@
 export const dynamic = 'force-dynamic'
 
+import { FetchTimeoutError, fetchWithRetry } from '../../lib/resilient-fetch.js'
+
 const last = values => Array.isArray(values) && values.length ? values.at(-1) : null
 const observationDate = series => last(series?.filter(item => item?.date))?.date ?? null
 const fredDate = payload => observationDate(payload?.observations)
@@ -150,24 +152,22 @@ function freshness(latestPeriod, maxAge) {
   return { status: 'current', ageDays, message: 'Within the expected publication window' }
 }
 
-async function fetchWithTimeout(url, milliseconds = 30000) {
-  const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), milliseconds)
-  try {
-    const response = await fetch(url, { cache: 'no-store', signal: controller.signal })
-    if (!response.ok) throw new Error(`HTTP ${response.status}`)
-    const payload = await response.json()
-    if (payload?.error) throw new Error(payload.error)
-    return payload
-  } finally {
-    clearTimeout(timeout)
-  }
+async function fetchHealthPayload(url, milliseconds = 30000) {
+  const response = await fetchWithRetry(url, { cache: 'no-store' }, {
+    attempts: 2,
+    timeoutMs: milliseconds,
+    retryDelayMs: 250,
+  })
+  if (!response.ok) throw new Error(`HTTP ${response.status}`)
+  const payload = await response.json()
+  if (payload?.error) throw new Error(payload.error)
+  return payload
 }
 
 async function inspectSource(origin, definition) {
   const checkedAt = new Date().toISOString()
   try {
-    const payload = await fetchWithTimeout(`${origin}${definition.path}`)
+    const payload = await fetchHealthPayload(`${origin}${definition.path}`)
     const latestPeriod = definition.extract(payload)
     const detailMessage = definition.describe?.(payload) || null
     const fresh = definition.reference
@@ -201,7 +201,7 @@ async function inspectSource(origin, definition) {
       checkedAt,
       status: 'failed',
       ageDays: null,
-      message: error.name === 'AbortError' ? 'Health check timed out' : error.message,
+      message: error instanceof FetchTimeoutError ? 'Health check timed out after retry' : error.message,
     }
   }
 }
