@@ -6,9 +6,11 @@ import {
   DALLAS_SURVEY,
   RICHMOND_SURVEY,
   cellMonth,
+  expectedLatestMonth,
   lastWeekday,
   nthWeekday,
   parseSurveyRows,
+  surveyLag,
 } from '../app/lib/regional-surveys.mjs'
 
 const close = (actual, expected, digits = 6) => assert.ok(Math.abs(actual - expected) < 10 ** -digits, `${actual} != ${expected}`)
@@ -67,4 +69,23 @@ test('release-day helpers find the fourth Tuesday and last Monday', () => {
   assert.equal(nthWeekday(2026, 9, 2, 4).toISOString().slice(0, 10), '2026-10-27')
   assert.equal(lastWeekday(2026, 9, 1).toISOString().slice(0, 10), '2026-10-26')
   assert.equal(lastWeekday(2026, 10, 1).toISOString().slice(0, 10), '2026-11-30')
+})
+
+test('expected latest month follows each district release schedule', () => {
+  const today = new Date(Date.UTC(2026, 10, 2)) // Nov 2, 2026
+  assert.equal(expectedLatestMonth('empire', today), '2026-10-01')
+  assert.equal(expectedLatestMonth('dallas', today), '2026-10-01')
+  // Richmond: Oct 27 + 3 days grace = Oct 30, so October is due.
+  assert.equal(expectedLatestMonth('richmond', today), '2026-10-01')
+  // Before Empire's Nov 16 release (+3 days), November is not yet expected.
+  assert.equal(expectedLatestMonth('empire', new Date(Date.UTC(2026, 10, 17))), '2026-10-01')
+  assert.equal(expectedLatestMonth('empire', new Date(Date.UTC(2026, 10, 19))), '2026-11-01')
+  assert.equal(expectedLatestMonth('unknown', today), null)
+})
+
+test('survey lag counts missing scheduled months', () => {
+  const today = new Date(Date.UTC(2026, 10, 2))
+  assert.equal(surveyLag('richmond', '2026-10-01', today).behind, 0)
+  assert.equal(surveyLag('richmond', '2026-08-01', today).behind, 2)
+  assert.equal(surveyLag('dallas', null, today).behind, null)
 })

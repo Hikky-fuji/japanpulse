@@ -27,7 +27,7 @@ import {
   ismEquivalentComposite,
   trackingStats,
 } from '../../lib/regional-ism.mjs'
-import { lastWeekday, nthWeekday } from '../../lib/regional-surveys.mjs'
+import { regionalReleaseDate } from '../../lib/regional-surveys.mjs'
 
 ChartJS.register(
   BarElement,
@@ -97,32 +97,15 @@ function pointForMonth(observations, month) {
   return last((observations || []).filter(point => point.date.slice(0, 7) === month))
 }
 
-function thirdThursday(year, monthIndex) {
-  const date = new Date(Date.UTC(year, monthIndex, 1))
-  const offset = (4 - date.getUTCDay() + 7) % 7
-  date.setUTCDate(1 + offset + 14)
-  return date
-}
-
-function nextWeekday(year, monthIndex) {
-  const date = new Date(Date.UTC(year, monthIndex, 1))
-  if (date.getUTCDay() === 6) date.setUTCDate(3)
-  if (date.getUTCDay() === 0) date.setUTCDate(2)
-  return date
-}
-
 function releaseDates(referenceDate) {
   if (!referenceDate) return {}
   const [year, month] = referenceDate.slice(0, 7).split('-').map(Number)
-  const empire = new Date(Date.UTC(year, month - 1, 15))
-  while (empire.getUTCDay() === 0 || empire.getUTCDay() === 6) {
-    empire.setUTCDate(empire.getUTCDate() + 1)
-  }
-  const philly = thirdThursday(year, month - 1)
-  const richmond = nthWeekday(year, month - 1, 2, 4)
-  const dallas = lastWeekday(year, month - 1, 1)
-  const ism = nextWeekday(year, month)
-  return { empire, philly, richmond, dallas, ism }
+  const releases = Object.fromEntries(['empire', 'philly', 'richmond', 'dallas']
+    .map(key => [key, regionalReleaseDate(key, year, month - 1)]))
+  // ISM: first business day of the following month.
+  const ism = new Date(Date.UTC(year, month, 1))
+  while (ism.getUTCDay() === 0 || ism.getUTCDay() === 6) ism.setUTCDate(ism.getUTCDate() + 1)
+  return { ...releases, ism }
 }
 
 const formatRelease = date => date
@@ -378,6 +361,7 @@ export default function ManufacturingMomentumPage() {
 
     return {
       cadence: orderedCadence(payload.cadence, releases),
+      lagging: Object.values(payload.meta?.freshness || {}).filter(lag => lag.behind > 0),
       empireEqComparison: eqMaps.empire?.get(comparisonMonth),
       phillyEqComparison: eqMaps.philly?.get(comparisonMonth),
       districts,
@@ -595,6 +579,17 @@ export default function ManufacturingMomentumPage() {
             </div>
             <p>Each survey&apos;s five ISM-counterpart components are converted to 50 + DI/2 and averaged, as the ISM PMI is built; the four districts are then averaged.</p>
           </div>
+
+          {model.lagging.length > 0 && (
+            <div className={styles.alert} role="status">
+              <strong>Behind release schedule</strong>
+              {model.lagging.map(lag => (
+                <span key={lag.key}>
+                  {STAGE_NAMES[lag.key]}: latest {monthLabel(lag.latest)}, {monthLabel(lag.expected)} was due. The four-district composite stops at the last complete month.
+                </span>
+              ))}
+            </div>
+          )}
 
           <div className={styles.stack}>
             <article className={styles.panel}>
