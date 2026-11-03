@@ -47,11 +47,10 @@ const REGIONAL_SERIES = {
 const ISM_SNAPSHOT = {
   label: 'ISM Manufacturing PMI',
   source: 'Institute for Supply Management',
-  sourceUrl: 'https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/pmi/september/',
+  sourceUrl: 'https://www.ismworld.org/supply-management-news-and-reports/reports/ism-pmi-reports/pmi/october/',
   updateMode: 'Official snapshot — manually verified',
-  verifiedAt: '2026-10-01',
+  verifiedAt: '2026-11-02',
   headline: [
-    { date: '2025-10-01', value: 48.8 },
     { date: '2025-11-01', value: 48.0 },
     { date: '2025-12-01', value: 47.9 },
     { date: '2026-01-01', value: 52.6 },
@@ -63,15 +62,16 @@ const ISM_SNAPSHOT = {
     { date: '2026-07-01', value: 55.6 },
     { date: '2026-08-01', value: 54.6 },
     { date: '2026-09-01', value: 54.5 },
+    { date: '2026-10-01', value: 55.5 },
   ],
   latest: {
-    headline: 54.5,
-    newOrders: 55.3,
-    production: 56.7,
-    employment: 52.7,
-    pricesPaid: 77.9,
-    inventories: 48.6,
-    supplierDeliveries: 59.0,
+    headline: 55.5,
+    newOrders: 55.5,
+    production: 59.0,
+    employment: 52.4,
+    pricesPaid: 75.2,
+    inventories: 51.4,
+    supplierDeliveries: 59.1,
   },
 }
 

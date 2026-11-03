@@ -108,10 +108,10 @@ test('data-health API references existing API routes and pages', () => {
 test('the manually verified ISM snapshot has a current official period', () => {
   const manufacturingApi = read('app/api/us-manufacturing/route.js')
 
-  assert.match(manufacturingApi, /pmi\/september\//)
-  assert.match(manufacturingApi, /verifiedAt:\s*'2026-10-01'/)
-  assert.match(manufacturingApi, /date:\s*'2026-09-01',\s*value:\s*54\.5/)
-  assert.match(manufacturingApi, /headline:\s*54\.5/)
+  assert.match(manufacturingApi, /pmi\/october\//)
+  assert.match(manufacturingApi, /verifiedAt:\s*'2026-11-02'/)
+  assert.match(manufacturingApi, /date:\s*'2026-10-01',\s*value:\s*55\.5/)
+  assert.match(manufacturingApi, /headline:\s*55\.5/)
 })
 
 test('public-quality routes and official dining series remain registered', () => {
