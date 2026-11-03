@@ -56,7 +56,19 @@ const DEFINITIONS = {
     { key: 'jp-housing', label: 'Housing Starts', href: '/housing', path: '/api/housing', cadence: 'Monthly', maxAge: 100, source: 'MLIT · Statistics Dashboard API', extract: data => observationDate(data?.series?.startsSaar?.observations) },
     { key: 'jp-tankan', label: 'BOJ Tankan', href: '/tankan', path: '/api/tankan', cadence: 'Quarterly', maxAge: 240, source: 'BOJ', extract: data => observationDate(data?.large_mfg) },
     { key: 'jp-watchers', label: 'Economy Watchers', href: '/watcher', path: '/api/watcher', cadence: 'Monthly', maxAge: 100, source: 'Cabinet Office', extract: data => observationDate(data?.current_all) },
-    { key: 'jp-wages', label: 'Wages', href: '/wages', path: '/api/wages', cadence: 'Monthly', maxAge: 110, source: 'MHLW', extract: data => data?.latest_date ?? observationDate(data?.nominal) },
+    {
+      key: 'jp-wages',
+      label: 'Wages',
+      href: '/wages',
+      path: '/api/wages',
+      cadence: 'Monthly',
+      maxAge: 110,
+      source: 'MHLW',
+      extract: data => data?.latest_date ?? observationDate(data?.nominal),
+      describe: data => data?.meta?.partial
+        ? `All-establishment series are current; same-establishment detail is partial: ${(data.meta.warnings || []).join(' · ')}`
+        : null,
+    },
     { key: 'jp-labour', label: 'Labor Force', href: '/labour', path: '/api/labour', cadence: 'Monthly', maxAge: 100, source: 'MIC · e-Stat', extract: data => observationDate(data?.data) },
     { key: 'jp-job-ratio', label: 'Job-to-Applicant Ratio', href: '/job-ratio', path: '/api/job-ratio', cadence: 'Monthly', maxAge: 100, source: 'MHLW · e-Stat', extract: data => data?.latest?.date ?? null },
     {

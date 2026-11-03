@@ -1,4 +1,5 @@
 import { fetchWithRetry } from '../../lib/resilient-fetch.js'
+import { SAME_ESTABLISHMENT_COLUMNS } from '../../lib/japan-wages.mjs'
 
 export const revalidate = 21600
 export const dynamic = 'force-dynamic'
@@ -120,7 +121,7 @@ async function findLatestKyo(maxBack = 5) {
   let y = new Date().getFullYear()
   let m = new Date().getMonth() + 1
   for (let i = 0; i < maxBack; i++) {
-    for (const sfx of ['p', 'r']) {
+    for (const sfx of ['r', 'p']) {
       const buf = await tryFetchKyo(y, m, sfx)
       if (buf) return buf
     }
@@ -172,10 +173,10 @@ export async function GET() {
   }
 
   try {
-    const [bufs1, bufs4, bufs6, kyoBuf] = await Promise.all([
-      fetchPair('t01', ['p', 'r']),
-      fetchPair('t04', ['p', 'r']),
-      fetchPair('t06', ['r']),
+    // Prefer the final (r) file over the preliminary (p) one for the same month.
+    const [bufs1, bufs4, kyoBuf] = await Promise.all([
+      fetchPair('t01', ['r', 'p']),
+      fetchPair('t04', ['r', 'p']),
       findLatestKyo(),
     ])
 
@@ -183,26 +184,51 @@ export async function GET() {
 
     const rows1All = bufs1.map(readRows)
     const rows4All = bufs4.map(readRows)
-    const rows6All = bufs6.map(readRows)
 
     const nominal   = mergeSeries(rows1All.map(r => extractSection(r, '現金給与総額'))).slice(-24)
     const scheduled = mergeSeries(rows1All.map(r => extractSection(r, '所定内給与'))).slice(-24)
     const parttime_ratio = mergeSeries(
       rows4All.map(r => parseSeries(r, 2, 3).map(d => ({ date: d.date, value: d.value })))
     ).filter(d => d.value != null).slice(-24)
-    const real = mergeSeries(rows6All.map(r => parseSeries(r, 2, 3))).slice(-24)
+    // Official real wage: 実質前年比 of 現金給与総額 in t01 (col 4). (t06 is an
+    // international comparison table and must not be used here.)
+    const real = mergeSeries(rows1All.map(r => extractSection(r, '現金給与総額', 2, 4)))
+      .map(item => ({ date: item.date, yoy: item.yoy }))
+      .filter(item => item.yoy != null)
+      .slice(-24)
 
-    // 共通事業所（同一事業所）前年比: col[3]=現金給与総額, col[9]=所定内給与
-    let nominal_same = [], scheduled_same = []
+    // 共通事業所（同一事業所）前年比 — the page's primary nominal basis. Its
+    // absence is a visible warning, never a silent gap.
+    const warnings = []
+    const same = Object.fromEntries(Object.keys(SAME_ESTABLISHMENT_COLUMNS).map(key => [key, []]))
     if (kyoBuf) {
       const kyoRows = readSheet(kyoBuf, '共通事業所')
-      nominal_same   = parseKyo(kyoRows, 3).slice(-24)
-      scheduled_same = parseKyo(kyoRows, 9).slice(-24)
+      for (const [key, column] of Object.entries(SAME_ESTABLISHMENT_COLUMNS)) {
+        same[key] = parseKyo(kyoRows, column).slice(-24)
+      }
+      if (!same.nominal.length || !same.scheduled.length) warnings.push('Same-establishment workbook found but its wage table could not be parsed')
+    } else {
+      warnings.push('Same-establishment workbook (kyo) unavailable; all-establishment series only')
     }
+    if (!real.length) warnings.push('Real wage column (t01 実質前年比) unavailable')
 
     const latest_date = nominal.at(-1)?.date ?? ''
 
-    return Response.json({ nominal, real, scheduled, parttime_ratio, nominal_same, scheduled_same, latest_date })
+    return Response.json({
+      nominal,
+      real,
+      scheduled,
+      parttime_ratio,
+      nominal_same: same.nominal,
+      scheduled_same: same.scheduled,
+      nominal_same_fulltime: same.nominalFullTime,
+      nominal_same_parttime: same.nominalPartTime,
+      scheduled_same_fulltime: same.scheduledFullTime,
+      scheduled_same_parttime: same.scheduledPartTime,
+      latest_date,
+      latest_same_date: same.nominal.at(-1)?.date ?? null,
+      meta: { partial: warnings.length > 0, warnings },
+    })
   } catch (e) {
     return Response.json({ error: e.message })
   }
