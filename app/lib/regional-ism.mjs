@@ -95,3 +95,39 @@ export function districtComposite(regional = {}, districts = COMPOSITE_DISTRICTS
   return averageSeries(districts.map(key => ismEquivalentComposite(regional?.[key]?.series)))
     .filter(point => finite(point.value))
 }
+
+// One PMI-style component averaged across districts on the ISM scale,
+// e.g. new orders or prices paid. `keys` lists series names in preference
+// order; a district without any of them is left out of `districts`.
+export function districtComponent(regional = {}, keys = [], districts = COMPOSITE_DISTRICTS) {
+  const series = districts.map(key => {
+    const survey = regional?.[key]?.series || {}
+    const name = keys.find(candidate => survey[candidate]?.observations?.length)
+    return (name ? survey[name].observations : []).map(point => ({ date: point.date, value: ismEquivalent(point.value) }))
+  })
+  if (series.some(list => !list.length)) return []
+  return averageSeries(series).filter(point => finite(point.value))
+}
+
+// a - b by month; blank where either side is missing.
+export function spreadSeries(a = [], b = []) {
+  const other = observationMap(b)
+  return a
+    .filter(point => finite(point.value) && finite(other.get(point.date)))
+    .map(point => ({ date: point.date, value: point.value - other.get(point.date) }))
+}
+
+const nextMonth = date => {
+  const [year, month] = date.slice(0, 7).split('-').map(Number)
+  return month === 12 ? `${year + 1}-01-01` : `${year}-${String(month + 1).padStart(2, '0')}-01`
+}
+
+// Trailing moving average over consecutive months; a gap restarts the window.
+export function movingAverage(observations = [], window = 3) {
+  const points = (observations || []).filter(point => finite(point.value)).sort((a, b) => a.date.localeCompare(b.date))
+  return points.map((point, index) => {
+    const slice = points.slice(Math.max(0, index - window + 1), index + 1)
+    const consecutive = slice.length === window && slice.every((item, i) => i === 0 || item.date.slice(0, 7) === nextMonth(slice[i - 1].date).slice(0, 7))
+    return { date: point.date, value: consecutive ? slice.reduce((sum, item) => sum + item.value, 0) / window : null }
+  })
+}

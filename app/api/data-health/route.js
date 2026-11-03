@@ -2,6 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { isCoreApi } from '../../lib/core-indicators.mjs'
 import { FetchTimeoutError, fetchWithRetry } from '../../lib/resilient-fetch.js'
+import { anchorLagMessage } from '../../lib/regional-surveys.mjs'
 
 const last = values => Array.isArray(values) && values.length ? values.at(-1) : null
 const observationDate = series => last(series?.filter(item => item?.date))?.date ?? null
@@ -136,11 +137,7 @@ const DEFINITIONS = {
         : null,
       // NY and Philly anchor the page: one falling behind its schedule is stale.
       // Richmond and Dallas lags stay warnings in the message above.
-      staleIf: data => ['empire', 'philly']
-        .map(key => data?.meta?.freshness?.[key])
-        .filter(lag => lag?.behind > 0)
-        .map(lag => `${lag.key} latest ${lag.latest?.slice(0, 7)}, expected ${lag.expected?.slice(0, 7)}`)
-        .join(' · ') || null,
+      staleIf: data => anchorLagMessage(data?.meta?.freshness),
     },
     { key: 'us-employment', label: 'Employment Situation', href: '/us/employment', path: '/api/us-employment', cadence: 'Monthly', maxAge: 100, source: 'BLS · FRED', extract: data => observationDate(data?.employment?.payems) },
     { key: 'us-claims', label: 'Initial Claims', href: '/us/initial-claims', path: '/api/us-initial-claims', cadence: 'Weekly', maxAge: 21, source: 'ETA · FRED', extract: data => fredDate(data?.series?.initialClaims) },

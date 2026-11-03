@@ -144,3 +144,15 @@ export function surveyLag(key, latestDate, today = new Date(), graceDays = 3) {
   const months = date => Number(date.slice(0, 4)) * 12 + Number(date.slice(5, 7))
   return { key, latest: latestDate.slice(0, 10), expected, behind: Math.max(0, months(expected) - months(latestDate)) }
 }
+
+// Surveys whose latest month trails their schedule, in a fixed order.
+export function laggingSurveys(freshness = {}, keys = Object.keys(RELEASE_RULES)) {
+  return keys.map(key => freshness?.[key]).filter(lag => lag?.behind > 0)
+}
+
+// Health message for the anchoring surveys (NY, Philly) when they lag; null otherwise.
+export function anchorLagMessage(freshness = {}) {
+  return laggingSurveys(freshness, ['empire', 'philly'])
+    .map(lag => `${lag.key} latest ${lag.latest?.slice(0, 7)}, expected ${lag.expected?.slice(0, 7)}`)
+    .join(' · ') || null
+}
