@@ -3,20 +3,24 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { DashboardFreshness } from '../../components/DashboardStatus'
-import { Line } from 'react-chartjs-2'
+import { Bar, Line } from 'react-chartjs-2'
 import {
+  BarController,
+  BarElement,
   CategoryScale,
   Chart as ChartJS,
   Filler,
   Legend,
   LinearScale,
+  LineController,
   LineElement,
   PointElement,
   Tooltip,
 } from 'chart.js'
 import styles from '../analysis-dashboard.module.css'
+import { HEADLINE_BLOCKS, INCOME_COMPONENTS, PCE_PRICE_ROWS, levelContributions, priceRow, shareContributions } from '../../lib/us-pce-metrics.mjs'
 
-ChartJS.register(CategoryScale, Filler, Legend, LinearScale, LineElement, PointElement, Tooltip)
+ChartJS.register(BarController, BarElement, CategoryScale, Filler, Legend, LinearScale, LineController, LineElement, PointElement, Tooltip)
 
 const COLORS = {
   orange: '#f08a24',
@@ -26,7 +30,11 @@ const COLORS = {
   violet: '#a99af0',
   muted: '#c7cdd1',
   grid: '#4a5258',
+  ink: '#f5f7f8',
 }
+
+// Validated categorical slots (dark surface) for the breakdown charts.
+const BREAKDOWN = { goods: '#3987e5', services: '#199e70', supercore: '#c98500', core: '#9085e9' }
 
 const valid = value => Number.isFinite(value)
 const last = values => values?.length ? values.at(-1) : null
@@ -108,6 +116,31 @@ function chartOptions({ percentAxis = true } = {}) {
     },
   }
 }
+
+function stackedOptions() {
+  const options = chartOptions()
+  options.scales.x.stacked = true
+  options.scales.y.stacked = true
+  options.scales.y.beginAtZero = true
+  options.scales.y.grid.color = context => context.tick.value === 0 ? '#899197' : COLORS.grid
+  options.scales.x.ticks.maxTicksLimit = 9
+  options.plugins.tooltip.callbacks.label = context => {
+    const value = context.parsed.y
+    if (!valid(value)) return `${context.dataset.label}: —`
+    return context.dataset.type === 'line'
+      ? `${context.dataset.label}: ${value.toFixed(2)}%`
+      : `${context.dataset.label}: ${value > 0 ? '+' : ''}${value.toFixed(2)} pt`
+  }
+  return options
+}
+
+// Acceleration in a price index (Y/Y up) reads hot; deceleration reads cool.
+function inflationTone(value) {
+  if (!valid(value) || Math.abs(value) < 0.05) return undefined
+  return value > 0 ? styles.negativeText : styles.positiveText
+}
+
+const signedPt = (value, digits = 2) => valid(value) ? `${value > 0 ? '+' : ''}${value.toFixed(digits)} pt` : '—'
 
 function MetricCard({ label, value, period, rows, tone = '' }) {
   return (
@@ -257,7 +290,80 @@ export default function ConsumptionDashboard() {
       return change(maps[kind].get(month), maps[kind].get(diningMonths[index - periods]))
     })
 
+    const priceRows = PCE_PRICE_ROWS.map(row => ({ ...row, ...priceRow(source[row.key]?.observations) }))
+    const momDates = priceRows[0].mom?.map(point => point.date) || []
+
+    const breakdownChart = {
+      labels,
+      datasets: [
+        { label: 'Goods YoY', data: yoyData('goodsPrice'), borderColor: BREAKDOWN.goods },
+        { label: 'Services YoY', data: yoyData('servicesPrice'), borderColor: BREAKDOWN.services },
+        { label: 'Services ex energy & housing YoY', data: yoyData('servicesExHousing'), borderColor: BREAKDOWN.supercore, borderWidth: 2.4 },
+        { label: 'Core PCE YoY', data: yoyData('corePce'), borderColor: BREAKDOWN.core, borderDash: [5, 4], borderWidth: 1.7 },
+      ].map(dataset => ({ backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2, ...dataset })),
+    }
+
+    const headlineSplit = shareContributions(
+      HEADLINE_BLOCKS.map(block => ({ key: block.key, price: source[block.price]?.observations, nominal: source[block.nominal]?.observations })),
+      source.headlinePce.observations,
+      source.nominalPce?.observations,
+    ).filter(point => Object.values(point.values).every(valid)).slice(-36)
+    const headlineSplitChart = headlineSplit.length ? {
+      labels: headlineSplit.map(point => monthLabel(point.date)),
+      datasets: [
+        { type: 'line', label: 'Published headline PCE YoY', data: headlineSplit.map(point => point.growth), borderColor: COLORS.ink, backgroundColor: COLORS.ink, pointRadius: 2, borderWidth: 1.6, order: 0 },
+        ...HEADLINE_BLOCKS.map(block => ({
+          label: block.label,
+          data: headlineSplit.map(point => point.values[block.key]),
+          backgroundColor: block.color,
+          borderColor: '#30363a',
+          borderWidth: 1,
+          borderRadius: 2,
+          order: 1,
+        })),
+      ],
+    } : null
+    const latestSplit = headlineSplit.at(-1) || null
+
+    const incomeSplit = levelContributions(
+      INCOME_COMPONENTS.map(item => ({ key: item.key, sign: item.sign, observations: source[item.key]?.observations })),
+      source.personalIncome?.observations,
+    ).filter(point => Object.values(point.values).every(valid)).slice(-36)
+    const incomeChart = incomeSplit.length ? {
+      labels: incomeSplit.map(point => monthLabel(point.date)),
+      datasets: [
+        { type: 'line', label: 'Personal income YoY', data: incomeSplit.map(point => point.growth), borderColor: COLORS.ink, backgroundColor: COLORS.ink, pointRadius: 2, borderWidth: 1.6, order: 0 },
+        ...INCOME_COMPONENTS.map(item => ({
+          label: item.label,
+          data: incomeSplit.map(point => point.values[item.key]),
+          backgroundColor: item.color,
+          borderColor: '#30363a',
+          borderWidth: 1,
+          borderRadius: 2,
+          order: 1,
+        })),
+      ],
+    } : null
+    const latestIncome = incomeSplit.at(-1) || null
+    const incomeMonthly = latestIncome ? levelContributions(
+      INCOME_COMPONENTS.map(item => ({ key: item.key, sign: item.sign, observations: source[item.key]?.observations })),
+      source.personalIncome?.observations,
+      1,
+    ).find(point => point.date === latestIncome.date) : null
+    const nominalDpi = byMonth(source.disposableIncome?.observations)
+    const incomeMonth = latestIncome?.date.slice(0, 7)
+    const dpiYoy = incomeMonth ? change(nominalDpi.get(incomeMonth), nominalDpi.get(`${Number(incomeMonth.slice(0, 4)) - 1}${incomeMonth.slice(4)}`)) : null
+
     return {
+      priceRows,
+      momDates,
+      breakdownChart,
+      headlineSplitChart,
+      latestSplit,
+      incomeChart,
+      latestIncome,
+      incomeMonthly,
+      dpiYoy,
       commonMonth,
       headlineYoy,
       coreYoy,
@@ -353,6 +459,7 @@ export default function ConsumptionDashboard() {
           <MetricCard label="Core PCE" value={pct(model.coreYoy)} period="YoY" tone="violet" rows={[
             { label: 'MoM', value: signedPct(model.coreMom, 2) },
             { label: '3M ann.', value: pct(model.core3m) },
+            { label: 'Supercore YoY', value: pct(model.priceRows.find(row => row.key === 'servicesExHousing')?.yoy) },
           ]} />
           <MetricCard label="Real Consumption" value={signedPct(model.realPceMom, 2)} period="MoM" tone="positive" rows={[
             { label: 'YoY', value: signedPct(model.realPceYoy) },
@@ -398,9 +505,79 @@ export default function ConsumptionDashboard() {
           </div>
         </section>
 
+
         <section className={styles.section}>
           <header className={styles.sectionHeader}>
-            <div><span>02 / CONSUMER CAPACITY</span><h2>Spending versus real income</h2></div>
+            <div><span>02 / PRICE BREAKDOWN</span><h2>Where PCE inflation is coming from</h2></div>
+            <p>Official BEA chain-type price indexes. Rows overlap and are read side by side, not summed.</p>
+          </header>
+          <article className={styles.panel}>
+            <div className={styles.panelHeading}>
+              <div><h3>PCE price components</h3><p>Percent change · seasonally adjusted · {monthLabel(model.priceRows[0].date)}</p></div>
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={styles.matrix}>
+                <thead className={styles.stickyHead}>
+                  <tr>
+                    <th>Component</th>
+                    <th>Y/Y</th>
+                    <th>vs prior Y/Y</th>
+                    <th>3M ann.</th>
+                    <th>6M ann.</th>
+                    {[...model.momDates].reverse().map(date => <th key={date}>{monthLabel(date)} M/M</th>)}
+                  </tr>
+                </thead>
+                <tbody>
+                  {model.priceRows.map(row => {
+                    const yoyChange = valid(row.yoy) && valid(row.priorYoy) ? row.yoy - row.priorYoy : null
+                    return (
+                      <tr key={row.key}>
+                        <td className={row.level ? styles.childRow : styles.parentRow}>
+                          {row.label}{row.rounded ? ' †' : ''}
+                        </td>
+                        <td><b>{pct(row.yoy)}</b></td>
+                        <td className={inflationTone(yoyChange)}>{signedPt(yoyChange, 1)}</td>
+                        <td>{pct(row.annualized3m)}</td>
+                        <td>{pct(row.annualized6m)}</td>
+                        {[...model.momDates].reverse().map(date => (
+                          <td key={date}>{signedPct(row.mom?.find(point => point.date === date)?.value, 2)}</td>
+                        ))}
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            <p className={styles.panelNote}>
+              Services ex energy &amp; housing is BEA&apos;s own published index (the Fed&apos;s &quot;supercore&quot; concept), not a derived residual.
+              Goods includes food and energy goods; services includes energy services. † Published to one decimal, so a single
+              month&apos;s change carries up to ±0.07 pt of rounding (about ±0.9 pt annualized). vs prior Y/Y: red = faster than a month earlier, green = slower.
+            </p>
+          </article>
+          <div className={`${styles.equalGrid} ${styles.stackGap}`}>
+            <article className={styles.panel}>
+              <div className={styles.panelHeading}><div><h3>Goods, services and supercore</h3><p>YoY percent · 5-year window</p></div></div>
+              <div className={styles.chartSmall}><Line data={model.breakdownChart} options={chartOptions()} /></div>
+            </article>
+            <article className={styles.panel}>
+              <div className={styles.panelHeading}>
+                <div><h3>What drives headline PCE</h3><p>Contribution to YoY, pt · derived · 3-year window</p></div>
+                {model.latestSplit ? <span className={styles.tag}>Gap {signedPt(model.latestSplit.residual)}</span> : null}
+              </div>
+              {model.headlineSplitChart
+                ? <div className={styles.chartSmall}><Bar data={model.headlineSplitChart} options={stackedOptions()} /></div>
+                : <p className={styles.panelNote}>Nominal spending detail is temporarily unavailable.</p>}
+            </article>
+          </div>
+          <p className={styles.panelNote}>
+            Headline split: each block&apos;s year-earlier share of nominal PCE times its own price change. BEA&apos;s Fisher chain index is not exactly
+            additive, so the gap to the published headline rate is shown rather than forced to zero.
+          </p>
+        </section>
+
+        <section className={styles.section}>
+          <header className={styles.sectionHeader}>
+            <div><span>03 / CONSUMER CAPACITY</span><h2>Spending versus real income</h2></div>
             <p>Indexed to 100 at the start of the displayed window to make the cumulative gap comparable.</p>
           </header>
           <div className={styles.equalGrid}>
@@ -415,9 +592,53 @@ export default function ConsumptionDashboard() {
           </div>
         </section>
 
+
         <section className={styles.section}>
           <header className={styles.sectionHeader}>
-            <div><span>03 / DINING DEMAND</span><h2>Restaurant spending after menu-price inflation</h2></div>
+            <div><span>04 / INCOME SOURCES</span><h2>What is driving personal income</h2></div>
+            <p>Nominal, before taxes. The six blocks are BEA&apos;s Table 2.6 identity and add up to personal income.</p>
+          </header>
+          {model.incomeChart ? (
+            <div className={styles.mainGrid}>
+              <article className={styles.panel}>
+                <div className={styles.panelHeading}>
+                  <div><h3>Contributions to personal income growth</h3><p>YoY, pt · nominal SAAR · 3-year window</p></div>
+                </div>
+                <div className={styles.chart}><Bar data={model.incomeChart} options={stackedOptions()} /></div>
+              </article>
+              <aside className={styles.analysis}>
+                <div>
+                  <div className={styles.analysisKicker}>LATEST · {monthLabel(model.latestIncome.date)}</div>
+                  <div className={styles.analysisScore}>
+                    <div><strong>{pct(model.latestIncome.growth)}</strong><small>Personal income YoY · disposable {pct(model.dpiYoy)}</small></div>
+                  </div>
+                  <ul>
+                    {INCOME_COMPONENTS.map(item => {
+                      const yoy = model.latestIncome.values[item.key]
+                      const mom = model.incomeMonthly?.values[item.key]
+                      return (
+                        <li key={item.key}>
+                          <span>{item.label}<small>M/M {signedPt(mom)}</small></span>
+                          <b className={valid(yoy) && Math.abs(yoy) >= 0.005 ? (yoy > 0 ? styles.positiveText : styles.negativeText) : undefined}>{signedPt(yoy)}</b>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              </aside>
+            </div>
+          ) : (
+            <article className={styles.panel}>Income detail is temporarily unavailable; the PCE dashboard remains fully usable.</article>
+          )}
+          <p className={styles.panelNote}>
+            Contribution = change in the block ÷ personal income a year (or month) earlier. Social insurance contributions are subtracted, so a
+            rise shows as a negative bar. Green adds to income growth, red subtracts. Values are nominal; real disposable income is in section 03.
+          </p>
+        </section>
+
+        <section className={styles.section}>
+          <header className={styles.sectionHeader}>
+            <div><span>05 / DINING DEMAND</span><h2>Restaurant spending after menu-price inflation</h2></div>
             <p>Official restaurant sales are divided by the food-away-from-home CPI to approximate real dining demand.</p>
           </header>
           {model.diningChart ? (
@@ -452,7 +673,7 @@ export default function ConsumptionDashboard() {
 
         <section className={styles.section}>
           <header className={styles.sectionHeader}>
-            <div><span>04 / MONTHLY SCORECARD</span><h2>Household demand and buffer</h2></div>
+            <div><span>06 / MONTHLY SCORECARD</span><h2>Household demand and buffer</h2></div>
             <p>Every comparison below uses {monthLabel(`${model.commonMonth}-01`)} to avoid mixing release months.</p>
           </header>
           <article className={styles.panel}>
@@ -475,7 +696,8 @@ export default function ConsumptionDashboard() {
           <strong>Methodology.</strong> PCE inflation is calculated from the BEA chain-type price indexes.
           Real spending and income are seasonally adjusted annual rates; MoM changes are calculated from
           the level series, not annualized. All headline comparisons use the latest month available across
-          the seven PCE and income series. The dining proxy divides seasonally adjusted Census restaurant
+          the seven PCE and income series. The price breakdown uses BEA&apos;s published component indexes; the headline split is an
+          approximation and the income split is an exact identity (up to rounding). The dining proxy divides seasonally adjusted Census restaurant
           sales by the seasonally adjusted food-away-from-home CPI; it is an approximation, and the advance
           sales estimate is revised. Sources: <a href="https://fred.stlouisfed.org/release?rid=54" target="_blank" rel="noreferrer">BEA Personal Income and Outlays</a>,{' '}
           <a href="https://fred.stlouisfed.org/series/RSFSDP" target="_blank" rel="noreferrer">Census restaurant sales</a> and{' '}

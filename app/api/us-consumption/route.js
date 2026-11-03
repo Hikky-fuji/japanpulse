@@ -1,4 +1,5 @@
 import { fetchFredSeries } from '../../lib/fred.js'
+import { INCOME_COMPONENTS, PCE_NOMINAL, PCE_PRICE_ROWS } from '../../lib/us-pce-metrics.mjs'
 
 export const revalidate = 3600
 export const dynamic = 'force-dynamic'
@@ -53,6 +54,40 @@ const SERIES = {
   },
 }
 
+// Breakdown detail. Optional: a missing component blanks its row or chart but
+// never fails the core PCE feed.
+const DETAIL = {
+  ...Object.fromEntries(PCE_PRICE_ROWS
+    .filter(row => !SERIES[row.key])
+    .map(row => [row.key, { id: row.id, label: `PCE price index: ${row.label}`, unit: 'index, 2017=100', optional: true }])),
+  nominalPce: { id: PCE_NOMINAL.total, label: 'Personal consumption expenditures', unit: 'billions of dollars, SAAR', optional: true },
+  nominalFood: { id: PCE_NOMINAL.food, label: 'PCE: Food', unit: 'billions of dollars, SAAR', optional: true },
+  nominalEnergy: { id: PCE_NOMINAL.energy, label: 'PCE: Energy goods and services', unit: 'billions of dollars, SAAR', optional: true },
+  nominalCore: { id: PCE_NOMINAL.core, label: 'PCE excluding food and energy', unit: 'billions of dollars, SAAR', optional: true },
+  personalIncome: { id: 'PI', label: 'Personal income', unit: 'billions of dollars, SAAR', optional: true },
+  disposableIncome: { id: 'DSPI', label: 'Disposable personal income', unit: 'billions of dollars, SAAR', optional: true },
+  ...Object.fromEntries(INCOME_COMPONENTS
+    .map(item => [item.key, { id: item.id, label: item.label, unit: 'billions of dollars, SAAR', optional: true }])),
+}
+
+async function mapLimited(items, limit, task) {
+  const results = new Array(items.length)
+  let next = 0
+  async function worker() {
+    while (next < items.length) {
+      const index = next
+      next += 1
+      try {
+        results[index] = { status: 'fulfilled', value: await task(items[index]) }
+      } catch (reason) {
+        results[index] = { status: 'rejected', reason }
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
+  return results
+}
+
 async function fetchSeries(apiKey, definition) {
   const observations = await fetchFredSeries(definition.id, {
     apiKey,
@@ -68,10 +103,8 @@ async function fetchSeries(apiKey, definition) {
 export async function GET() {
   try {
     const apiKey = process.env.FRED_API_KEY
-    const definitions = Object.entries(SERIES)
-    const settled = await Promise.allSettled(
-      definitions.map(([, definition]) => fetchSeries(apiKey, definition)),
-    )
+    const definitions = Object.entries({ ...SERIES, ...DETAIL })
+    const settled = await mapLimited(definitions, 10, ([, definition]) => fetchSeries(apiKey, definition))
     const entries = []
     const warnings = []
 
@@ -97,6 +130,7 @@ export async function GET() {
         partial: warnings.length > 0,
         warnings,
         diningMethod: 'Restaurant sales divided by the food-away-from-home CPI; growth rates are an approximate real-demand signal.',
+        contributionMethod: 'Headline split: year-earlier nominal share times the component price change (approximate; the Fisher chain is not additive, so the gap is shown). Income split: exact BEA Table 2.6 identity, up to rounding.',
       },
     })
   } catch (error) {

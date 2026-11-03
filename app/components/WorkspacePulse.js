@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { monthlyBlockContributions } from '../lib/us-cpi-scenarios.mjs'
+import { COMPOSITE_DISTRICTS, EARLY_READ_DISTRICTS, districtComposite } from '../lib/regional-ism.mjs'
 
 const last = series => Array.isArray(series) && series.length ? series.at(-1) : null
 const finite = value => Number.isFinite(value)
@@ -487,6 +488,11 @@ function usCards(payload) {
   const empire = last(manufacturing?.regional?.empire?.series?.headline?.observations?.filter(item => finite(item.value)))
   const philly = last(manufacturing?.regional?.philly?.series?.headline?.observations?.filter(item => finite(item.value)))
   const ism = last(manufacturing?.ism?.headline)
+  const fourDistrict = last(districtComposite(manufacturing?.regional, COMPOSITE_DISTRICTS))
+  const earlyRead = last(districtComposite(manufacturing?.regional, EARLY_READ_DISTRICTS))
+  const regionalEq = earlyRead && (!fourDistrict || earlyRead.date > fourDistrict.date)
+    ? { ...earlyRead, label: 'NY+Philly ISM-eq.' }
+    : fourDistrict && { ...fourDistrict, label: '4-district ISM-eq.' }
   const payrolls = employment?.employment?.payems || []
   const payrollLatest = last(payrolls)
   const payrollPrior = payrolls.at(-2)
@@ -628,6 +634,7 @@ function usCards(payload) {
       details: [
         detail('NY Empire', signed(empire?.value, 1), tone(empire?.value)),
         detail('Philly Fed', signed(philly?.value, 1), tone(philly?.value)),
+        detail(`${regionalEq?.label || 'Regional ISM-eq.'} ${regionalEq?.date?.slice(0, 7) || ''}`.trim(), fixed(regionalEq?.value, 1), tone(regionalEq?.value - 50)),
       ],
       source: 'NY Fed · Philly Fed · ISM',
       series: seriesValues(manufacturing?.ism?.headline),

@@ -104,8 +104,8 @@ const DEFINITIONS = {
       source: 'BEA · Census · BLS · FRED',
       extract: data => fredDate(data?.series?.headlinePce),
       describe: data => data?.meta?.partial
-        ? `Core PCE data are current; optional dining detail is partial: ${(data.meta.warnings || []).join(' · ')}`
-        : 'PCE, income, restaurant sales and dining-price data loaded from official sources.',
+        ? `Core PCE data are current; optional breakdown or dining detail is partial: ${(data.meta.warnings || []).join(' · ')}`
+        : 'PCE, price breakdown, income, restaurant sales and dining-price data loaded from official sources.',
     },
     {
       key: 'us-household-credit',
@@ -121,7 +121,7 @@ const DEFINITIONS = {
     { key: 'us-retail', label: 'Retail Sales', href: '/us/retail-sales', path: '/api/us-retail-sales', cadence: 'Monthly', maxAge: 100, source: 'Census · FRED', extract: data => fredDate(data?.series?.total) },
     { key: 'us-housing', label: 'Housing Cycle', href: '/us/housing', path: '/api/us-housing', cadence: 'Weekly / Monthly / Quarterly', maxAge: 100, source: 'Census · HUD · FHFA · FRED', extract: data => fredDate(data?.series?.starts) },
     { key: 'us-growth', label: 'GDP & Growth', href: '/us-macro#growth', path: '/api/us-macro', cadence: 'Quarterly', maxAge: 240, source: 'BEA · FRED', extract: data => observationDate(data?.growth?.realGdpGrowth) },
-    { key: 'us-manufacturing', label: 'Manufacturing Surveys', href: '/us/manufacturing', path: '/api/us-manufacturing', cadence: 'Monthly', maxAge: 100, source: 'NY Fed · Philly Fed · ISM', mode: 'MIXED', extract: data => observationDate(data?.ism?.headline) },
+    { key: 'us-manufacturing', label: 'Manufacturing Surveys', href: '/us/manufacturing', path: '/api/us-manufacturing', cadence: 'Monthly', maxAge: 100, source: 'NY · Philly · Richmond · Dallas Fed · ISM', mode: 'MIXED', extract: data => observationDate(data?.ism?.headline) },
     { key: 'us-employment', label: 'Employment Situation', href: '/us/employment', path: '/api/us-employment', cadence: 'Monthly', maxAge: 100, source: 'BLS · FRED', extract: data => observationDate(data?.employment?.payems) },
     { key: 'us-claims', label: 'Initial Claims', href: '/us/initial-claims', path: '/api/us-initial-claims', cadence: 'Weekly', maxAge: 21, source: 'ETA · FRED', extract: data => fredDate(data?.series?.initialClaims) },
     { key: 'us-jolts', label: 'JOLTS', href: '/us/jolts', path: '/api/us-jolts', cadence: 'Monthly', maxAge: 110, source: 'BLS · FRED', extract: data => fredDate(data?.series?.openings) },

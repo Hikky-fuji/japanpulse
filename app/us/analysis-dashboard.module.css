@@ -311,3 +311,26 @@
   .hero { padding: 19px; }
   .chart { height: 300px; }
 }
+
+.panelNote {
+  margin: 12px 0 0;
+  color: var(--dim);
+  font-size: 9.5px;
+  line-height: 1.55;
+}
+.matrix td.parentRow { color: var(--ink); font-weight: 650; }
+.matrix td.childRow { padding-left: 24px; }
+.stackGap { margin-top: 12px; }
+@media (max-width: 620px) {
+  .matrix td.parentRow,
+  .matrix td.childRow {
+    position: sticky;
+    left: 0;
+    min-width: 128px;
+    max-width: 150px;
+    white-space: normal;
+    background: var(--panel);
+  }
+  .matrix td.childRow { padding-left: 16px; }
+  .stickyHead th:first-child { position: sticky; left: 0; background: var(--panel); }
+}
