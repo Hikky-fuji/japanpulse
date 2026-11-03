@@ -383,8 +383,10 @@ function japanCards(payload) {
   const weightedMedian = last(bojPolicy?.coreInflation?.weightedMedian)
   const outputGap = last(bojPolicy?.activity?.outputGap)
   const realWage = last(wages?.real)
-  const nominalWage = last(wages?.nominal)
-  const scheduledWage = last(wages?.scheduled)
+  // Same-establishment (共通事業所) basis first; all establishments as fallback.
+  const nominalWage = last(wages?.nominal_same?.length ? wages.nominal_same : wages?.nominal)
+  const scheduledWage = last(wages?.scheduled_same?.length ? wages.scheduled_same : wages?.scheduled)
+  const wageBasis = wages?.nominal_same?.length ? ' (same est.)' : ''
 
   return [
     card({
@@ -449,8 +451,8 @@ function japanCards(payload) {
       period: realWage?.date,
       toneName: tone(realWage?.yoy),
       details: [
-        detail('Nominal wages', signed(nominalWage?.yoy, 1, '%'), tone(nominalWage?.yoy)),
-        detail('Scheduled pay', signed(scheduledWage?.yoy, 1, '%'), tone(scheduledWage?.yoy)),
+        detail(`Nominal wages${wageBasis}`, signed(nominalWage?.yoy, 1, '%'), tone(nominalWage?.yoy)),
+        detail(`Scheduled pay${wageBasis}`, signed(scheduledWage?.yoy, 1, '%'), tone(scheduledWage?.yoy)),
       ],
       source: 'MHLW',
       series: seriesValues(wages?.real, item => item?.yoy),

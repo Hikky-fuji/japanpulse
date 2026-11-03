@@ -85,7 +85,7 @@ export const CHART_ORDERS = {
   headlineSplit: ['energy', 'food', 'core'],
   incomeSources: ['compensation', 'proprietorsIncome', 'rentalIncome', 'assetIncome', 'transfers', 'socialContributions'],
   dining: ['nominalSpending', 'consumption', 'food'],
-  japanWages: ['wages', 'realWages', 'scheduledWages'],
+  japanWages: ['wages', 'realWages'],
   goodsServices: ['goods', 'supercore', 'services', 'core'],
   cpiBlocks: ['food', 'energy', 'goods', 'shelter', 'medical', 'transportation', 'services'],
   taylorRules: ['taylor1993', 'balancedApproach', 'claridaProxy', 'bullardModernized'],
