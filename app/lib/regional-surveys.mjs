@@ -106,3 +106,41 @@ export function lastWeekday(year, monthIndex, weekday) {
   const offset = (last.getUTCDay() - weekday + 7) % 7
   return new Date(Date.UTC(year, monthIndex + 1, -offset))
 }
+
+const RELEASE_RULES = {
+  // Empire: the 15th, or the next business day.
+  empire: (year, monthIndex) => {
+    const date = new Date(Date.UTC(year, monthIndex, 15))
+    while (date.getUTCDay() === 0 || date.getUTCDay() === 6) date.setUTCDate(date.getUTCDate() + 1)
+    return date
+  },
+  philly: (year, monthIndex) => nthWeekday(year, monthIndex, 4, 3),
+  richmond: (year, monthIndex) => nthWeekday(year, monthIndex, 2, 4),
+  dallas: (year, monthIndex) => lastWeekday(year, monthIndex, 1),
+}
+
+// Scheduled release date of a district survey for a reference month.
+export function regionalReleaseDate(key, year, monthIndex) {
+  return RELEASE_RULES[key]?.(year, monthIndex) ?? null
+}
+
+// Newest reference month that should be published by `today`, allowing a
+// few days of grace for holidays and schedule shifts.
+export function expectedLatestMonth(key, today = new Date(), graceDays = 3) {
+  if (!RELEASE_RULES[key]) return null
+  const limit = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate())
+  for (let back = 0; back < 3; back++) {
+    const anchor = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - back, 1))
+    const release = regionalReleaseDate(key, anchor.getUTCFullYear(), anchor.getUTCMonth())
+    if (release.getTime() + graceDays * 86400000 <= limit) return iso(anchor.getUTCFullYear(), anchor.getUTCMonth() + 1)
+  }
+  return null
+}
+
+// Whole months by which a survey's latest observation trails its schedule.
+export function surveyLag(key, latestDate, today = new Date(), graceDays = 3) {
+  const expected = expectedLatestMonth(key, today, graceDays)
+  if (!expected || !latestDate) return { key, latest: latestDate || null, expected, behind: expected ? null : 0 }
+  const months = date => Number(date.slice(0, 4)) * 12 + Number(date.slice(5, 7))
+  return { key, latest: latestDate.slice(0, 10), expected, behind: Math.max(0, months(expected) - months(latestDate)) }
+}

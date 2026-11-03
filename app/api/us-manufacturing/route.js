@@ -1,6 +1,6 @@
 import { fetchFredSeries } from '../../lib/fred.js'
 import { fetchWithRetry } from '../../lib/resilient-fetch.js'
-import { DALLAS_SURVEY, RICHMOND_SURVEY, parseSurveyRows } from '../../lib/regional-surveys.mjs'
+import { DALLAS_SURVEY, RICHMOND_SURVEY, parseSurveyRows, surveyLag } from '../../lib/regional-surveys.mjs'
 
 export const revalidate = 3600
 export const dynamic = 'force-dynamic'
@@ -147,12 +147,25 @@ export async function GET() {
       fetchWorkbookSurvey(DALLAS_SURVEY, warnings),
     ])
 
+    // A survey whose file still loads but stops advancing is flagged against
+    // its own release schedule, so a silent upstream freeze stays visible.
+    const regional = { empire, philly, ...(richmond && { richmond }), ...(dallas && { dallas }) }
+    const freshness = Object.fromEntries(Object.entries(regional).map(([key, survey]) => [
+      key,
+      surveyLag(key, survey.series.headline?.observations?.at(-1)?.date),
+    ]))
+    for (const lag of Object.values(freshness)) {
+      if (lag.behind > 0) {
+        warnings.push(`${regional[lag.key].shortLabel} survey is ${lag.behind} month(s) behind schedule: latest ${lag.latest.slice(0, 7)}, expected ${lag.expected.slice(0, 7)}`)
+      }
+    }
+
     return Response.json({
       fetchedAt: new Date().toISOString(),
       frequency: 'Monthly',
-      regional: { empire, philly, ...(richmond && { richmond }), ...(dallas && { dallas }) },
+      regional,
       ism: ISM_SNAPSHOT,
-      meta: { partial: warnings.length > 0, warnings },
+      meta: { partial: warnings.length > 0, warnings, freshness },
       cadence: [
         {
           key: 'empire',
