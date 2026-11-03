@@ -28,6 +28,7 @@ import {
 } from '../../lib/us-cpi-metrics.mjs'
 import CpiScenarioLab from './CpiScenarioLab'
 import styles from './page.module.css'
+import { SERIES_COLORS } from '../../lib/series-colors.mjs'
 
 ChartJS.register(
   BarElement,
@@ -40,21 +41,21 @@ ChartJS.register(
   Tooltip,
 )
 
+// Shared indicator colors (app/lib/series-colors.mjs); keys here are this page's series names.
 const COLORS = {
-  headline: '#2774ae',
-  core: '#d97706',
-  servicesExShelter: '#188977',
-  supercore: '#c2417a',
-  median: '#4fa3d9',
-  trimmedMean: '#9fc46a',
-  stickyCore: '#c48bd6',
-  food: '#5c8fd6',
-  energy: '#e2703a',
-  coreGoods: '#91b982',
-  rentOfShelter: '#e5ad16',
-  medicalServices: '#8d7ed0',
-  transportation: '#e56c62',
-  otherCoreServices: '#44a99a',
+  headline: SERIES_COLORS.headline,
+  core: SERIES_COLORS.core,
+  supercore: SERIES_COLORS.supercore,
+  median: SERIES_COLORS.median,
+  trimmedMean: SERIES_COLORS.trimmedMean,
+  stickyCore: SERIES_COLORS.sticky,
+  food: SERIES_COLORS.food,
+  energy: SERIES_COLORS.energy,
+  coreGoods: SERIES_COLORS.goods,
+  rentOfShelter: SERIES_COLORS.shelter,
+  medicalServices: SERIES_COLORS.medical,
+  transportation: SERIES_COLORS.transportation,
+  otherCoreServices: SERIES_COLORS.services,
 }
 
 const CATEGORY_STRUCTURE = [
@@ -320,8 +321,9 @@ export default function USCpiDashboard() {
       trendData: {
         labels: trendDates.map(date => monthLabel(date, true)),
         datasets: [
-          { label: 'Headline', data: toYoy('headline'), borderColor: COLORS.headline, backgroundColor: COLORS.headline, borderWidth: 2.3, pointRadius: 0, spanGaps: false },
+          // Validated order (CHART_ORDERS.inflationTrend): core, headline, supercore.
           { label: 'Core', data: toYoy('core'), borderColor: COLORS.core, backgroundColor: COLORS.core, borderWidth: 2.3, pointRadius: 0, spanGaps: false },
+          { label: 'Headline', data: toYoy('headline'), borderColor: COLORS.headline, backgroundColor: COLORS.headline, borderWidth: 2.3, pointRadius: 0, spanGaps: false },
           { label: 'Supercore', data: supercoreYoyPath(series, payload.contributionWeights, payload.aggregateWeights, trendDates), borderColor: COLORS.supercore, backgroundColor: COLORS.supercore, borderWidth: 2.3, pointRadius: 0, spanGaps: false },
         ],
       },

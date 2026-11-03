@@ -281,7 +281,7 @@ product_direction:
     requests expansion. Do not delete the route or feed without an explicit change request.
 ```
 
-Every analytical chart should remain readable on desktop and mobile and include units/frequency/source context. Charts have no `Copy image` / `Download PNG` controls (removed by the owner on 2026-10-31); do not reintroduce them unless asked.
+Every analytical chart should remain readable on desktop and mobile and include units/frequency/source context. Series colors come from one registry, `app/lib/series-colors.mjs`: one color per indicator concept on every page (e.g. headline blue, core orange, food aqua, energy yellow), dark-surface steps, because every page draws charts on the #30363a panel (including pages with light-looking inline styles). Co-plotted sets were checked with the dataviz validator in the orders listed in `CHART_ORDERS`; keep those orders, and validate any new combination before adding it. A momentum variant of the same concept (e.g. 3M annualized) keeps the hue and is dashed. `tests/series-colors.test.mjs` fails if a core page hard-codes a concept color or uses a generic hue name. Charts have no `Copy image` / `Download PNG` controls (removed by the owner on 2026-10-31); do not reintroduce them unless asked.
 
 ## 7. Policy-rule monitor
 
@@ -371,6 +371,7 @@ Tests currently cover:
 - US Employment metrics (summaries, revisions, family additivity, release time);
 - US PCE breakdown (price rows, income identity contributions, share-weighted headline split);
 - regional ISM-equivalent conversion, composite gaps and tracking statistics.
+- shared series-color registry and its use on core pages.
 
 When adding domain calculations, add pure helpers plus deterministic unit tests. When changing a response contract, update pages, health extraction, workspace aggregation, smoke checks, and tests in the same change.
 

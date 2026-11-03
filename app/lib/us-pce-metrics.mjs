@@ -1,4 +1,5 @@
 import { addMonths, latestObservation, observationMap } from './us-cpi-scenarios.mjs'
+import { SERIES_COLORS } from './series-colors.mjs'
 
 const finite = value => Number.isFinite(value)
 
@@ -28,21 +29,22 @@ export const PCE_NOMINAL = {
   core: 'DPCCRC1M027SBEA',
 }
 
+// Stack order follows the validated CHART_ORDERS.headlineSplit (energy, food, core).
 export const HEADLINE_BLOCKS = [
-  { key: 'food', label: 'Food', price: 'foodPrice', nominal: 'nominalFood', color: '#c98500' },
-  { key: 'energy', label: 'Energy', price: 'energyPrice', nominal: 'nominalEnergy', color: '#d95926' },
-  { key: 'core', label: 'Core (ex food & energy)', price: 'corePce', nominal: 'nominalCore', color: '#3987e5' },
+  { key: 'energy', label: 'Energy', price: 'energyPrice', nominal: 'nominalEnergy', color: SERIES_COLORS.energy },
+  { key: 'food', label: 'Food', price: 'foodPrice', nominal: 'nominalFood', color: SERIES_COLORS.food },
+  { key: 'core', label: 'Core (ex food & energy)', price: 'corePce', nominal: 'nominalCore', color: SERIES_COLORS.core },
 ]
 
 // BEA Table 2.6 identity: personal income = compensation + proprietors' income
 // + rental income + asset income + transfer receipts - social insurance contributions.
 export const INCOME_COMPONENTS = [
-  { key: 'compensation', label: 'Compensation of employees', id: 'W209RC1', sign: 1, color: '#3987e5' },
-  { key: 'proprietors', label: "Proprietors' income", id: 'A041RC1', sign: 1, color: '#c98500' },
-  { key: 'rental', label: 'Rental income', id: 'A048RC1', sign: 1, color: '#199e70' },
-  { key: 'assetIncome', label: 'Interest & dividends', id: 'PIROA', sign: 1, color: '#9085e9' },
-  { key: 'transfers', label: 'Transfer receipts', id: 'PCTR', sign: 1, color: '#d55181' },
-  { key: 'socialContributions', label: 'Less: social insurance contributions', id: 'A061RC1', sign: -1, color: '#d95926' },
+  { key: 'compensation', label: 'Compensation of employees', id: 'W209RC1', sign: 1, color: SERIES_COLORS.compensation },
+  { key: 'proprietors', label: "Proprietors' income", id: 'A041RC1', sign: 1, color: SERIES_COLORS.proprietorsIncome },
+  { key: 'rental', label: 'Rental income', id: 'A048RC1', sign: 1, color: SERIES_COLORS.rentalIncome },
+  { key: 'assetIncome', label: 'Interest & dividends', id: 'PIROA', sign: 1, color: SERIES_COLORS.assetIncome },
+  { key: 'transfers', label: 'Transfer receipts', id: 'PCTR', sign: 1, color: SERIES_COLORS.transfers },
+  { key: 'socialContributions', label: 'Less: social insurance contributions', id: 'A061RC1', sign: -1, color: SERIES_COLORS.socialContributions },
 ]
 
 function sumValues(values) {

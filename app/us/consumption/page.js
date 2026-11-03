@@ -18,6 +18,7 @@ import {
   Tooltip,
 } from 'chart.js'
 import styles from '../analysis-dashboard.module.css'
+import { SERIES_COLORS } from '../../lib/series-colors.mjs'
 import { HEADLINE_BLOCKS, INCOME_COMPONENTS, PCE_PRICE_ROWS, levelContributions, priceRow, shareContributions } from '../../lib/us-pce-metrics.mjs'
 
 ChartJS.register(BarController, BarElement, CategoryScale, Filler, Legend, LinearScale, LineController, LineElement, PointElement, Tooltip)
@@ -33,8 +34,6 @@ const COLORS = {
   ink: '#f5f7f8',
 }
 
-// Validated categorical slots (dark surface) for the breakdown charts.
-const BREAKDOWN = { goods: '#3987e5', services: '#199e70', supercore: '#c98500', core: '#9085e9' }
 
 const valid = value => Number.isFinite(value)
 const last = values => values?.length ? values.at(-1) : null
@@ -296,10 +295,11 @@ export default function ConsumptionDashboard() {
     const breakdownChart = {
       labels,
       datasets: [
-        { label: 'Goods YoY', data: yoyData('goodsPrice'), borderColor: BREAKDOWN.goods },
-        { label: 'Services YoY', data: yoyData('servicesPrice'), borderColor: BREAKDOWN.services },
-        { label: 'Services ex energy & housing YoY', data: yoyData('servicesExHousing'), borderColor: BREAKDOWN.supercore, borderWidth: 2.4 },
-        { label: 'Core PCE YoY', data: yoyData('corePce'), borderColor: BREAKDOWN.core, borderDash: [5, 4], borderWidth: 1.7 },
+        // Validated order (CHART_ORDERS.goodsServices): goods, supercore, services, core.
+        { label: 'Goods YoY', data: yoyData('goodsPrice'), borderColor: SERIES_COLORS.goods },
+        { label: 'Services ex energy & housing YoY', data: yoyData('servicesExHousing'), borderColor: SERIES_COLORS.supercore, borderWidth: 2.4 },
+        { label: 'Services YoY', data: yoyData('servicesPrice'), borderColor: SERIES_COLORS.services },
+        { label: 'Core PCE YoY', data: yoyData('corePce'), borderColor: SERIES_COLORS.core, borderDash: [5, 4], borderWidth: 1.7 },
       ].map(dataset => ({ backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2, ...dataset })),
     }
 
@@ -393,31 +393,31 @@ export default function ConsumptionDashboard() {
       inflationChart: {
         labels,
         datasets: [
-          { label: 'Headline PCE YoY', data: yoyData('headlinePce'), borderColor: COLORS.orange, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2 },
-          { label: 'Core PCE YoY', data: yoyData('corePce'), borderColor: COLORS.blue, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2 },
-          { label: 'Core PCE 3M annualized', data: threeMonthData('corePce'), borderColor: COLORS.violet, backgroundColor: 'transparent', borderDash: [5, 4], tension: .25, pointRadius: 0, borderWidth: 1.7 },
+          { label: 'Headline PCE YoY', data: yoyData('headlinePce'), borderColor: SERIES_COLORS.headline, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2 },
+          { label: 'Core PCE YoY', data: yoyData('corePce'), borderColor: SERIES_COLORS.core, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2 },
+          { label: 'Core PCE 3M annualized', data: threeMonthData('corePce'), borderColor: SERIES_COLORS.core, backgroundColor: 'transparent', borderDash: [5, 4], tension: .25, pointRadius: 0, borderWidth: 1.7 },
         ],
       },
       capacityChart: {
         labels,
         datasets: [
-          { label: 'Real PCE', data: indexed('realPce'), borderColor: COLORS.orange, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2 },
-          { label: 'Real disposable income', data: indexed('realDisposableIncome'), borderColor: COLORS.green, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2 },
+          { label: 'Real PCE', data: indexed('realPce'), borderColor: SERIES_COLORS.consumption, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2 },
+          { label: 'Real disposable income', data: indexed('realDisposableIncome'), borderColor: SERIES_COLORS.disposableIncome, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2 },
         ],
       },
       mixChart: {
         labels,
         datasets: [
-          { label: 'Real goods YoY', data: yoyData('realGoods'), borderColor: COLORS.blue, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2 },
-          { label: 'Real services YoY', data: yoyData('realServices'), borderColor: COLORS.green, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2 },
+          { label: 'Real goods YoY', data: yoyData('realGoods'), borderColor: SERIES_COLORS.goods, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2 },
+          { label: 'Real services YoY', data: yoyData('realServices'), borderColor: SERIES_COLORS.services, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2 },
         ],
       },
       diningChart: diningMonth ? {
         labels: diningChartMonths.map(month => monthLabel(`${month}-01`)),
         datasets: [
-          { label: 'Nominal restaurant sales YoY', data: diningGrowth('restaurantSales'), borderColor: COLORS.orange, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 1.8 },
-          { label: 'Approx. real restaurant sales YoY', data: diningGrowth('real'), borderColor: COLORS.green, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2.2 },
-          { label: 'Food away from home CPI YoY', data: diningGrowth('foodAwayCpi'), borderColor: COLORS.violet, backgroundColor: 'transparent', borderDash: [5, 4], tension: .25, pointRadius: 0, borderWidth: 1.7 },
+          { label: 'Nominal restaurant sales YoY', data: diningGrowth('restaurantSales'), borderColor: SERIES_COLORS.nominalSpending, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 1.8 },
+          { label: 'Approx. real restaurant sales YoY', data: diningGrowth('real'), borderColor: SERIES_COLORS.consumption, backgroundColor: 'transparent', tension: .25, pointRadius: 0, borderWidth: 2.2 },
+          { label: 'Food away from home CPI YoY', data: diningGrowth('foodAwayCpi'), borderColor: SERIES_COLORS.food, backgroundColor: 'transparent', borderDash: [5, 4], tension: .25, pointRadius: 0, borderWidth: 1.7 },
         ],
       } : null,
     }
@@ -452,11 +452,11 @@ export default function ConsumptionDashboard() {
         </header>
 
         <section className={styles.metricGridFive}>
-          <MetricCard label="Headline PCE" value={pct(model.headlineYoy)} period="YoY" tone="warning" rows={[
+          <MetricCard label="Headline PCE" value={pct(model.headlineYoy)} period="YoY" tone="headline" rows={[
             { label: 'MoM', value: signedPct(model.headlineMom, 2) },
             { label: '3M ann.', value: pct(model.headline3m) },
           ]} />
-          <MetricCard label="Core PCE" value={pct(model.coreYoy)} period="YoY" tone="violet" rows={[
+          <MetricCard label="Core PCE" value={pct(model.coreYoy)} period="YoY" tone="core" rows={[
             { label: 'MoM', value: signedPct(model.coreMom, 2) },
             { label: '3M ann.', value: pct(model.core3m) },
             { label: 'Supercore YoY', value: pct(model.priceRows.find(row => row.key === 'servicesExHousing')?.yoy) },

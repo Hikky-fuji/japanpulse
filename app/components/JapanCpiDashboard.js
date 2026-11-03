@@ -18,24 +18,27 @@ import { JAPAN_CPI_WEIGHTS } from '../lib/japan-cpi-config.mjs'
 import { bridgeStats, momentumSignal, saMomentum, yoyMomentum } from '../lib/japan-cpi-momentum.mjs'
 // National, Tokyo and US CPI dashboards share one layout and stylesheet.
 import styles from '../us/cpi/page.module.css'
+import { SERIES_COLORS } from '../lib/series-colors.mjs'
 
 ChartJS.register(BarElement, CategoryScale, Legend, LinearScale, LineElement, PointElement, Tooltip)
 
+// Shared indicator colors (app/lib/series-colors.mjs). Groups with no US
+// counterpart (apparel, education, leisure, miscellaneous) keep page-local tones.
 const COLORS = {
-  headline: '#2774ae',
-  core: '#d97706',
-  corecore: '#188977',
+  headline: SERIES_COLORS.headline,
+  core: SERIES_COLORS.core,
+  corecore: SERIES_COLORS.coreCore,
   national: '#8d99a3',
-  trimmedMean: '#9fc46a',
-  weightedMedian: '#4fa3d9',
-  mode: '#c48bd6',
-  food: '#5c8fd6',
-  housing: '#e5ad16',
-  utilities: '#e2703a',
-  furniture: '#91b982',
+  trimmedMean: SERIES_COLORS.trimmedMean,
+  weightedMedian: SERIES_COLORS.median,
+  mode: SERIES_COLORS.sticky,
+  food: SERIES_COLORS.food,
+  housing: SERIES_COLORS.shelter,
+  utilities: SERIES_COLORS.energy,
+  furniture: SERIES_COLORS.goods,
   apparel: '#d98bb0',
-  medical: '#8d7ed0',
-  transport_comms: '#e56c62',
+  medical: SERIES_COLORS.medical,
+  transport_comms: SERIES_COLORS.transportation,
   education: '#44a99a',
   leisure: '#6f8fb0',
   miscellaneous: '#9aa3a8',
@@ -382,8 +385,9 @@ export default function JapanCpiDashboard({ variant = 'national' }) {
         labels: trendDates.map(date => monthLabel(date, true)),
         datasets: [
           { label: 'Core', data: seriesOn(data.core, trendDates), borderColor: COLORS.core, backgroundColor: COLORS.core },
-          { label: 'Trimmed Mean', data: seriesOn(underlyingSeries.trimmedMean, trendDates), borderColor: COLORS.trimmedMean, backgroundColor: COLORS.trimmedMean },
+          // Validated order (CHART_ORDERS.underlying): core, median, trimmed mean, mode.
           { label: 'Weighted Median', data: seriesOn(underlyingSeries.weightedMedian, trendDates), borderColor: COLORS.weightedMedian, backgroundColor: COLORS.weightedMedian },
+          { label: 'Trimmed Mean', data: seriesOn(underlyingSeries.trimmedMean, trendDates), borderColor: COLORS.trimmedMean, backgroundColor: COLORS.trimmedMean },
           { label: 'Mode', data: seriesOn(underlyingSeries.mode, trendDates), borderColor: COLORS.mode, backgroundColor: COLORS.mode },
         ].map(dataset => ({ ...dataset, borderWidth: 2, pointRadius: 0, spanGaps: false })),
       },
