@@ -74,6 +74,8 @@ principles:
 - Taylor 1993, Balanced Approach, Clarida-CGG proxy, and Bullard Modernized have different assumptions. Preserve their equations, inputs, source links, and caveats.
 - Household-credit transition flows are flows. Do not re-annualize or confuse them with delinquency stocks.
 - Weekly claims interpretation should prioritize the official four-week average over one noisy weekly print.
+- US PCE breakdown rows (`app/lib/us-pce-metrics.mjs`) are BEA's published chain-type price indexes and overlap; never sum them. "Services ex energy & housing" (IA001260M) is BEA's own index, the official supercore concept, published to one decimal (single-month changes carry up to ±0.07pt of rounding). The headline split (food, energy, core) is derived: year-earlier nominal share × component price change, with the gap to published headline PCE shown (≤0.06pt since 2016), never forced to zero. The personal-income split is the exact BEA Table 2.6 identity (compensation + proprietors' + rental + asset income + transfers − social insurance contributions).
+- Regional-to-ISM comparison (`app/lib/regional-ism.mjs`): a regional diffusion index is converted to the ISM scale as 50 + DI/2 (equal to %higher + %same/2). The ISM-equivalent composite averages the five ISM counterparts (new orders, production or shipments, employees, delivery time↔supplier deliveries, inventories) per survey, then averages four districts: NY and Philly via FRED, Richmond and Dallas from each Bank's official SA workbook (optional; failures are warnings). NY + Philly alone is shown only as an early read. Kansas City is excluded: its file URL changes monthly and it blocks non-browser clients. Checked against ISM (n = 88): four-district MAE 1.6pt, corr 0.89, no fitted parameters; repeating the prior ISM has MAE 1.35pt, so never present the composite as a forecast. A change-based nowcast was tested and did not beat persistence out of sample. Never plot a raw regional DI against ISM − 50 as if comparable.
 - US Employment sectors come from one list (`app/lib/us-employment-metrics.mjs`): 14 BLS industries whose levels sum to total nonfarm (up to rounding), grouped into six supersector families. Each family has one validated color used by every chart and table on the page. Missing observations stay blank; never sum or chart them as zero. Payroll revisions compare the prior two monthly changes with the previous release's ALFRED vintage. "Private ex health care & social assistance" is derived. The Sahm value is FRED's real-time series, shown as a descriptive rule, not a forecast.
 
 ## 2. Technology and repository layout
@@ -364,6 +366,9 @@ Tests currently cover:
 - BOJ core-CPI base-year detection and linking;
 - e-Stat status handling and required/optional series;
 - core registry coverage (pages, APIs, health, gated smoke) and the single canonical origin / legacy-host redirect.
+- US Employment metrics (summaries, revisions, family additivity, release time);
+- US PCE breakdown (price rows, income identity contributions, share-weighted headline split);
+- regional ISM-equivalent conversion, composite gaps and tracking statistics.
 
 When adding domain calculations, add pure helpers plus deterministic unit tests. When changing a response contract, update pages, health extraction, workspace aggregation, smoke checks, and tests in the same change.
 

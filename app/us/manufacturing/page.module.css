@@ -128,7 +128,7 @@
 
 .releaseClock {
   display: grid;
-  grid-template-columns: 1fr 1.08fr 1.22fr;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -154,6 +154,8 @@
 
 .clockStep.empire { --step: var(--blue); }
 .clockStep.philly { --step: var(--violet); }
+.clockStep.richmond,
+.clockStep.dallas { --step: var(--green); }
 .clockStep.ism { --step: var(--orange); }
 
 .sequence {
@@ -578,6 +580,11 @@
   color: var(--muted);
 }
 
+@media (max-width: 1180px) {
+  .releaseClock { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .clockStep:nth-child(3) .arrow { display: none; }
+}
+
 @media (max-width: 980px) {
   .releaseClock,
   .latestStrip,
@@ -634,3 +641,41 @@
     gap: 16px;
   }
 }
+
+.trackingSummary {
+  display: grid;
+  gap: 4px;
+  padding: 16px 14px 12px;
+  border-bottom: 1px solid var(--line);
+}
+.trackingSummary span {
+  color: var(--muted);
+  font-size: 9px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.trackingSummary strong { color: #60d4af; font-size: 26px; }
+.trackingSummary small { color: var(--muted); font-size: 9.5px; line-height: 1.5; }
+.note {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 9.5px;
+  line-height: 1.6;
+}
+.tableWrap tr.secondaryRow td { color: var(--muted); }
+.stack { display: grid; gap: 12px; }
+.trackingPanel { display: grid; grid-template-columns: minmax(200px, 260px) minmax(0, 1fr); }
+.trackingPanel .trackingSummary { border-bottom: 0; border-right: 1px solid var(--line); align-content: start; }
+@media (max-width: 760px) {
+  .trackingPanel { grid-template-columns: 1fr; }
+  .trackingPanel .trackingSummary { border-right: 0; border-bottom: 1px solid var(--line); }
+}
+.equalGrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 960px) { .equalGrid { grid-template-columns: 1fr; } }
+.tableWrap .numericTable th:last-child,
+.tableWrap .numericTable td:last-child {
+  color: inherit;
+  font-size: inherit;
+  text-align: right;
+}
+.tableWrap .numericTable th:last-child { color: var(--muted); font-size: 9px; }

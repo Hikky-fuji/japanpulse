@@ -149,9 +149,9 @@ export const INDICATOR_GUIDES = {
   ),
   '/us/consumption': guide(
     'Combines the Fed’s preferred inflation gauge with household demand and income capacity.',
-    'Compare core PCE momentum, real spending, real income, saving and dining demand.',
+    'Compare core PCE momentum, BEA services ex energy and housing, real spending, the sources of income, saving and dining demand.',
     'Spending that persistently outruns income can be strong now but less sustainable later.',
-    'Advance retail estimates are revised and real dining sales are an approximation.',
+    'The headline split is an approximation of a chain index; advance retail estimates are revised and real dining sales are an approximation.',
     [{ href: '/us/cpi', label: 'US CPI' }, { href: '/us/household-credit', label: 'Household Credit' }],
   ),
   '/us/household-credit': guide(
@@ -177,9 +177,9 @@ export const INDICATOR_GUIDES = {
   ),
   '/us/manufacturing': guide(
     'Sequences early regional surveys into the national ISM manufacturing signal.',
-    'Keep months aligned and compare direction rather than raw levels across unlike surveys.',
+    'Keep months aligned; compare regional surveys with ISM only after converting their five PMI-counterpart components to the ISM scale (50 + DI/2).',
     'Breadth across new orders and employment is more useful than one regional headline.',
-    'Regional indices and ISM use different samples and scales.',
+    'The four-district ISM-equivalent composite is a derived translation with a typical gap of about 1.6 points to ISM; it is not a forecast and does not beat ISM’s own month-to-month persistence.',
     [{ href: '/us-macro', label: 'US Growth' }, { href: '/us/employment', label: 'Employment' }],
   ),
   '/us/employment': guide(
