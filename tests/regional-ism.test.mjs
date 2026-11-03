@@ -4,6 +4,9 @@ import test from 'node:test'
 import {
   ISM_EQUIVALENT_COMPONENTS,
   averageSeries,
+  districtComponent,
+  movingAverage,
+  spreadSeries,
   ismEquivalent,
   ismEquivalentComposite,
   trackingStats,
@@ -47,4 +50,26 @@ test('tracking stats report bias, MAE, RMSE and correlation', () => {
   close(stats.rmse, 1)
   close(stats.correlation, 1)
   assert.equal(trackingStats(estimate.slice(0, 2), actual).correlation, null)
+})
+
+test('district component averages one series on the ISM scale across districts', () => {
+  const regional = {
+    empire: { series: { pricesPaid: { observations: obs([['2026-09-01', 40], ['2026-10-01', 30]]) } } },
+    philly: { series: { pricesPaid: { observations: obs([['2026-10-01', 50]]) } } },
+    dallas: { series: { pricesPaid: { observations: obs([['2026-10-01', 10]]) } } },
+  }
+  const paid = districtComponent(regional, ['pricesPaid'], ['empire', 'philly', 'dallas'])
+  assert.deepEqual(paid.map(point => point.date), ['2026-10-01'])
+  close(paid[0].value, (65 + 75 + 55) / 3)
+  assert.deepEqual(districtComponent(regional, ['pricesPaid'], ['empire', 'richmond']), [])
+})
+
+test('spread subtracts matching months only', () => {
+  const result = spreadSeries(obs([['2026-09-01', 55], ['2026-10-01', 56]]), obs([['2026-10-01', 51]]))
+  assert.deepEqual(result, [{ date: '2026-10-01', value: 5 }])
+})
+
+test('moving average needs consecutive months', () => {
+  const result = movingAverage(obs([['2026-06-01', 1], ['2026-07-01', 2], ['2026-08-01', 3], ['2026-10-01', 4]]))
+  assert.deepEqual(result.map(point => point.value), [null, null, 2, null])
 })

@@ -152,11 +152,11 @@
   border-top: 2px solid var(--step);
 }
 
-.clockStep.empire { --step: var(--blue); }
-.clockStep.philly { --step: var(--violet); }
-.clockStep.richmond,
-.clockStep.dallas { --step: var(--green); }
-.clockStep.ism { --step: var(--orange); }
+.clockStep.empire { --step: #3987e5; }
+.clockStep.philly { --step: #d55181; }
+.clockStep.richmond { --step: #9085e9; }
+.clockStep.dallas { --step: #c98500; }
+.clockStep.ism { --step: #d95926; }
 
 .sequence {
   display: grid;
@@ -235,7 +235,7 @@
 
 .latestStrip {
   display: grid;
-  grid-template-columns: minmax(260px, 1.35fr) repeat(3, minmax(120px, .7fr));
+  grid-template-columns: minmax(240px, 1.2fr) repeat(5, minmax(110px, .6fr));
   gap: 1px;
   margin-bottom: 12px;
   overflow: hidden;
@@ -581,6 +581,8 @@
 }
 
 @media (max-width: 1180px) {
+  .latestStrip { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .latestStripIntro { grid-column: 1 / -1; }
   .releaseClock { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .clockStep:nth-child(3) .arrow { display: none; }
 }

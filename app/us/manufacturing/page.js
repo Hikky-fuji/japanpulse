@@ -3,9 +3,8 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { DashboardFreshness } from '../../components/DashboardStatus'
-import { Bar, Line } from 'react-chartjs-2'
+import { Line } from 'react-chartjs-2'
 import {
-  BarElement,
   CategoryScale,
   Chart as ChartJS,
   Filler,
@@ -22,15 +21,17 @@ import {
   ISM_EQUIVALENT_COMPONENTS,
   ISM_EQUIVALENT_VALIDATION,
   componentSeries,
+  districtComponent,
   districtComposite,
   ismEquivalent,
   ismEquivalentComposite,
+  movingAverage,
+  spreadSeries,
   trackingStats,
 } from '../../lib/regional-ism.mjs'
 import { regionalReleaseDate } from '../../lib/regional-surveys.mjs'
 
 ChartJS.register(
-  BarElement,
   CategoryScale,
   Filler,
   Legend,
@@ -40,16 +41,21 @@ ChartJS.register(
   Tooltip,
 )
 
+// Validated categorical slots on the dark panel (dataviz validator, per chart).
 const COLORS = {
-  empire: '#42a9bc',
-  philly: '#a99af0',
-  ism: '#f08a24',
-  regional: '#60d4af',
-  green: '#60d4af',
-  red: '#ff6b6b',
+  empire: '#3987e5',
+  philly: '#d55181',
+  richmond: '#9085e9',
+  dallas: '#c98500',
+  regional: '#199e70',
+  ism: '#d95926',
   muted: '#c7cdd1',
   grid: '#4a5258',
 }
+
+const PRICE_DISTRICTS = ['empire', 'philly', 'dallas']
+const OUTLOOK_DISTRICTS = ['empire', 'philly', 'dallas']
+const DISTRICT_LABELS = { empire: 'NY', philly: 'Philly', richmond: 'Richmond', dallas: 'Dallas' }
 
 const STAGE_NAMES = {
   empire: 'New York Empire',
@@ -74,10 +80,6 @@ const monthLabel = date => date
       .format(new Date(`${date}T00:00:00Z`))
   : '—'
 
-function pointChange(values, periods = 1) {
-  if (!values || values.length <= periods) return null
-  return values.at(-1).value - values.at(-1 - periods).value
-}
 
 function latestByMonth(observations) {
   return new Map(
@@ -87,10 +89,6 @@ function latestByMonth(observations) {
   )
 }
 
-function observationsThroughMonth(observations, month) {
-  if (!month) return observations || []
-  return (observations || []).filter(point => point.date.slice(0, 7) <= month)
-}
 
 function pointForMonth(observations, month) {
   if (!month) return null
@@ -106,6 +104,12 @@ function releaseDates(referenceDate) {
   const ism = new Date(Date.UTC(year, month, 1))
   while (ism.getUTCDay() === 0 || ism.getUTCDay() === 6) ism.setUTCDate(ism.getUTCDate() + 1)
   return { ...releases, ism }
+}
+
+const addMonth = (date, delta) => {
+  const [year, month] = date.slice(0, 7).split('-').map(Number)
+  const value = new Date(Date.UTC(year, month - 1 + delta, 1))
+  return `${value.getUTCFullYear()}-${String(value.getUTCMonth() + 1).padStart(2, '0')}`
 }
 
 const formatRelease = date => date
@@ -130,8 +134,8 @@ function signalFor(value, neutral = 0) {
   return { label: 'Neutral', tone: 'neutral' }
 }
 
-function SurveyCard({ label, role, importance, value, neutral, date, change, color, description, comparisonMonth, equivalent, equivalentLabel = 'ISM-equivalent (5 components)' }) {
-  const signal = signalFor(value, neutral)
+function SurveyCard({ label, role, importance, value, date, change, color, description, rows = [] }) {
+  const signal = signalFor(value, 50)
   return (
     <article className={styles.surveyCard} style={{ '--accent': color }}>
       <div className={styles.cardTopline}>
@@ -147,15 +151,15 @@ function SurveyCard({ label, role, importance, value, neutral, date, change, col
           <small>{monthLabel(date)}</small>
         </div>
       </div>
-      {valid(equivalent) && (
-        <div className={styles.cardFooter}>
-          <span>{equivalentLabel}</span>
-          <b>{equivalent.toFixed(1)}</b>
+      {rows.map(row => (
+        <div className={styles.cardFooter} key={row.label}>
+          <span>{row.label}</span>
+          <b>{row.value}</b>
         </div>
-      )}
+      ))}
       <div className={styles.cardFooter}>
-        <span>1M change through {monthLabel(`${comparisonMonth}-01`)}</span>
-        <b className={change >= 0 ? styles.positive : styles.negative}>{signed(change)} pt</b>
+        <span>1M change</span>
+        <b className={toneClass(change, 0)}>{signed(change)} pt</b>
       </div>
     </article>
   )
@@ -166,7 +170,7 @@ function toneClass(value, neutral) {
   return value > neutral ? styles.positive : styles.negative
 }
 
-function chartOptions({ neutralLabel = 'Neutral', bar = false, baseline = 0 } = {}) {
+function chartOptions({ neutralLabel = 'Neutral', baseline = 0 } = {}) {
   return {
     responsive: true,
     maintainAspectRatio: false,
@@ -177,7 +181,7 @@ function chartOptions({ neutralLabel = 'Neutral', bar = false, baseline = 0 } = 
         labels: {
           color: COLORS.muted,
           usePointStyle: true,
-          pointStyle: bar ? 'rectRounded' : 'circle',
+          pointStyle: 'circle',
           boxWidth: 8,
           font: { size: 10 },
         },
@@ -261,28 +265,6 @@ export default function ManufacturingMomentumPage() {
         .map(point => point.date.slice(0, 7))
         .sort()
         .at(0)
-    const empireComparison = pointForMonth(empireHeadline, comparisonMonth)
-    const phillyComparison = pointForMonth(phillyHeadline, comparisonMonth)
-    const ismComparison = pointForMonth(ismHeadline, comparisonMonth)
-
-    const regionalDirection = [empireComparison?.value, phillyComparison?.value].filter(valid)
-    const positiveRegional = regionalDirection.filter(value => value > 0).length
-    const leadLabel = regionalDirection.length < 2
-      ? 'Regional signals are incomplete'
-      : positiveRegional === 2
-        ? 'Regional signals agree on expansion'
-        : positiveRegional === 0
-          ? 'Regional signals agree on contraction'
-          : 'Regional signals are mixed'
-    const ismSignal = signalFor(ismComparison?.value, 50)
-    const latestReleases = [
-      { key: 'empire', label: 'New York', point: empireLatest, neutral: 0 },
-      { key: 'philly', label: 'Philadelphia', point: phillyLatest, neutral: 0 },
-      { key: 'ism', label: 'ISM', point: ismLatest, neutral: 50 },
-    ]
-    const hasNewerRelease = latestReleases.some(
-      release => release.point?.date.slice(0, 7) !== comparisonMonth,
-    )
 
     const regional = payload.regional
     const districts = DISTRICTS.filter(district => regional[district.key])
@@ -299,6 +281,29 @@ export default function ManufacturingMomentumPage() {
     const fourLatest = last(fourDistrict)
     const earlyLatest = last(earlyRead)
     const earlyAhead = earlyLatest && (!fourLatest || earlyLatest.date > fourLatest.date)
+    const change1m = (series, point) => {
+      const previous = point && series.find(item => item.date.slice(0, 7) === addMonth(point.date, -1))
+      return valid(point?.value) && valid(previous?.value) ? point.value - previous.value : null
+    }
+    const latestReleases = [
+      ...districts.map(district => {
+        const headline = (regional[district.key].series.headline?.observations || []).filter(point => valid(point.value))
+        const point = last(headline)
+        return {
+          key: district.key,
+          label: STAGE_NAMES[district.key],
+          date: point?.date,
+          value: eqMaps[district.key].get(point?.date?.slice(0, 7)),
+          detail: `Headline ${signed(point?.value)} DI`,
+        }
+      }),
+      { key: 'ism', label: STAGE_NAMES.ism, date: ismLatest?.date, value: ismLatest?.value, detail: 'Official PMI' },
+    ]
+    const regionalSignal = signalFor((fourLatest || earlyLatest)?.value, 50)
+    const regionalChange = fourLatest ? change1m(fourDistrict, fourLatest) : change1m(earlyRead, earlyLatest)
+    const readoutLabel = !regionalSignal || regionalSignal.tone === 'neutral'
+      ? 'Regional breadth is unavailable'
+      : `Regional breadth: ${regionalSignal.label.toLowerCase()}${valid(regionalChange) ? (regionalChange > 0.25 ? ', firming' : regionalChange < -0.25 ? ', cooling' : ', steady') : ''}`
     const trackingMonths = [...new Set([...earlyMap.keys(), ...ismMap.keys()])].sort().slice(-12).reverse()
     const trackingRows = trackingMonths.map(month => {
       const estimate = fourMap.get(month)
@@ -337,16 +342,24 @@ export default function ManufacturingMomentumPage() {
       values: Object.fromEntries(districts.map(district => [district.key, componentValue(regional[district.key].series, row.key)])),
     }))
 
-    const seriesMap = (series, key) => latestByMonth(series[key]?.observations)
-    const priceMaps = {
-      empirePaid: seriesMap(empire, 'pricesPaid'),
-      empireReceived: seriesMap(empire, 'pricesReceived'),
-      phillyPaid: seriesMap(philly, 'pricesPaid'),
-      phillyReceived: seriesMap(philly, 'pricesReceived'),
-    }
-    const empireFuture = seriesMap(empire, 'futureHeadline')
-    const phillyFuture = seriesMap(philly, 'futureHeadline')
-    const regionalMonths = [...new Set([...empireMap.keys(), ...phillyMap.keys()])].filter(month => month >= start).sort()
+    // Leading signals on the ISM scale: new orders minus inventories, and prices paid.
+    const regionalNewOrders = districtComponent(regional, ['newOrders'], COMPOSITE_DISTRICTS)
+    const regionalInventories = districtComponent(regional, ['inventories'], COMPOSITE_DISTRICTS)
+    const ordersInventories = latestByMonth(spreadSeries(regionalNewOrders, regionalInventories))
+    const priceDistricts = PRICE_DISTRICTS.filter(key => regional[key]?.series?.pricesPaid)
+    const regionalPaid = latestByMonth(districtComponent(regional, ['pricesPaid'], priceDistricts))
+    const ismLatestMonth = ismLatest?.date.slice(0, 7)
+    const ismOrdersInventories = valid(payload.ism.latest.newOrders) && valid(payload.ism.latest.inventories)
+      ? payload.ism.latest.newOrders - payload.ism.latest.inventories
+      : null
+    const passThrough = Object.fromEntries(priceDistricts.map(key => {
+      const series = regional[key].series
+      return [key, latestByMonth(spreadSeries(series.pricesReceived?.observations || [], series.pricesPaid?.observations || []))]
+    }))
+    const outlook = Object.fromEntries(OUTLOOK_DISTRICTS
+      .filter(key => regional[key]?.series?.futureHeadline)
+      .map(key => [key, latestByMonth(movingAverage(regional[key].series.futureHeadline.observations, 3))]))
+    const regionalMonths = [...new Set([...empireMap.keys(), ...phillyMap.keys(), ...(ismLatestMonth ? [ismLatestMonth] : [])])].filter(month => month >= start).sort()
     const regionalLabels = regionalMonths.map(month => monthLabel(`${month}-01`))
     const line = (label, map, color, extra = {}) => ({
       label,
@@ -362,8 +375,6 @@ export default function ManufacturingMomentumPage() {
     return {
       cadence: orderedCadence(payload.cadence, releases),
       lagging: Object.values(payload.meta?.freshness || {}).filter(lag => lag.behind > 0),
-      empireEqComparison: eqMaps.empire?.get(comparisonMonth),
-      phillyEqComparison: eqMaps.philly?.get(comparisonMonth),
       districts,
       trackingRows,
       liveStats,
@@ -383,39 +394,45 @@ export default function ManufacturingMomentumPage() {
           { label: 'ISM Manufacturing PMI (official)', data: months.map(month => ismMap.get(month) ?? null), borderColor: COLORS.ism, backgroundColor: COLORS.ism, borderWidth: 2.4, pointRadius: 3, tension: .24, spanGaps: false },
         ],
       },
-      pricesData: {
+      ordersInventoriesData: {
         labels: regionalLabels,
         datasets: [
-          line('New York prices paid', priceMaps.empirePaid, COLORS.empire),
-          line('New York prices received', priceMaps.empireReceived, COLORS.empire, { borderDash: [5, 4], borderWidth: 1.6 }),
-          line('Philadelphia prices paid', priceMaps.phillyPaid, COLORS.philly),
-          line('Philadelphia prices received', priceMaps.phillyReceived, COLORS.philly, { borderDash: [5, 4], borderWidth: 1.6 }),
+          line('Four-district: new orders − inventories', ordersInventories, COLORS.regional, { borderWidth: 2.4 }),
+          line('ISM: new orders − inventories (latest month)', new Map(ismLatestMonth && valid(ismOrdersInventories) ? [[ismLatestMonth, ismOrdersInventories]] : []), COLORS.ism, { pointRadius: 5, showLine: false, backgroundColor: COLORS.ism }),
         ],
+      },
+      pricesPaidData: {
+        labels: regionalLabels,
+        datasets: [
+          line(`Prices paid, ISM scale (${priceDistricts.map(key => DISTRICT_LABELS[key]).join(' + ')})`, regionalPaid, COLORS.regional, { borderWidth: 2.4 }),
+          line('ISM prices (latest month)', new Map(ismLatestMonth && valid(payload.ism.latest.pricesPaid) ? [[ismLatestMonth, payload.ism.latest.pricesPaid]] : []), COLORS.ism, { pointRadius: 5, showLine: false, backgroundColor: COLORS.ism }),
+        ],
+      },
+      passThroughData: {
+        labels: regionalLabels,
+        datasets: priceDistricts.map(key => line(DISTRICT_LABELS[key], passThrough[key], COLORS[key])),
       },
       outlookData: {
         labels: regionalLabels,
-        datasets: [
-          line('New York · 6 months ahead', empireFuture, COLORS.empire),
-          line('Philadelphia · 6 months ahead', phillyFuture, COLORS.philly),
-        ],
+        datasets: Object.keys(outlook).map(key => line(`${DISTRICT_LABELS[key]} · 3-month average`, outlook[key], COLORS[key])),
       },
+      latestOrdersInventories: last([...ordersInventories.entries()].map(([month, value]) => ({ month, value }))),
+      ismOrdersInventories,
       empire,
       philly,
-      empireHeadline,
-      phillyHeadline,
       ismHeadline,
       empireLatest,
       phillyLatest,
       ismLatest,
-      empireComparison,
-      phillyComparison,
-      ismComparison,
       comparisonMonth,
       latestReleases,
-      hasNewerRelease,
       releases,
-      leadLabel,
-      ismSignal,
+      readoutLabel,
+      regionalSignal,
+      ismSignal: signalFor(ismLatest?.value, 50),
+      earlyChange: change1m(earlyRead, earlyLatest),
+      fourChange: fourLatest ? change1m(fourDistrict, fourLatest) : null,
+      ismChange: change1m(ismHeadline, ismLatest),
     }
   }, [payload])
 
@@ -452,15 +469,14 @@ export default function ManufacturingMomentumPage() {
         </div>
 
         <section className={styles.hero}>
-          <div className={styles.eyebrow}>UNITED STATES / MANUFACTURING SURVEY CLOCK</div>
+          <div className={styles.eyebrow}>UNITED STATES / MANUFACTURING SURVEYS ON THE ISM SCALE</div>
           <h1>Manufacturing Momentum</h1>
           <p>
-            Follow the monthly information sequence from the first regional read to confirmation
-            and finally the national ISM anchor. Importance is shown as a decision hierarchy—not
-            as an arbitrary statistical weight.
+            Four regional Fed surveys translated to the ISM scale, from the mid-month NY + Philly early read
+            to the four-district composite at month-end, set against the national ISM PMI.
           </p>
           <div className={styles.heroMeta}>
-            <span><i />Regional data refreshes automatically via FRED</span>
+            <span><i />Regional data refreshes automatically (FRED and Reserve Bank workbooks)</span>
             <span>Frequency: Monthly</span>
             <span>Neutral: 0 regional DI / 50 ISM and ISM-equivalent</span>
           </div>
@@ -498,75 +514,64 @@ export default function ManufacturingMomentumPage() {
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
             <div>
-              <span>02 / COMPARABLE SNAPSHOT</span>
-              <h2>Lead, confirm, anchor — same survey month</h2>
+              <span>02 / THIS MONTH</span>
+              <h2>Early read, four-district composite, ISM</h2>
             </div>
-            <p>All three cards and momentum calculations are aligned to {monthLabel(`${model.comparisonMonth}-01`)}.</p>
+            <p>Every value below is on the ISM scale (50 = no change). Regional headlines are converted from their five PMI-counterpart components.</p>
           </div>
 
           <div className={styles.latestStrip}>
             <div className={styles.latestStripIntro}>
-              <span>LATEST RELEASE SEQUENCE</span>
-              <strong>Comparison month: {monthLabel(`${model.comparisonMonth}-01`)}</strong>
+              <span>LATEST RELEASES · ISM SCALE</span>
+              <strong>{model.earlyAhead ? `Early read for ${monthLabel(model.earlyLatest.date)}` : `Four-district composite for ${monthLabel(model.fourLatest?.date)}`}</strong>
               <small>
-                {model.hasNewerRelease
-                  ? 'Newer releases stay visible here, but do not enter the cross-survey verdict until all three surveys catch up.'
-                  : 'All three surveys currently refer to the same month.'}
+                {model.earlyAhead
+                  ? 'Richmond and Dallas have not reported this month yet; the composite stays on the last complete month.'
+                  : 'All four districts have reported the latest month.'}
               </small>
             </div>
-            {model.latestReleases.map(release => {
-              const releaseMonth = release.point?.date.slice(0, 7)
-              const isAhead = releaseMonth !== model.comparisonMonth
-              return (
-                <div className={styles.latestRelease} key={release.key} style={{ '--release': COLORS[release.key] }}>
-                  <span>{release.label}</span>
-                  <strong>{valid(release.point?.value) ? release.point.value.toFixed(1) : '—'}</strong>
-                  <small>{monthLabel(release.point?.date)} · {isAhead ? 'New lead' : 'Aligned'}</small>
-                </div>
-              )
-            })}
+            {model.latestReleases.map(release => (
+              <div className={styles.latestRelease} key={release.key} style={{ '--release': COLORS[release.key] }}>
+                <span>{release.label}</span>
+                <strong>{valid(release.value) ? release.value.toFixed(1) : '—'}</strong>
+                <small>{monthLabel(release.date)} · {release.detail}</small>
+              </div>
+            ))}
           </div>
 
           <div className={styles.surveyGrid}>
             <SurveyCard
-              label="New York Empire"
-              role="First read"
-              importance="Regional lead"
-              value={model.empireComparison?.value}
-              neutral={0}
-              date={model.empireComparison?.date}
-              change={pointChange(observationsThroughMonth(model.empireHeadline, model.comparisonMonth))}
+              label="Early read: NY + Philly"
+              role="Mid-month"
+              importance="Early"
+              value={model.earlyLatest?.value}
+              date={model.earlyLatest?.date}
+              change={model.earlyChange}
               color={COLORS.empire}
-              comparisonMonth={model.comparisonMonth}
-              equivalent={model.empireEqComparison}
-              description="Fast but geographically narrow. Useful for direction, not a national conclusion."
+              description="Available from the third Thursday. Fast, but two districts only."
+              rows={[{ label: 'Typical gap to ISM (MAE)', value: `${ISM_EQUIVALENT_VALIDATION.earlyRead.mae.toFixed(1)} pt` }]}
             />
             <SurveyCard
-              label="Philadelphia Fed"
-              role="Second read"
-              importance="Regional confirm"
-              value={model.phillyComparison?.value}
-              neutral={0}
-              date={model.phillyComparison?.date}
-              change={pointChange(observationsThroughMonth(model.phillyHeadline, model.comparisonMonth))}
-              color={COLORS.philly}
-              comparisonMonth={model.comparisonMonth}
-              equivalent={model.phillyEqComparison}
-              description="Long-running regional survey that confirms—or challenges—the first New York signal."
+              label="Four-district composite"
+              role="Month-end"
+              importance="Breadth"
+              value={model.fourLatest?.value}
+              date={model.fourLatest?.date}
+              change={model.fourChange}
+              color={COLORS.regional}
+              description="Adds Richmond and Dallas once both report, late in the month."
+              rows={[{ label: 'Typical gap to ISM (MAE)', value: `${ISM_EQUIVALENT_VALIDATION.fourDistrict.mae.toFixed(1)} pt` }]}
             />
             <SurveyCard
-              label="ISM Manufacturing"
-              role="Final anchor"
+              label="ISM Manufacturing PMI"
+              role="First business day"
               importance="National"
-              value={model.ismComparison?.value}
-              neutral={50}
-              date={model.ismComparison?.date}
-              change={pointChange(observationsThroughMonth(model.ismHeadline, model.comparisonMonth))}
+              value={model.ismLatest?.value}
+              date={model.ismLatest?.date}
+              change={model.ismChange}
               color={COLORS.ism}
-              comparisonMonth={model.comparisonMonth}
-              equivalent={model.ismComparison?.value}
-              equivalentLabel="Official PMI (no conversion)"
-              description="The national benchmark. It carries the greatest decision weight in the sequence."
+              description="The official national benchmark, entered from the ISM report."
+              rows={[{ label: 'Previous ISM as a level guess (MAE)', value: `${ISM_EQUIVALENT_VALIDATION.previousIsm.mae.toFixed(2)} pt` }]}
             />
           </div>
         </section>
@@ -723,21 +728,55 @@ export default function ManufacturingMomentumPage() {
         <section className={styles.section}>
           <div className={styles.sectionHeader}>
             <div>
-              <span>05 / PRICES &amp; OUTLOOK</span>
-              <h2>Cost pass-through and expectations</h2>
+              <span>05 / LEADING SIGNALS</span>
+              <h2>Orders versus inventories, and input prices</h2>
             </div>
-            <p>Diffusion indexes, 0 = no change. Paid above received means input costs are rising more broadly than selling prices.</p>
+            <p>Both on the ISM scale. The ISM marker is its latest month only: this page keeps ISM component values for the latest report alone.</p>
           </div>
           <div className={styles.equalGrid}>
             <article className={styles.panel}>
               <div className={styles.panelHeading}>
-                <div><h3>Prices paid vs received</h3><p>Diffusion index · solid = paid · dashed = received</p></div>
+                <div><h3>New orders − inventories</h3><p>Points on the ISM scale · four-district composite</p></div>
+                <span className={styles.liveBadge}>DERIVED</span>
               </div>
-              <div className={styles.chart}><Line data={model.pricesData} options={chartOptions({ neutralLabel: 'Diffusion index' })} /></div>
+              <div className={styles.chart}><Line data={model.ordersInventoriesData} options={chartOptions({ neutralLabel: 'Points (0 = balanced)' })} /></div>
+              <p className={styles.note}>
+                Latest four-district spread {signed(model.latestOrdersInventories?.value)} pt ({monthLabel(model.latestOrdersInventories ? `${model.latestOrdersInventories.month}-01` : null)});
+                ISM {signed(model.ismOrdersInventories)} pt ({monthLabel(model.ismLatest?.date)}). Orders running ahead of inventories is a common
+                sign of upcoming production; it is a descriptive gauge, not a forecast. Dallas inventories are finished goods.
+              </p>
             </article>
             <article className={styles.panel}>
               <div className={styles.panelHeading}>
-                <div><h3>Six-month outlook</h3><p>Future general activity · diffusion index</p></div>
+                <div><h3>Prices paid on the ISM scale</h3><p>50 + DI/2 · NY, Philly and Dallas · ISM prices index for reference</p></div>
+                <span className={styles.liveBadge}>DERIVED</span>
+              </div>
+              <div className={styles.chart}><Line data={model.pricesPaidData} options={chartOptions({ neutralLabel: 'Index (50 = no change)', baseline: 50 })} /></div>
+              <p className={styles.note}>
+                Richmond reports expected percent price changes rather than a diffusion index, so it is not included. ISM&apos;s prices index is not seasonally adjusted.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section className={styles.section}>
+          <div className={styles.sectionHeader}>
+            <div>
+              <span>06 / PRICES &amp; OUTLOOK</span>
+              <h2>Pass-through and expectations</h2>
+            </div>
+            <p>Diffusion indexes, 0 = no change. Below zero, input costs are rising more broadly than selling prices.</p>
+          </div>
+          <div className={styles.equalGrid}>
+            <article className={styles.panel}>
+              <div className={styles.panelHeading}>
+                <div><h3>Pass-through gap: prices received − paid</h3><p>Diffusion-index points · by district</p></div>
+              </div>
+              <div className={styles.chart}><Line data={model.passThroughData} options={chartOptions({ neutralLabel: 'Received − paid (DI points)' })} /></div>
+            </article>
+            <article className={styles.panel}>
+              <div className={styles.panelHeading}>
+                <div><h3>Six-month outlook</h3><p>Future general activity · 3-month average to damp monthly noise</p></div>
               </div>
               <div className={styles.chart}><Line data={model.outlookData} options={chartOptions({ neutralLabel: 'Diffusion index' })} /></div>
             </article>
@@ -746,21 +785,20 @@ export default function ManufacturingMomentumPage() {
 
         <section className={styles.readout}>
           <div>
-            <span>Aligned readout · {monthLabel(`${model.comparisonMonth}-01`)}</span>
-            <h2>{model.leadLabel}</h2>
+            <span>Readout · {monthLabel(model.regionalEqLatest?.date)}</span>
+            <h2>{model.readoutLabel}</h2>
             <p>
-              The same-month national anchor is <strong className={styles[model.ismSignal.tone]}>{model.ismSignal.label.toLowerCase()}</strong>.
-              {valid(model.regionalEqLatest?.value) && (
-                <> The latest {model.compositeLabel.toLowerCase()} ISM-equivalent ({monthLabel(model.regionalEqLatest.date)}) is{' '}
-                <strong>{model.regionalEqLatest.value.toFixed(1)}</strong>, a derived translation whose typical gap to ISM is about {ISM_EQUIVALENT_VALIDATION.fourDistrict.mae.toFixed(1)} points.</>
-              )}
-              {' '}Newer regional releases update the live sequence above without contaminating this horizontal comparison.
+              The latest {model.compositeLabel.toLowerCase()} ISM-equivalent is{' '}
+              <strong className={styles[model.regionalSignal.tone]}>{valid(model.regionalEqLatest?.value) ? model.regionalEqLatest.value.toFixed(1) : '—'}</strong>
+              {' '}and the latest ISM PMI ({monthLabel(model.ismLatest?.date)}) is{' '}
+              <strong className={styles[model.ismSignal.tone]}>{valid(model.ismLatest?.value) ? model.ismLatest.value.toFixed(1) : '—'}</strong>.
+              The composite describes breadth across four districts; it is a derived translation, not a forecast of the next ISM.
             </p>
           </div>
           <div className={styles.readoutRules}>
-            <div><b>1</b><span>NY sets the first directional clue.</span></div>
-            <div><b>2</b><span>Philly determines whether the clue has breadth.</span></div>
-            <div><b>3</b><span>ISM resolves the national manufacturing signal.</span></div>
+            <div><b>1</b><span>Mid-month, NY + Philly give an early ISM-scale read (typical gap {ISM_EQUIVALENT_VALIDATION.earlyRead.mae.toFixed(1)} pt).</span></div>
+            <div><b>2</b><span>By month-end, Richmond and Dallas complete the four-district composite ({ISM_EQUIVALENT_VALIDATION.fourDistrict.mae.toFixed(1)} pt).</span></div>
+            <div><b>3</b><span>ISM resolves the national reading; as a level guess, its own last value is still closer ({ISM_EQUIVALENT_VALIDATION.previousIsm.mae.toFixed(2)} pt).</span></div>
           </div>
         </section>
 

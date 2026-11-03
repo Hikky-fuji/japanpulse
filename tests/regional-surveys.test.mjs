@@ -4,6 +4,8 @@ import test from 'node:test'
 import { districtComposite, ismEquivalentComposite } from '../app/lib/regional-ism.mjs'
 import {
   DALLAS_SURVEY,
+  anchorLagMessage,
+  laggingSurveys,
   RICHMOND_SURVEY,
   cellMonth,
   expectedLatestMonth,
@@ -88,4 +90,16 @@ test('survey lag counts missing scheduled months', () => {
   assert.equal(surveyLag('richmond', '2026-10-01', today).behind, 0)
   assert.equal(surveyLag('richmond', '2026-08-01', today).behind, 2)
   assert.equal(surveyLag('dallas', null, today).behind, null)
+})
+
+test('only NY and Philly lags produce an anchor (stale) message', () => {
+  const freshness = {
+    empire: { key: 'empire', latest: '2026-10-01', expected: '2026-10-01', behind: 0 },
+    philly: { key: 'philly', latest: '2026-09-01', expected: '2026-10-01', behind: 1 },
+    richmond: { key: 'richmond', latest: '2026-08-01', expected: '2026-10-01', behind: 2 },
+  }
+  assert.equal(anchorLagMessage(freshness), 'philly latest 2026-09, expected 2026-10')
+  assert.deepEqual(laggingSurveys(freshness).map(lag => lag.key), ['philly', 'richmond'])
+  assert.equal(anchorLagMessage({ ...freshness, philly: { ...freshness.philly, behind: 0 } }), null)
+  assert.equal(anchorLagMessage(undefined), null)
 })
