@@ -15,8 +15,10 @@ import {
 } from 'chart.js'
 import { DashboardFreshness, DashboardState } from '../components/DashboardStatus'
 import styles from './page.module.css'
+import { SERIES_COLORS } from '../lib/series-colors.mjs'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler)
+
 
 const COLORS = {
   orange: '#f08a24',
@@ -243,10 +245,11 @@ export default function BojPolicyMonitor() {
   const underlyingChart = {
     labels: underlyingLabels,
     datasets: [
-      { label: 'Trimmed mean', data: underlyingLabels.map(date => trimmedMap.get(date) ?? null), borderColor: COLORS.orange, borderWidth: 2.4, pointRadius: 0, tension: .24 },
-      { label: 'Weighted median', data: underlyingLabels.map(date => weightedMap.get(date) ?? null), borderColor: COLORS.green, borderWidth: 2, pointRadius: 0, tension: .24 },
-      { label: 'Mode', data: underlyingLabels.map(date => modeMap.get(date) ?? null), borderColor: COLORS.violet, borderWidth: 1.7, pointRadius: 0, borderDash: [5, 4], tension: .24 },
-      { label: 'CPI ex. institutional factors', data: underlyingLabels.map(date => adjustedMap.get(date) ?? null), borderColor: COLORS.blue, borderWidth: 1.6, pointRadius: 0, borderDash: [2, 3], tension: .24 },
+      // Shared indicator colors; validated order: mode, trimmed mean, weighted median, core.
+      { label: 'Mode', data: underlyingLabels.map(date => modeMap.get(date) ?? null), borderColor: SERIES_COLORS.sticky, borderWidth: 1.7, pointRadius: 0, borderDash: [5, 4], tension: .24 },
+      { label: 'Trimmed mean', data: underlyingLabels.map(date => trimmedMap.get(date) ?? null), borderColor: SERIES_COLORS.trimmedMean, borderWidth: 2.4, pointRadius: 0, tension: .24 },
+      { label: 'Weighted median', data: underlyingLabels.map(date => weightedMap.get(date) ?? null), borderColor: SERIES_COLORS.median, borderWidth: 2, pointRadius: 0, tension: .24 },
+      { label: 'CPI ex. institutional factors', data: underlyingLabels.map(date => adjustedMap.get(date) ?? null), borderColor: SERIES_COLORS.core, borderWidth: 1.6, pointRadius: 0, borderDash: [2, 3], tension: .24 },
     ],
   }
 

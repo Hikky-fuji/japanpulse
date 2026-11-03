@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import { Line, Bar } from 'react-chartjs-2'
 import { DashboardFreshness, DashboardState } from '../components/DashboardStatus'
+import { SERIES_COLORS as C } from '../lib/series-colors.mjs'
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -75,7 +76,7 @@ export default function USMacroDashboard() {
       key: 'taylor93',
       short: 'Taylor 1993',
       label: 'Taylor (1993)',
-      color: '#378ADD',
+      color: C.taylor1993,
       formula: '2 + π + 0.5(π − 2) + 0.5 × output gap',
       detail: 'Classic level rule · core PCE inflation · fixed 2% real neutral rate.',
     },
@@ -83,7 +84,7 @@ export default function USMacroDashboard() {
       key: 'balanced',
       short: 'Balanced',
       label: 'Balanced Approach',
-      color: '#1D9E75',
+      color: C.balancedApproach,
       formula: '2 + π + 0.5(π − 2) + 1.0 × output gap',
       detail: 'Taylor (1999) / Fed balanced approach · twice the Taylor (1993) slack response.',
     },
@@ -91,7 +92,7 @@ export default function USMacroDashboard() {
       key: 'clarida',
       short: 'Clarida-CGG',
       label: 'Clarida–CGG Proxy',
-      color: '#A78BFA',
+      color: C.claridaProxy,
       formula: '0.79iₜ₋₁ + 0.21[4.12 + 2.15(Eπ − 2) + 0.93y-gap]',
       detail: 'Expected-inflation reaction β=2.15 and output-gap reaction γ=0.93; adjusted 5Y BEI is the expectation proxy.',
     },
@@ -99,7 +100,7 @@ export default function USMacroDashboard() {
       key: 'bullard',
       short: 'Bullard',
       label: 'Bullard Modernized',
-      color: '#E24B4A',
+      color: C.bullardModernized,
       formula: '0.85iₜ₋₁ + 0.15[r* + 2 + 1.5(Eπ − 2) + 0.1y-gap]',
       detail: 'HP-trend safe real rate, adjusted 5Y BEI and a 0.1 output-gap coefficient.',
     },
@@ -349,7 +350,7 @@ export default function USMacroDashboard() {
         {ruleLatest ? (
           <>
             <div style={s.ruleGrid}>
-              <div style={{ ...s.ruleCard, borderTop: '3px solid #F59E0B' }}>
+              <div style={{ ...s.ruleCard, borderTop: `3px solid ${C.policyRate}` }}>
                 <div style={s.cardLabel}>Effective Fed Funds</div>
                 <div style={s.cardVal}>{fmtPct(ruleLatest.actual)}</div>
                 <div style={{ ...s.cardSub, color: '#888' }}>Quarterly average</div>
@@ -378,8 +379,8 @@ export default function USMacroDashboard() {
                   {
                     label: 'Effective Fed Funds',
                     data: ruleHistory.map(point => point.actual),
-                    borderColor: '#F59E0B',
-                    backgroundColor: '#F59E0B',
+                    borderColor: C.policyRate,
+                    backgroundColor: C.policyRate,
                     borderWidth: 3,
                     pointRadius: 1,
                     tension: 0.25,
@@ -511,8 +512,8 @@ export default function USMacroDashboard() {
           data={{
             labels: inflLabels,
             datasets: [
-              { label: 'CPI (All Items)',  data: cpiYS.values.slice(-inflLen),     borderColor: '#378ADD', borderWidth: 2, pointRadius: 0, tension: 0.3 },
-              { label: 'Core CPI',         data: coreCpiYS.values.slice(-inflLen), borderColor: '#D85A30', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+              { label: 'CPI (All Items)',  data: cpiYS.values.slice(-inflLen),     borderColor: C.headline, borderWidth: 2, pointRadius: 0, tension: 0.3 },
+              { label: 'Core CPI',         data: coreCpiYS.values.slice(-inflLen), borderColor: C.core, borderWidth: 2, pointRadius: 0, tension: 0.3 },
             ],
           }}
           options={lineOpts}
@@ -582,8 +583,8 @@ export default function USMacroDashboard() {
             data={{
               labels: unrLabels,
               datasets: [
-                { label: 'U-3 (Headline)', data: unr24.map(v => v.value), borderColor: '#378ADD', borderWidth: 2, pointRadius: 0, tension: 0.3 },
-                { label: 'U-6 (Broad)',    data: u6_24.map(v => v.value), borderColor: '#D85A30', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+                { label: 'U-3 (Headline)', data: unr24.map(v => v.value), borderColor: C.unemployment, borderWidth: 2, pointRadius: 0, tension: 0.3 },
+                { label: 'U-6 (Broad)',    data: u6_24.map(v => v.value), borderColor: C.underemployment, borderWidth: 2, pointRadius: 0, tension: 0.3 },
               ],
             }}
             options={lineOpts}
@@ -598,8 +599,8 @@ export default function USMacroDashboard() {
             data={{
               labels: partLabels,
               datasets: [
-                { label: 'Overall (16+)',   data: civpart24.map(v => v.value), borderColor: '#1D9E75', borderWidth: 2, pointRadius: 0, tension: 0.3 },
-                { label: 'Prime Age 25-54', data: prime24.map(v => v.value),   borderColor: '#9B59B6', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+                { label: 'Overall (16+)',   data: civpart24.map(v => v.value), borderColor: C.participation, borderWidth: 2, pointRadius: 0, tension: 0.3 },
+                { label: 'Prime Age 25-54', data: prime24.map(v => v.value),   borderColor: C.primeParticipation, borderWidth: 2, pointRadius: 0, tension: 0.3 },
               ],
             }}
             options={lineOpts}

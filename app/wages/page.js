@@ -7,6 +7,7 @@ import {
   CategoryScale, LinearScale, PointElement,
   LineElement, Title, Tooltip, Legend, Filler,
 } from 'chart.js'
+import { SERIES_COLORS as C } from '../lib/series-colors.mjs'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
 
@@ -46,7 +47,7 @@ export default function Wages() {
       {
         label: 'Nominal Wages Y/Y (%)',
         data: nominal.map(d => d.yoy),
-        borderColor: '#2980B9',
+        borderColor: C.wages,
         borderWidth: 2,
         pointRadius: 2,
         tension: 0.3,
@@ -55,7 +56,7 @@ export default function Wages() {
       {
         label: 'Real Wages Y/Y (%)',
         data: labels.map(d => realMap[d]?.yoy ?? null),
-        borderColor: '#E74C3C',
+        borderColor: C.realWages,
         borderWidth: 2,
         pointRadius: 2,
         tension: 0.3,
@@ -68,17 +69,16 @@ export default function Wages() {
       {
         label: 'Scheduled Wages Y/Y (%)',
         data: labels.map(d => schedMap[d]?.yoy ?? null),
-        borderColor: '#27AE60',
+        borderColor: C.scheduledWages,
         borderWidth: 1.5,
         pointRadius: 2,
         tension: 0.3,
-        borderDash: [4, 3],
         fill: false,
       },
       {
         label: 'Nominal Wages (Same Establishment) Y/Y (%)',
         data: labels.map(d => nomSameMap[d]?.yoy ?? null),
-        borderColor: '#8E44AD',
+        borderColor: C.wages,
         borderWidth: 2,
         pointRadius: 2,
         tension: 0.3,
@@ -88,7 +88,7 @@ export default function Wages() {
       {
         label: 'Scheduled Wages (Same Establishment) Y/Y (%)',
         data: labels.map(d => schedSameMap[d]?.yoy ?? null),
-        borderColor: '#16A085',
+        borderColor: C.scheduledWages,
         borderWidth: 1.5,
         pointRadius: 2,
         tension: 0.3,
@@ -104,7 +104,7 @@ export default function Wages() {
       {
         label: 'Nominal Wages (Index)',
         data: nominal.map(d => d.value),
-        borderColor: '#2980B9',
+        borderColor: C.wages,
         borderWidth: 2,
         pointRadius: 2,
         tension: 0.3,
@@ -113,7 +113,7 @@ export default function Wages() {
       {
         label: 'Real Wages (Index)',
         data: labels.map(d => realMap[d]?.value ?? null),
-        borderColor: '#E74C3C',
+        borderColor: C.realWages,
         borderWidth: 2,
         pointRadius: 2,
         tension: 0.3,

@@ -35,20 +35,21 @@ import {
 // US and Japan dashboards share one layout and stylesheet.
 import styles from '../cpi/page.module.css'
 import layout from './page.module.css'
+import { SERIES_COLORS } from '../../lib/series-colors.mjs'
 
 ChartJS.register(BarElement, CategoryScale, Legend, LinearScale, LineElement, PointElement, Tooltip)
 
+// Shared indicator colors (app/lib/series-colors.mjs).
 const COLORS = {
-  total: '#e6eaec',
-  u3: '#3987e5',
-  u6: '#d95926',
-  sep: '#c98500',
-  primeLfpr: '#d55181',
-  primeEpop: '#9085e9',
-  ahe: '#3987e5',
-  ahe3m: '#d95926',
-  atlanta: '#199e70',
-  eci: '#c98500',
+  total: SERIES_COLORS.payrollTotal,
+  u3: SERIES_COLORS.unemployment,
+  u6: SERIES_COLORS.underemployment,
+  sep: SERIES_COLORS.fomcProjection,
+  primeLfpr: SERIES_COLORS.primeParticipation,
+  primeEpop: SERIES_COLORS.primeEmployment,
+  ahe: SERIES_COLORS.wages,
+  atlanta: SERIES_COLORS.wageTracker,
+  eci: SERIES_COLORS.employmentCostIndex,
 }
 
 const valid = value => Number.isFinite(value)
@@ -459,7 +460,7 @@ export default function USEmploymentPage() {
     labels: model.wageDates.map(shortMonth),
     datasets: [
       { label: 'AHE Y/Y', data: valuesOn(yoySeries(employment.ahe), model.wageDates), borderColor: COLORS.ahe, backgroundColor: COLORS.ahe, borderWidth: 2, pointRadius: 0 },
-      { label: 'AHE 3M ann.', data: valuesOn(annualized3mSeries(employment.ahe), model.wageDates), borderColor: COLORS.ahe3m, backgroundColor: COLORS.ahe3m, borderWidth: 1.5, pointRadius: 0 },
+      { label: 'AHE 3M ann.', data: valuesOn(annualized3mSeries(employment.ahe), model.wageDates), borderColor: COLORS.ahe, backgroundColor: COLORS.ahe, borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0 },
       { label: 'Atlanta Fed tracker', data: valuesOn(model.atlanta, model.wageDates), borderColor: COLORS.atlanta, backgroundColor: COLORS.atlanta, borderWidth: 2, pointRadius: 0 },
       { label: 'ECI wages Y/Y (quarterly)', data: valuesOn(model.eciYoy, model.wageDates), borderColor: COLORS.eci, backgroundColor: COLORS.eci, borderWidth: 2, pointRadius: 3, spanGaps: true },
     ],

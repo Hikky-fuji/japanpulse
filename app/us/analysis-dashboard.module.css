@@ -126,6 +126,9 @@
 .metricCard.warning { --tone: #f2b96d; }
 .metricCard.negative { --tone: var(--red); }
 .metricCard.violet { --tone: var(--violet); }
+/* Indicator tones match app/lib/series-colors.mjs */
+.metricCard.headline { --tone: #3987e5; }
+.metricCard.core { --tone: #d95926; }
 .metricLabel { color: var(--muted); }
 
 .metricHeadline {

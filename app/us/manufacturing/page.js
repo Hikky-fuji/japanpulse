@@ -30,6 +30,7 @@ import {
   trackingStats,
 } from '../../lib/regional-ism.mjs'
 import { regionalReleaseDate } from '../../lib/regional-surveys.mjs'
+import { SERIES_COLORS } from '../../lib/series-colors.mjs'
 
 ChartJS.register(
   CategoryScale,
@@ -41,14 +42,14 @@ ChartJS.register(
   Tooltip,
 )
 
-// Validated categorical slots on the dark panel (dataviz validator, per chart).
+// Shared indicator colors (app/lib/series-colors.mjs).
 const COLORS = {
-  empire: '#3987e5',
-  philly: '#d55181',
-  richmond: '#9085e9',
-  dallas: '#c98500',
-  regional: '#199e70',
-  ism: '#d95926',
+  empire: SERIES_COLORS.empire,
+  philly: SERIES_COLORS.philly,
+  richmond: SERIES_COLORS.richmond,
+  dallas: SERIES_COLORS.dallas,
+  regional: SERIES_COLORS.regionalComposite,
+  ism: SERIES_COLORS.ism,
   muted: '#c7cdd1',
   grid: '#4a5258',
 }
